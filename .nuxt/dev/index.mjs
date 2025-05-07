@@ -645,8 +645,7 @@ const _inlineRuntimeConfig = {
     }
   },
   "public": {
-    "apiBase": "http://202.10.41.18:8001",
-    "storageBase": "http://202.10.41.18:9000/photos",
+    "apiBase": "https://api.frameitalbum.com/",
     "device": {
       "defaultUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.39 Safari/537.36",
       "enabled": true,

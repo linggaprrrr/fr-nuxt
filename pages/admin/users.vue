@@ -1,16 +1,41 @@
 <script setup lang="ts">
-
+import { ref, onMounted } from 'vue'
 // compposables
 const { getUsers, getUserById, updateUserById, deleteUserById, getCurrentUser } = useUsers()
 
+const page = ref(1)
+const limit = 24
+const total = ref(0)
+const isLoading = ref(false)
+const show = ref(true)
 
+const users = ref<User[]>([])
+  async function fetchUsers() {
+  isLoading.value = true
+  try {
+    console.log('Fetching users...', { page: page.value, limit })
 
-const { data: users, refresh } = await useAsyncData<User[]>('users', () =>
-  getUsers({ page: 1, limit: 25 }).then(res => {
-    if (!res) return []
-    return res.data
-  }),
-)
+    const res = await getUsers({ page: page.value, limit })
+
+    console.log('API response:', res)
+
+    // Check if response contains data and total
+    if (res) {
+      users.value = res.data 
+      total.value = res.total || 0 
+    } else {
+      users.value = []
+      total.value = 0
+      console.warn('No data in response')
+    }
+  } catch (e) {
+    console.error('Error fetching users:', e)
+    users.value = []
+    total.value = 0
+  } finally {
+    isLoading.value = false
+  }
+}
 
 
 // Modal logic
@@ -45,6 +70,10 @@ async function confirmDelete(id: string) {
     await refresh()
   }
 }
+
+onMounted(() => {
+  fetchUsers()
+})
 
 </script>
 

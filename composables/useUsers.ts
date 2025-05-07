@@ -37,31 +37,26 @@ export const useUsers = () => {
         limit?: number, 
         search?: string | null
     }) => {
-        const token = import.meta.client ? localStorage.getItem('token') : null
+        
         // queries
         const params: Record<string, any> = {           
             page,
             limit
         }
 
+
         if (search) {
             params.search = search
         }
         
         try {
-            const data = await $fetch('users', {
+            const data = await $fetch('users/', {
                 baseURL: config.public.apiBase,
-                method: 'GET',
-                headers: {
-                    accept: 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
+                method: 'GET',                                
                 params
             })
 
-            if (data) {
-                return data
-            }
+            return data
         } catch (error: any) {
             if (error?.status_code === 401) handleUnauthorized()
             else throw error         

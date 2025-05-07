@@ -120,8 +120,6 @@ declare module 'nuxt/schema' {
   interface PublicRuntimeConfig {
    apiBase: string,
 
-   storageBase: string,
-
    device: {
       defaultUserAgent: string,
 
