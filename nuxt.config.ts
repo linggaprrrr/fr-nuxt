@@ -19,8 +19,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: 'http://202.10.41.18:8001',
-      storageBase: 'http://202.10.41.18:9000/photos'
+      apiBase: 'https://api.frameitalbum.com/',      
     }
   },
 
