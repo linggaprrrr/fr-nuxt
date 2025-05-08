@@ -1,15 +1,22 @@
 export default defineNuxtRouteMiddleware((to, from) => {
   if (process.client) {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
 
-    // Jika ada token, arahkan langsung ke halaman dashboard
     if (token && to.path === '/login') {
-      return navigateTo('/dashboard')
+      if (userStr) {
+        const user = JSON.parse(userStr) as { role: string };
+
+        if (user.role === 'superadmin') {
+          return navigateTo('/admin/dashboard');
+        } else {
+          return navigateTo('/photos');
+        }
+      }
     }
 
-    // Jika tidak ada token dan bukan ke halaman login, arahkan ke halaman login
     if (!token && to.path !== '/login') {
-      return navigateTo('/login')
+      return navigateTo('/login');
     }
   }
-})
+});

@@ -20,7 +20,9 @@ onMounted(async () => {
   console.log('hallow', data)
 })
 
-
+definePageMeta({
+  layout: 'default'
+})
 </script>
 
 <template>

@@ -10,7 +10,7 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
       :item="{
         title: 'Dashboard',
         icon: 'bx bx-home-smile',        
-        to: '/dashboard',
+        to: '/admin/dashboard',
       }"
     />
 
@@ -53,7 +53,7 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
     :item="{
       title: 'Transactions',
       icon: 'bx bxs-receipt',      
-      to: '/register',
+      to: '/login',
     }"
   />
 
@@ -67,7 +67,7 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
       :item="{
         title: 'Report 1',
         icon: 'bx bxs-report',
-        to: '/typography',
+        to: '/login',
       }"
     />  
 

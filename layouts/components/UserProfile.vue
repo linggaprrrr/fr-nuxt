@@ -2,13 +2,25 @@
 import avatar1 from '@images/avatars/avatar-1.png'
 
 const router = useRouter()
-
 const { logout } = useAuth()
 
 const handleLogout = async () => {
   logout()
 }
 
+// Ambil data user dari localStorage
+const user = ref<{ name: string; role: string } | null>(null)
+
+if (import.meta.client) {
+  const userData = localStorage.getItem('user')
+  if (userData) {
+    try {
+      user.value = JSON.parse(userData)
+    } catch (e) {
+      user.value = null
+    }
+  }
+}
 </script>
 
 <template>
@@ -27,7 +39,6 @@ const handleLogout = async () => {
     >
       <VImg :src="avatar1" />
 
-      <!-- SECTION Menu -->
       <VMenu
         activator="parent"
         width="230"
@@ -57,43 +68,32 @@ const handleLogout = async () => {
             </template>
 
             <VListItemTitle class="font-weight-semibold">
-              John Doe
+              {{ user?.name || 'Unknown User' }}
             </VListItemTitle>
-            <VListItemSubtitle>Admin</VListItemSubtitle>
+            <VListItemSubtitle>{{ user?.role || 'Unknown Role' }}</VListItemSubtitle>
           </VListItem>
+
           <VDivider class="my-2" />
 
           <!-- 👉 Profile -->
           <VListItem link>
             <template #prepend>
-              <VIcon
-                class="me-2"
-                icon="bx-user"
-                size="22"
-              />
+              <VIcon class="me-2" icon="bx-user" size="22" />
             </template>
-
             <VListItemTitle>Profile</VListItemTitle>
           </VListItem>
 
-          <!-- Divider -->
           <VDivider class="my-2" />
 
           <!-- 👉 Logout -->
           <VListItem @click="handleLogout">
             <template #prepend>
-              <VIcon
-                class="me-2"
-                icon="bx-log-out"
-                size="22"
-              />
+              <VIcon class="me-2" icon="bx-log-out" size="22" />
             </template>
-
             <VListItemTitle>Logout</VListItemTitle>
           </VListItem>
         </VList>
       </VMenu>
-      <!-- !SECTION -->
     </VAvatar>
   </VBadge>
 </template>

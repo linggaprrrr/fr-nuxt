@@ -7,7 +7,7 @@ export default <RouterConfig> {
     {
       path: '/',
       name: 'index',
-      redirect: '/dashboard',
+      redirect: '/login',
     },
   ],
 }

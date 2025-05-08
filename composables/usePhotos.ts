@@ -38,10 +38,13 @@ export const usePhotos = () => {
 
       return response
     } catch (error: any) {
-      if (error?.status_code === 401) handleUnauthorized()
-      else throw error
-
-      return { data: [], total: 0 }
+      if (error?.response?.data?.detail?.status_code === 401) {
+        localStorage.removeItem('token')
+        router.push('/login') 
+        return Promise.reject(error) 
+      } 
+      throw error
+    
     }
   }
 
@@ -57,8 +60,11 @@ export const usePhotos = () => {
         }
       })
     } catch (error: any) {
-      if (error?.status_code === 401) handleUnauthorized()
-      else throw error
+      if (error?.response?.data?.detail?.status_code === 401) {
+        localStorage.removeItem('token')
+        router.push('/login') 
+        return Promise.reject(error) 
+      }
     }
   }
 

@@ -22,8 +22,12 @@ export const useUsers = () => {
         
             return data
         } catch (error: any) {
-            if (error?.status_code === 401) handleUnauthorized()
-            else throw error
+            if (error?.response?.data?.detail?.status_code === 401) {
+                localStorage.removeItem('token')
+                router.push('/login') 
+                return Promise.reject(error) 
+            }
+            throw error
         }
     }
       

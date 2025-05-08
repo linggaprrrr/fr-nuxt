@@ -58,14 +58,14 @@ const handleLogin = async () => {
               v-html="logo"
             />
             <h1 class="app-logo-title">
-              sneat
+              
             </h1>
           </NuxtLink>
         </VCardItem>
 
         <VCardText>
           <h4 class="text-h4 mb-1">
-            Welcome to Sneat! 👋🏻
+            Welcome to DufanSnap! 👋🏻
           </h4>
           <p class="mb-0">
             Please sign-in to your account and start the adventure

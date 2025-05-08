@@ -19,14 +19,15 @@ declare module 'vue-router/auto-routes' {
    */
   export interface RouteNamedMap {
     'account-settings': RouteRecordInfo<'account-settings', '/account-settings', Record<never, never>, Record<never, never>>,
+    'admin-dashboard': RouteRecordInfo<'admin-dashboard', '/admin/dashboard', Record<never, never>, Record<never, never>>,
     'admin-photos': RouteRecordInfo<'admin-photos', '/admin/photos', Record<never, never>, Record<never, never>>,
     'admin-upload-photo': RouteRecordInfo<'admin-upload-photo', '/admin/upload-photo', Record<never, never>, Record<never, never>>,
     'admin-users': RouteRecordInfo<'admin-users', '/admin/users', Record<never, never>, Record<never, never>>,
     'cards': RouteRecordInfo<'cards', '/cards', Record<never, never>, Record<never, never>>,
-    'dashboard': RouteRecordInfo<'dashboard', '/dashboard', Record<never, never>, Record<never, never>>,
     'form-layouts': RouteRecordInfo<'form-layouts', '/form-layouts', Record<never, never>, Record<never, never>>,
     'icons': RouteRecordInfo<'icons', '/icons', Record<never, never>, Record<never, never>>,
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,
+    'photos': RouteRecordInfo<'photos', '/photos', Record<never, never>, Record<never, never>>,
     'register': RouteRecordInfo<'register', '/register', Record<never, never>, Record<never, never>>,
     'tables': RouteRecordInfo<'tables', '/tables', Record<never, never>, Record<never, never>>,
     'typography': RouteRecordInfo<'typography', '/typography', Record<never, never>, Record<never, never>>,

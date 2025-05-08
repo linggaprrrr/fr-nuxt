@@ -6,8 +6,8 @@ import vuetify from 'vite-plugin-vuetify'
 export default defineNuxtConfig({
   app: {
     head: {
-      titleTemplate: '%s - NuxtJS Admin Template',
-      title: 'Sneat',
+      titleTemplate: '%s - Face Recognition App',
+      title: 'DufanSnap',
 
       link: [{
         rel: 'icon',

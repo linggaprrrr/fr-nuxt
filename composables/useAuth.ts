@@ -18,7 +18,17 @@ export const useAuth = () => {
         if (process.client && token && user) {
           localStorage.setItem('token', token)
           localStorage.setItem('user', JSON.stringify(user))
-          router.push('/dashboard')
+          const userStr = JSON.stringify(user)
+          if (userStr) {
+            const user = JSON.parse(userStr) as { role: string };
+    
+            if (user.role === 'superadmin') {
+              router.push('/admin/dashboard')
+            } else {
+              router.push('/photos')
+            }
+          }
+          
         }
 
       }

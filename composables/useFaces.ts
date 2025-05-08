@@ -28,11 +28,12 @@ export const useFaces = () => {
     
         return data
       } catch (error: any) {
-        if (error?.status_code === 401) {
+        if (error?.response?.data?.detail?.status_code === 401) {
           localStorage.removeItem('token')
-          return navigateTo('/login')
+          router.push('/login') 
+          return Promise.reject(error) 
         }
-    
+        
         console.error('Upload failed:', error)
       }
     }
@@ -79,13 +80,13 @@ export const useFaces = () => {
             },
             params,
           })
-      
+          
           return data
         } catch (error: any) {
-          if (error?.status_code === 401) {
+          if (error?.response?.data?.detail?.status_code === 401) {
             localStorage.removeItem('token')
-            localStorage.removeItem('user')
-            return navigateTo('/login')
+            router.push('/login') 
+            return Promise.reject(error) 
           }
           console.error('Fetch error:', error)
         }

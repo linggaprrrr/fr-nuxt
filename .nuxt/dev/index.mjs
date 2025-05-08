@@ -1053,7 +1053,7 @@ const _FFPZbBc_vLqAkvMCs9DESm3FSRglyrTD9Ano6V56X4 = (function(nitro) {
 
 const rootDir = "/Applications/MAMP/htdocs/nuxtjs/dufansnap";
 
-const appHead = {"meta":[{"name":"viewport","content":"width=device-width, initial-scale=1"},{"charset":"utf-8"}],"link":[{"rel":"icon","type":"image/x-icon","href":"/favicon.ico"}],"style":[],"script":[],"noscript":[],"titleTemplate":"%s - NuxtJS Admin Template","title":"Sneat"};
+const appHead = {"meta":[{"name":"viewport","content":"width=device-width, initial-scale=1"},{"charset":"utf-8"}],"link":[{"rel":"icon","type":"image/x-icon","href":"/favicon.ico"}],"style":[],"script":[],"noscript":[],"titleTemplate":"%s - Face Recognition","title":"DufanSnap"};
 
 const appRootTag = "div";
 
