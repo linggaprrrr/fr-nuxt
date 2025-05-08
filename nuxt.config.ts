@@ -89,7 +89,13 @@ export default defineNuxtConfig({
 
   vite: {
     define: { 'process.env': {} },
-
+    server: {
+      allowedHosts: [
+        'fr.funclick-kasir.com',
+        'localhost',
+        '0.0.0.0'
+      ]
+    },
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('.', import.meta.url)),
