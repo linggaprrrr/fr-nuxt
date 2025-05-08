@@ -1,1 +1,0 @@
-export { default } from "file:///Applications/MAMP/htdocs/nuxtjs/dufansnap/node_modules/@nuxt/vite-builder/dist/runtime/client.manifest.mjs"
