@@ -80,15 +80,17 @@ export const useFaces = () => {
             },
             params,
           })
+          console.log('Fetched face search data:', data)
           
           return data
         } catch (error: any) {
-          if (error?.response?.data?.detail?.status_code === 401) {
+          if (error?.response?.status === 401) {
+                        
             localStorage.removeItem('token')
             router.push('/login') 
             return Promise.reject(error) 
           }
-          console.error('Fetch error:', error)
+          console.error('Fetch error:', error?.response?.status)
         }
       }
       

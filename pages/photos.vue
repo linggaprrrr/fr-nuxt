@@ -171,15 +171,15 @@ definePageMeta({
             <small>{{ formatDate(photo.uploaded_at) }}</small>
             <div class="d-flex align-center font-weight-bold text-primary">
               <i class="bx bxs-wallet-alt mr-2"></i>
-              <small>Rp. 20.000</small>
+              <small>Rp. {{ photo.photo_price }}</small>
             </div>
           </v-card-subtitle>
 
 
           <v-card-actions>
-            <v-btn prepend-icon="bx bxs-download" color="#4f545c" variant="flat" size="small" @click="() => downloadPhoto(photo.original_path)">              
+            <v-btn prepend-icon="bx bxs-download" color="#4f545c" variant="flat" size="x-small" @click="() => downloadPhoto(photo.original_path)">              
           
-              <span class="subheading me-2">Purchase</span>
+              <span class="subheading me-2">Beli Sekarang</span>
             </v-btn>
 
             <v-spacer></v-spacer>
@@ -195,7 +195,7 @@ definePageMeta({
               <v-card-text>
         
                 <div class="d-flex align-center text-medium-emphasis">
-                  <i class="bx bxs-map mr-2"></i> Location
+                  <i class="bx bxs-map mr-2"></i> {{ photo.unit_name }}
                 </div>
               </v-card-text>
             </div>

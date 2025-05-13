@@ -57,6 +57,43 @@ export const useAuth = () => {
       
     }
   }
+
+  const googleLogin = async (googleToken: string) => {
+    try {
+      const response = await $fetch('/auth/google-login', {
+        baseURL: config.public.apiBase,
+        method: 'POST',
+        body: { token: googleToken }
+      })
+
+      const { user, access_token } = response
+
+      if (!user.email_verified) {
+        // Handle email not verified case (optional)
+        return
+      }
+      console.log(response)
+      if (process.client && access_token && user) {
+        localStorage.setItem('token', access_token)
+        localStorage.setItem('user', JSON.stringify(user))
+        console.log(user)  
+        const userStr = JSON.stringify(user)
+          if (userStr) {
+            const user = JSON.parse(userStr) as { role: string };
+    
+            if (user.role === 'superadmin') {
+              router.push('/admin/dashboard')
+            } else {
+              router.push('/photos')
+            }
+          }
+      }
+    } catch (err) {
+      console.error('Google login error:', err)
+    }
+  }
+
+
   
   function isLoginResponse(data: any): data is { access_token: string; user: { id: string; name: string; email: string } } {
     return typeof data.access_token === 'string' && typeof data.user === 'object'
@@ -93,5 +130,6 @@ export const useAuth = () => {
     logout,
     isAuthenticated,
     getUser,
+    googleLogin
   }
 }

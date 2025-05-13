@@ -28,6 +28,20 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
       to: '/admin/users',
     }"
   />
+   <VerticalNavLink
+    :item="{
+      title: 'Units',
+      icon: 'x bx-store-alt',
+      to: '/admin/units',
+    }"
+  />  
+   <VerticalNavLink
+    :item="{
+      title: 'Pricing',
+      icon: 'bx bxs-purchase-tag',
+      to: '/admin/photo-pricing',
+    }"
+  />
   <VerticalNavGroup
     :item="{
       title: 'Photos',

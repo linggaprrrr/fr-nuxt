@@ -15,7 +15,7 @@ const isPasswordVisible = ref(false)
 definePageMeta({ layout: 'blank' })
 
 // handle login
-const { login } = useAuth()
+const { login, googleLogin } = useAuth()
 const handleLogin = async () => {
   try {
     await login(form.value.email, form.value.password)
@@ -24,7 +24,26 @@ const handleLogin = async () => {
     console.error(error)
   }
 }
+
+import {
+  GoogleSignInButton,
+  type CredentialResponse,
+} from "vue3-google-signin";
+
+
+const handleLoginSuccess = async (response: CredentialResponse) => {
+  const { credential } = response
+  if (credential) {
+    await googleLogin(credential)
+  }
+}
+
+
+const handleLoginError = () => {
+  console.error("Login failed");
+};
 </script>
+
 
 <template>
   <div class="auth-wrapper d-flex align-center justify-center pa-4">
@@ -140,12 +159,16 @@ const handleLogin = async () => {
                   Create an account
                 </NuxtLink>
               </VCol>
-
+               <GoogleSignInButton
+                @success="handleLoginSuccess"
+                @error="handleLoginError"
+              ></GoogleSignInButton>
               <VCol
                 cols="12"
                 class="d-flex align-center"
               >
               </VCol>              
+              
             </VRow>
           </VForm>
         </VCardText>

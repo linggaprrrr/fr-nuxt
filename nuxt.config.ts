@@ -16,10 +16,37 @@ export default defineNuxtConfig({
       }],
     },
   },
+  
+
+  googleSignIn: {
+    clientId: '274025832444-7k0601rlv9p1fjlsqlff56hejao8lqgv.apps.googleusercontent.com'
+  },
+
+  // Add nitro server options
+  nitro: {
+    routeRules: {
+      // Apply specific headers to authentication-related routes
+      '/auth/**': {
+        headers: {
+          'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+          'Cross-Origin-Embedder-Policy': 'unsafe-none'
+        }
+      },
+      // For routes that need to interact with Google Auth
+      '/login': {
+        headers: {
+          'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+          'Cross-Origin-Embedder-Policy': 'unsafe-none'
+        }
+      }
+    }
+  },
+  
 
   runtimeConfig: {
     public: {
       apiBase: 'https://api.frameitalbum.com/',    
+      
     }
   },
 
@@ -90,6 +117,10 @@ export default defineNuxtConfig({
   vite: {
     define: { 'process.env': {} },
     server: {
+       headers: {
+        'Cross-Origin-Opener-Policy': 'unsafe-none',
+        'Cross-Origin-Embedder-Policy': 'unsafe-none',
+      },
       allowedHosts: [
         'fr.funclick-kasir.com',
         'localhost',
@@ -132,6 +163,6 @@ export default defineNuxtConfig({
     transpile: ['vuetify'],
   },
 
-  modules: ['@vueuse/nuxt', '@nuxtjs/device', '@pinia/nuxt'],
+  modules: ['@vueuse/nuxt', '@nuxtjs/device', '@pinia/nuxt', 'nuxt-vue3-google-signin'],
   compatibilityDate: '2025-05-05',
 })

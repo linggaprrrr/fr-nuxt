@@ -1,3 +1,5 @@
+import type { GetUsersResponse } from '@/types/user'
+
 export const useUsers = () => {
     const config = useRuntimeConfig()
     const router = useRouter()
@@ -30,43 +32,38 @@ export const useUsers = () => {
             throw error
         }
     }
-      
-
     const getUsers = async ({
-        page = 1, 
-        limit = 25, 
+        page = 1,
+        limit = 25,
         search = null
     }: {
-        page?: number,
-        limit?: number, 
+        page?: number
+        limit?: number
         search?: string | null
-    }) => {
-        
-        // queries
-        const params: Record<string, any> = {           
-            page,
-            limit
-        }
-
-
+    }): Promise<GetUsersResponse> => {
+        const params: Record<string, any> = { page, limit }
         if (search) {
             params.search = search
         }
-        
-        try {
-            const data = await $fetch('users/', {
-                baseURL: config.public.apiBase,
-                method: 'GET',                                
-                params
-            })
 
+        try {
+            const data = await $fetch<GetUsersResponse>('users/', {
+            baseURL: config.public.apiBase,
+            method: 'GET',
+            params
+            })
             return data
         } catch (error: any) {
-            if (error?.status_code === 401) handleUnauthorized()
-            else throw error         
+            if (error?.status_code === 401) {
+            handleUnauthorized()
+            throw new Error('Unauthorized') // atau return Promise.reject('Unauthorized')
+            } else {
+            throw error
+            }
         }
     }
 
+    
     const getUserById = async (userId: string) => {    
         const token = import.meta.client ? localStorage.getItem('token') : null    
         try {

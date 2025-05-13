@@ -12,12 +12,15 @@
     "generate": "nuxt generate"
   },
   "dependencies": {
+    "@auth/core": "^0.39.1",
     "@floating-ui/dom": "1.6.8",
+    "@sidebase/nuxt-auth": "^0.10.1",
     "@stylistic/stylelint-config": "^1.0.1",
     "@vueuse/core": "^10.11.1",
     "@vueuse/math": "^10.11.1",
     "apexcharts": "3.49.2",
     "nuxt": "3.14.1592",
+    "nuxt-vue3-google-signin": "^0.0.11",
     "pinia": "^2.3.0",
     "prismjs": "^1.29.0",
     "roboto-fontface": "^0.10.0",
