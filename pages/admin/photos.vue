@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, watch } from 'vue'
-import UploadPhoto from '@/components/UploadPhoto.vue'
+
 import type { Photo } from '~/types/photo'
 const { getPhotos, deletePhotoById } = usePhotos()
 
@@ -31,7 +31,7 @@ async function fetchPhotos() {
           photo.bounding_boxes = matched.boundingBoxes
         }
       })
-
+      
       nextTick(() => {
         photos.value.forEach(photo => updateImageSize(photo.id))
       })
@@ -190,9 +190,7 @@ async function handleDelete(photoId: string) {
                   @click="handleDelete(photo.id)">
                 </v-btn>
 
-                <v-btn variant="plain" class="float-right text-error" size="large" @click="handleDelete(photo.id)">
-                  <i class='' ></i>
-                </v-btn>
+          
                 <v-spacer></v-spacer>                
               <v-btn
                 :icon="show ? 'bx bx-chevron-up' : 'bx bx-chevron-down'"
@@ -207,12 +205,12 @@ async function handleDelete(photoId: string) {
                   <v-card-text>
                     <p class="d-flex align-center">
                       <i class='bx bxs-wallet-alt mr-2' ></i>
-                      Rp. 20.000
+                      Rp {{ photo.unit_price.toLocaleString() }}
                     </p>
 
                     <div class="d-flex align-center text-medium-emphasis">
                       <i class="bx bxs-map mr-2"></i>
-                      Location
+                      {{ photo.unit_name }}
                     </div>
                   </v-card-text>
 

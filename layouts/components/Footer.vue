@@ -5,7 +5,7 @@
       &copy;
       {{ new Date().getFullYear() }}
 
-      DufanSnap
+      Ownize
     </span>
     
   </div>

@@ -7,7 +7,7 @@ const display = useDisplay()
 
 const series = [
   { name: `${new Date().getFullYear() - 1}`, data: [18, 10, 15, 29, 18, 12, 9] },
-  { name: `${new Date().getFullYear() - 2}`, data: [-13, -18, -9, -14, -8, -17, -15] },
+  
 ]
 
 const chartOptions = computed(() => {
@@ -254,11 +254,9 @@ const moreList = [
 
 <template>
   <VCard>
-    <VRow no-gutters>
-      <VCol
+    <VCol
         cols="12"
-        sm="7"
-        xl="8"
+        sm="12"
         :class="$vuetify.display.smAndUp ? 'border-e' : 'border-b'"
       >
         <VCardItem class="pb-0">
@@ -279,68 +277,6 @@ const moreList = [
           />
         </VCardText>
       </VCol>
-
-      <VCol
-        cols="12"
-        sm="5"
-        xl="4"
-      >
-        <VCardText class="text-center pt-10">
-          <VBtn
-            variant="tonal"
-            class="mb-2"
-            append-icon="bx-chevron-down"
-          >
-            2023
-            <VMenu activator="parent">
-              <VList>
-                <VListItem
-                  v-for="(item, index) in ['2023', '2022', '2021']"
-                  :key="index"
-                  :value="item"
-                >
-                  <VListItemTitle>{{ item }}</VListItemTitle>
-                </VListItem>
-              </VList>
-            </VMenu>
-          </VBtn>
-
-          <!-- radial chart -->
-          <VueApexCharts
-            type="radialBar"
-            :height="200"
-            :options="chartOptions.radial"
-            :series="[78]"
-          />
-
-          <h6 class="text-h6 text-medium-emphasis mb-8 mt-1">
-            62% Company Growth
-          </h6>
-          <div class="d-flex align-center justify-center flex-wrap gap-x-6 gap-y-3">
-            <div
-              v-for="data in balanceData"
-              :key="data.year"
-              class="d-flex align-center gap-2"
-            >
-              <VAvatar
-                :icon="data.icon"
-                :color="data.color"
-                size="38"
-                rounded
-                variant="tonal"
-              />
-
-              <div class="text-start">
-                <span class="text-sm"> {{ data.year }}</span>
-                <h6 class="text-h6">
-                  {{ data.amount }}
-                </h6>
-              </div>
-            </div>
-          </div>
-        </VCardText>
-      </VCol>
-    </VRow>
   </VCard>
 </template>
 

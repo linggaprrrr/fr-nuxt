@@ -6,42 +6,23 @@ import vuetify from 'vite-plugin-vuetify'
 export default defineNuxtConfig({
   app: {
     head: {
-      titleTemplate: '%s - Face Recognition App',
-      title: 'DufanSnap',
+      titleTemplate: '%s - Find Your Photos with Just Your Face',
+      title: 'Ownize',
 
       link: [{
         rel: 'icon',
         type: 'image/x-icon',
-        href: '/favicon.ico',
+        href: '/favicon.png',
       }],
     },
   },
   
 
   googleSignIn: {
-    clientId: '274025832444-7k0601rlv9p1fjlsqlff56hejao8lqgv.apps.googleusercontent.com'
+    clientId: '274025832444-7k0601rlv9p1fjlsqlff56hejao8lqgv.apps.googleusercontent.com',    
   },
 
   // Add nitro server options
-  nitro: {
-    routeRules: {
-      // Apply specific headers to authentication-related routes
-      '/auth/**': {
-        headers: {
-          'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
-          'Cross-Origin-Embedder-Policy': 'unsafe-none'
-        }
-      },
-      // For routes that need to interact with Google Auth
-      '/login': {
-        headers: {
-          'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
-          'Cross-Origin-Embedder-Policy': 'unsafe-none'
-        }
-      }
-    }
-  },
-  
 
   runtimeConfig: {
     public: {
@@ -59,6 +40,7 @@ export default defineNuxtConfig({
     '@styles/styles.scss',
     '@/plugins/iconify/icons.css',
     '@layouts/styles/index.scss',
+    'boxicons/css/boxicons.min.css',
   ],
 
   components: {
@@ -117,10 +99,7 @@ export default defineNuxtConfig({
   vite: {
     define: { 'process.env': {} },
     server: {
-       headers: {
-        'Cross-Origin-Opener-Policy': 'unsafe-none',
-        'Cross-Origin-Embedder-Policy': 'unsafe-none',
-      },
+       headers: {},
       allowedHosts: [
         'fr.funclick-kasir.com',
         'localhost',
@@ -163,6 +142,6 @@ export default defineNuxtConfig({
     transpile: ['vuetify'],
   },
 
-  modules: ['@vueuse/nuxt', '@nuxtjs/device', '@pinia/nuxt', 'nuxt-vue3-google-signin'],
+  modules: ['@vueuse/nuxt', '@nuxtjs/device', '@pinia/nuxt', 'nuxt-vue3-google-signin', '@nuxt/image'],
   compatibilityDate: '2025-05-05',
 })

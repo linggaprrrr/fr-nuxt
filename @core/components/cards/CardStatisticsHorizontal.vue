@@ -3,15 +3,13 @@ interface Props {
   title: string
   color?: string
   icon: string
-  stats: number
-  change: number
+  stats: string  
 }
 
 const props = withDefaults(defineProps<Props>(), {
   color: 'primary',
 })
 
-const isPositive = controlledComputed(() => props.change, () => Math.sign(props.change) === 1)
 </script>
 
 <template>
@@ -33,14 +31,7 @@ const isPositive = controlledComputed(() => props.change, () => Math.sign(props.
       <div>
         <span class="text-caption">{{ props.title }}</span>
         <div class="d-flex align-center flex-wrap">
-          <span class="text-h6 font-weight-semibold">{{ kFormatter(props.stats) }}</span>
-          <div
-            v-if="props.change"
-            :class="`${isPositive ? 'text-success' : 'text-error'} mt-1`"
-          >
-            <VIcon :icon="isPositive ? 'bx-chevron-up' : 'bx-chevron-down'" />
-            <span class="text-caption font-weight-semibold">{{ Math.abs(props.change) }}%</span>
-          </div>
+          <span class="text-h6 font-weight-semibold">{{ props.stats }}</span>   
         </div>
       </div>
     </VCardText>

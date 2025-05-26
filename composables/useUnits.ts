@@ -50,10 +50,7 @@ export const useUnits = () => {
                     accept: 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                query: {
-                    name: data.name,
-                    location: data.location,
-                }
+                body: data
             })
             console.log('Unit created:', response)
             return response

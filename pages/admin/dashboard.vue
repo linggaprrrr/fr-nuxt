@@ -1,165 +1,78 @@
 <script setup lang="ts">
-import AnalyticsCongratulations from '@/views/dashboard/AnalyticsCongratulations.vue'
-import AnalyticsFinanceTabs from '@/views/dashboard/AnalyticsFinanceTab.vue'
-import AnalyticsOrderStatistics from '@/views/dashboard/AnalyticsOrderStatistics.vue'
-import AnalyticsProfitReport from '@/views/dashboard/AnalyticsProfitReport.vue'
-import AnalyticsTotalRevenue from '@/views/dashboard/AnalyticsTotalRevenue.vue'
-import AnalyticsTransactions from '@/views/dashboard/AnalyticsTransactions.vue'
 
-// 👉 Images
-import chart from '@images/cards/chart-success.png'
-import card from '@images/cards/credit-card-primary.png'
-import paypal from '@images/cards/paypal-error.png'
-import wallet from '@images/cards/wallet-info.png'
+import AnalyticsRevenue from '@/views/dashboard/AnalyticsRevenue.vue'
+import AnalyticsRevenuePerUnit from '@/views/dashboard/AnalyticsRevenuePerUnit.vue'
 
-const { fetchFaceSearch } = useFaces()
+const {
+  loading, 
+  getDasboardStatistcs,  
+} = useReports()
 
+const stats = ref<ReportResponse | null>(null)
 
-onMounted(async () => {
-  const data = await fetchFaceSearch({ page: 1, limit: 25 })
-  console.log('hallow', data)
+async function getDashboardData() {
+  stats.value = await getDasboardStatistcs()
+}
+
+onMounted(async() => {
+  await getDashboardData()
+  console.log(stats.value) 
 })
+
+const incomeToday = computed(() =>
+  (stats.value?.total_pendapatan_hari_ini ?? 0).toLocaleString('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0
+  })
+)
+
+const totalTransaction = computed(() => 
+  (stats.value?.total_transaksi_hari_ini ?? 0).toString()
+)
+
+const chartData = computed(() => stats.value?.pendapatan_per_hari ?? [])
+const unitsRevenue = computed(() => stats.value?.pendapatan_per_unit ?? [])
 
 definePageMeta({
   layout: 'default'
 })
+
+
 </script>
 
 <template>
-  <VRow>
-    <!-- 👉 Congratulations -->
-    <VCol
-      cols="12"
-      md="8"
-    >
-      <AnalyticsCongratulations />
-    </VCol>
-
-    <VCol
-      cols="12"
-      sm="4"
-    >
+  
+  <VRow>    
+    <VCol cols="12">
       <VRow>
         <!-- 👉 Profit -->
-        <VCol
-          cols="12"
-          md="6"
-        >
-          <CardStatisticsVertical
-            v-bind="{
-              title: 'Profit',
-              image: chart,
-              stats: '$12,628',
-              change: 72.80,
-            }"
-          />
+        <VCol cols="12" md="6">
+          <CardStatisticsHorizontal
+            :stats='incomeToday'
+            icon='bx bx-wallet-alt'
+            title='Pendapatan Hari ini'
+          />                
         </VCol>
 
         <!-- 👉 Sales -->
-        <VCol
-          cols="12"
-          md="6"
-        >
-          <CardStatisticsVertical
-            v-bind="{
-              title: 'Sales',
-              image: wallet,
-              stats: '$4,679',
-              change: 28.42,
-            }"
-          />
-        </VCol>
+        <VCol cols="12" md="6">
+          <CardStatisticsHorizontal
+            :stats='totalTransaction'
+            icon='bx bx-cart'
+            title='Total Transaksi Hari ini'
+          />          
+        </VCol>      
       </VRow>
+    </VCol>    
+  </VRow>
+  <VRow>
+    <VCol cols="12" md="8" order="2" order-md="1" class="h-100">
+      <AnalyticsRevenue :data="chartData" />
     </VCol>
-
-    <!-- 👉 Total Revenue -->
-    <VCol
-      cols="12"
-      md="8"
-      order="2"
-      order-md="1"
-    >
-      <AnalyticsTotalRevenue />
-    </VCol>
-
-    <VCol
-      cols="12"
-      sm="8"
-      md="4"
-      order="1"
-      order-md="2"
-    >
-      <VRow>
-        <!-- 👉 Payments -->
-        <VCol
-          cols="12"
-          sm="6"
-        >
-          <CardStatisticsVertical
-            v-bind=" {
-              title: 'Payments',
-              image: paypal,
-              stats: '$2,468',
-              change: -14.82,
-            }"
-          />
-        </VCol>
-
-        <!-- 👉 Revenue -->
-        <VCol
-          cols="12"
-          sm="6"
-        >
-          <CardStatisticsVertical
-            v-bind="{
-              title: 'Transactions',
-              image: card,
-              stats: '$14,857',
-              change: 28.14,
-            }"
-          />
-        </VCol>
-      </VRow>
-
-      <VRow>
-        <!-- 👉 Profit Report -->
-        <VCol
-          cols="12"
-          sm="12"
-        >
-          <AnalyticsProfitReport />
-        </VCol>
-      </VRow>
-    </VCol>
-
-    <!-- 👉 Order Statistics -->
-    <VCol
-      cols="12"
-      md="4"
-      sm="6"
-      order="3"
-    >
-      <AnalyticsOrderStatistics />
-    </VCol>
-
-    <!-- 👉 Tabs chart -->
-    <VCol
-      cols="12"
-      md="4"
-      sm="6"
-      order="3"
-    >
-      <AnalyticsFinanceTabs />
-    </VCol>
-
-    <!-- 👉 Transactions -->
-    <VCol
-      cols="12"
-      md="4"
-      sm="6"
-      order="3"
-    >
-      <AnalyticsTransactions />
+    <VCol cols="12" md="4" order="2" order-md="1" class="h-100">
+      <AnalyticsRevenuePerUnit :data="unitsRevenue" />
     </VCol>
   </VRow>
+
 </template>

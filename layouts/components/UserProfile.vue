@@ -13,9 +13,10 @@ const user = ref<{ name: string; role: string } | null>(null)
 
 if (import.meta.client) {
   const userData = localStorage.getItem('user')
+  
   if (userData) {
     try {
-      user.value = JSON.parse(userData)
+      user.value = JSON.parse(userData)      
     } catch (e) {
       user.value = null
     }
@@ -37,7 +38,7 @@ if (import.meta.client) {
       color="primary"
       variant="tonal"
     >
-      <VImg :src="avatar1" />
+      <VImg :src="user?.picture" />
 
       <VMenu
         activator="parent"
@@ -61,7 +62,7 @@ if (import.meta.client) {
                     color="primary"
                     variant="tonal"
                   >
-                    <VImg :src="avatar1" />
+                    <VImg :src="user?.picture" />
                   </VAvatar>
                 </VBadge>
               </VListItemAction>

@@ -1,14 +1,14 @@
 <script setup lang="ts">
 interface Props {
   title: string
-  image: string
+  image: string    // class icon, contoh: "bx bxs-user-account"
   stats: string
-  change: number
+  change?: number
 }
 
 const props = defineProps<Props>()
 
-const isPositive = controlledComputed(() => props.change, () => Math.sign(props.change) === 1)
+const isPositive = controlledComputed(() => props.change, () => Math.sign(props.change ?? 0) === 1)
 
 const moreList = [
   { title: 'Yesterday', value: 'Yesterday' },
@@ -20,11 +20,8 @@ const moreList = [
 <template>
   <VCard>
     <VCardText class="d-flex align-center pb-4">
-      <img
-        width="42"
-        :src="props.image"
-        alt="image"
-      >
+      <!-- Ganti dari img ke i dengan class icon -->
+      <i :class="props.image" style="font-size: 42px;"></i>
 
       <VSpacer />
 
@@ -44,12 +41,8 @@ const moreList = [
       <span
         :class="isPositive ? 'text-success' : 'text-error'"
         class="d-flex align-center gap-1 text-sm"
-      >
-        <VIcon
-          size="18"
-          :icon="isPositive ? 'bx-up-arrow-alt' : 'bx-down-arrow-alt'"
-        />
-        {{ isPositive ? Math.abs(props.change) : props.change }}%
+      >        
+        
       </span>
     </VCardText>
   </VCard>

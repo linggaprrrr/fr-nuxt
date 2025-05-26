@@ -33,6 +33,7 @@ import {
 
 const handleLoginSuccess = async (response: CredentialResponse) => {
   const { credential } = response
+  console.log(credential)
   if (credential) {
     await googleLogin(credential)
   }
@@ -71,20 +72,19 @@ const handleLoginError = () => {
             to="/"
             class="app-logo"
           >
-            <!-- eslint-disable vue/no-v-html -->
-            <div
-              class="d-flex"
-              v-html="logo"
-            />
-            <h1 class="app-logo-title">
-              
-            </h1>
+            <nuxt-img
+              src="/images/ownize_logo.png"
+              alt=""
+              class="float-left margin-fleche"              
+              style="max-width: 120px; height: auto;"
+               />
+         
           </NuxtLink>
         </VCardItem>
 
         <VCardText>
           <h4 class="text-h4 mb-1">
-            Welcome to DufanSnap! 👋🏻
+            Welcome to Ownize! 👋🏻
           </h4>
           <p class="mb-0">
             Please sign-in to your account and start the adventure
@@ -138,6 +138,7 @@ const handleLoginError = () => {
                 <!-- login button -->
                 <VBtn
                   block
+                  color="#FB3AA2"
                   type="submit"
                 >
                   Login
@@ -159,10 +160,24 @@ const handleLoginError = () => {
                   Create an account
                 </NuxtLink>
               </VCol>
-               <GoogleSignInButton
-                @success="handleLoginSuccess"
-                @error="handleLoginError"
-              ></GoogleSignInButton>
+              <VCol
+                cols="12"
+                class="d-flex align-center"
+              >
+                <VDivider />
+                <span class="mx-4 text-high-emphasis">or</span>
+                <VDivider />
+              </VCol>
+              <VCol
+                cols="12"
+                class="text-body-1 text-center"
+              >
+                <GoogleSignInButton
+                  @success="handleLoginSuccess"                
+                  @error="handleLoginError"
+                ></GoogleSignInButton>
+              </VCol>
+               
               <VCol
                 cols="12"
                 class="d-flex align-center"

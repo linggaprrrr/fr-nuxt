@@ -171,7 +171,7 @@ definePageMeta({
             <small>{{ formatDate(photo.uploaded_at) }}</small>
             <div class="d-flex align-center font-weight-bold text-primary">
               <i class="bx bxs-wallet-alt mr-2"></i>
-              <small>Rp. {{ photo.photo_price }}</small>
+              <small>Rp. {{ photo.photo_price.toLocaleString() }}</small>
             </div>
           </v-card-subtitle>
 

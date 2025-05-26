@@ -41,15 +41,15 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
         class="app-logo app-title-wrapper"
       >
         <!-- eslint-disable vue/no-v-html -->
-        <div
-          class="d-flex"
-          v-html="logo"
-        />
+         <nuxt-img
+          src="/images/ownize_logo.png"
+          alt=""
+          class="float-left margin-fleche"              
+          style="max-width: 120px; height: auto;"
+          />
         <!-- eslint-enable -->
 
-        <h1 class="app-logo-title">
-          DufanSnap
-        </h1>
+       
       </NuxtLink>
 
       <IconBtn

@@ -35,7 +35,7 @@ export const usePhotos = () => {
         },
         params: { page, limit }
       }) as GetPhotosResponse
-
+      
       return response
     } catch (error: any) {
       if (error?.response?.data?.detail?.status_code === 401) {

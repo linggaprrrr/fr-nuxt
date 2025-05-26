@@ -1,88 +1,222 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import type { Unit } from '@/types/unit'
+import type { PhotoPrice } from '@/types/photo'
 
-const files = ref<File[]>([])  // To hold multiple files
-const loading = ref(false)  // To track upload progress
-const progress = ref(0)  // To track progress of upload
-const showAlert = ref(false)  // Control the visibility of the alert
-const uploadStatus = ref<{ type: string, message: string } | null>(null)  // For alert messages
 
-// Your custom composable for uploading
 const { uploadImages } = useFaces()
+const { getUnits } = useUnits()
+const { getPhotoPrices, getPhotoPricesByUnit } = usePricings() 
+ 
+const files = ref<File[]>([])  
+const loading = ref(false) 
+const progress = ref(0)  
+const showAlert = ref(false)  
+const uploadStatus = ref<{ type: string, message: string } | null>(null)  
+
+const photoParams = reactive({
+  unit_id: null,
+  photo_type_id: null 
+})
+
+// load units
+const units = ref<Unit[]>([])
+
+
+async function fetchUnits() {
+  
+  try {
+    const res = await getUnits({
+      page: 1,
+      limit: 9999,
+      
+    })
+    units.value = res?.data || []   
+  } catch (error) {
+    console.error('Failed to fetch units:', error)
+    units.value = []    
+  } 
+}
+
+
 
 const handleUpload = async () => {
-  if (files.value.length === 0 || loading.value) return  // Don't allow upload if already uploading
-  loading.value = true  // Start loading
+  if (!photoParams.unit_id || !photoParams.photo_type_id) {
+    uploadStatus.value = {
+      type: 'error',
+      message: 'Pilih Unit dan Tipe Foto terlebih dahulu.',
+    }
+    showAlert.value = true
+
+    setTimeout(() => {
+      showAlert.value = false
+    }, 5000)
+    files.value = []
+    return
+  }
+
+  if (files.value.length === 0 || loading.value) return
+  loading.value = true
 
   try {
-    const response = await uploadImages(files.value, (uploadedPercentage: number) => {
-      progress.value = uploadedPercentage  // Update progress for each file
-    })
-    console.log('Upload success:', response)
-    uploadStatus.value = { type: 'success', message: 'Files uploaded successfully!' }
-    showAlert.value = true  // Show success alert
-    files.value = []  // Clear files after upload success
-    
-    // Automatically hide the alert after 5 seconds
-    setTimeout(() => {
-      showAlert.value = false  // Hide alert after 5 seconds
-    }, 5000)
+    const response = await uploadImages(
+      photoParams.unit_id,
+      photoParams.photo_type_id,
+      files.value,
+      (uploadedPercentage: number) => {
+        progress.value = uploadedPercentage
+      }
+    )
 
+    uploadStatus.value = {
+      type: 'success',
+      message: 'Files uploaded successfully!',
+    }
+    showAlert.value = true
+    files.value = []
+
+    setTimeout(() => {
+      showAlert.value = false
+    }, 5000)
   } catch (error) {
     console.error('Upload failed:', error)
-    uploadStatus.value = { type: 'error', message: 'Upload failed. Please try again.' }
-    showAlert.value = true  // Show error alert
-    
-    // Automatically hide the alert after 5 seconds
+    uploadStatus.value = {
+      type: 'error',
+      message: 'Upload failed. Please try again.',
+    }
+    showAlert.value = true
+
     setTimeout(() => {
-      showAlert.value = false  // Hide alert after 5 seconds
+      showAlert.value = false
     }, 5000)
   } finally {
-    loading.value = false  // End loading
+    loading.value = false
   }
 }
+
+
+const selectedUnit = computed(() => {
+  return units.value.find(u => u.id === photoParams.unit_id) || null
+})
+
+const photoPricesByUnit = ref([])
+
+async function fetchPhotoPricesByUnit(unitId: string) {
+  try {
+    const res = await getPhotoPricesByUnit(unitId)
+    console.log(res)
+    
+    
+    photoPricesByUnit.value = res?.photo_prices || []    
+    
+    if (photoPricesByUnit.value.length > 0 && !photoParams.photo_type_id) {
+      photoParams.photo_type_id = photoPricesByUnit.value[0].photo_type_id
+    }
+  } catch (error) {
+    console.error('Failed to fetch photo prices by unit:', error)
+    photoPricesByUnit.value = []
+  }
+}
+
+
+watch(() => photoParams.unit_id, async (newUnitId) => {
+  if (newUnitId) {
+    await fetchPhotoPricesByUnit(newUnitId)
+  }
+})
+
+
+onMounted(() => {
+  fetchUnits()  
+  
+})
+
 </script>
-
-
 <template>
-     <v-alert
+  <v-container fluid>
+    <!-- Alert Section -->
+    <v-alert
       v-if="uploadStatus"
       :type="uploadStatus.type"
       dismissible
-      transition="fade-transition" 
+      transition="fade-transition"
       class="mb-4"
-      v-model="showAlert" 
+      color="#2A3B4D"
+      density="compact"      
+      prominent
+      v-model="showAlert"
     >
+      <v-icon class="me-2">mdi-information</v-icon>
       {{ uploadStatus.message }}
     </v-alert>
-    <v-card elevation="16">
-        <v-file-upload    
-        v-model="files"
-        accept="image/*"
-        clearable
-        prepend-icon="bx bx-upload"
-        multiple  
-        :disabled="loading" 
-        @change="handleUpload"
-        class="mb-4"
-        />
+
+    <!-- Main Card -->
+    <v-card elevation="8" class="rounded-xl">
+      <v-card-title class="text-h6 font-weight-bold mt-2">
+        Upload Foto 
+      </v-card-title>
+
+      <v-divider />
+
+      <v-card-text>
+        <v-form>
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="photoParams.unit_id"
+                density="comfortable"
+                label="Unit"                
+                :items="units"
+                item-value="id"
+                item-title="name"
+                :hint="selectedUnit?.location"
+                persistent-hint
+                class="mb-4"
+                variant="outlined"
+              />
+            </v-col>
+
+            <v-col cols="12" md="6">
+               <v-select
+                v-model="photoParams.photo_type_id"              
+                :items="photoPricesByUnit"                  
+                item-value="photo_type_id"                
+                 :item-title="item => `${item.photo_type_name ?? 'Select first'} - ${item.price?.toLocaleString() ?? '0'} IDR`"
+                class="mb-4"
+              />
+
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="12">
+              <v-file-upload    
+                v-model="files"
+                accept="image/*"
+                clearable
+                prepend-icon="bx bx-upload"
+                multiple  
+                :disabled="loading" 
+                @change="handleUpload"
+                class="mb-4"
+                />
+            </v-col>
+          </v-row>
+        </v-form>
+      </v-card-text>
     </v-card>
-  
-  
+
+    <!-- Progress Bar -->
     <v-progress-linear
       v-if="loading"
       :value="progress"
-      color="primary"
-      height="20"
+      color="blue"
+      height="16"
       striped
       indeterminate
-      class="mb-4"
-      
+      class="mt-6 rounded-pill"
     >
-      Uploading...
+      <strong class="ms-4 text-white">Uploading...</strong>
     </v-progress-linear>
-  
-
-   
-  </template>
-  
+  </v-container>
+</template>

@@ -1,43 +1,53 @@
+import axios from 'axios'
+
+
 export const useFaces = () => {
     const config = useRuntimeConfig()
     const router = useRouter()
-    const uploadImages = async (files: File[], onProgress: (progress: number) => void) => {
+
+
+    const uploadImages = async (
+      unit_id: string,
+      type_id: string,
+      files: File[],
+      onProgress: (progress: number) => void
+    ) => {
       const token = import.meta.client ? localStorage.getItem('token') : null
-      
+
       const formData = new FormData()
       files.forEach(file => {
-        formData.append('files', file) // Use 'files' key to match expected backend field
+        formData.append('files', file)
       })
-    
+
       try {
-        const data = await $fetch('faces/upload', {
-          baseURL: config.public.apiBase,
-          method: 'POST',
+        const response = await axios.post(`${config.public.apiBase}/faces/upload`, formData, {
           headers: {
             Authorization: `Bearer ${token}`,
-            // No need to set Content-Type when using FormData — browser will do it automatically
+            'Content-Type': 'multipart/form-data'
           },
-          body: formData,
-          onUploadProgress: (progressEvent: ProgressEvent) => {
+           params: {
+            unit_id: unit_id,
+            photo_type_id: type_id,
+            
+          },
+          onUploadProgress: (progressEvent) => {
             if (progressEvent.total) {
               const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-              onProgress(progress) // Call the onProgress callback to update the UI
+              onProgress(progress)
             }
           }
         })
-    
-        return data
+
+        return response.data
       } catch (error: any) {
-        if (error?.response?.data?.detail?.status_code === 401) {
+        if (error?.response?.status === 401) {
           localStorage.removeItem('token')
-          router.push('/login') 
-          return Promise.reject(error) 
+          router.push('/login')
         }
-        
         console.error('Upload failed:', error)
+        return Promise.reject(error)
       }
     }
-    
     
     const fetchFaceSearch = async ({
         page = 1,

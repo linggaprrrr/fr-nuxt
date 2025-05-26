@@ -19,12 +19,12 @@ export default {
   //   eager: true,
   // },
   VBadge: {
-    // set v-badge default color to primary
-    color: 'primary',
+    // set v-badge default color to #1b5782
+    color: '#FB3AA2',
   },
   VBtn: {
-    // set v-btn default color to primary
-    color: 'primary',
+    // set v-btn default color to #1b5782
+    color: '#1b5782',
     ripple: false,
   },
   VChip: {
@@ -50,7 +50,7 @@ export default {
     },
   },
   VList: {
-    color: 'primary',
+    color: '#1b5782',
     density: 'compact',
     VCheckboxBtn: {
       density: 'compact',
@@ -70,8 +70,8 @@ export default {
     variant: 'tonal',
   },
   VTabs: {
-    // set v-tabs default color to primary
-    color: 'primary',
+    // set v-tabs default color to #1b5782
+    color: '#1b5782',
     density: 'comfortable',
     VSlideGroup: {
       showArrows: true,
@@ -82,16 +82,16 @@ export default {
     location: 'top',
   },
   VCheckboxBtn: {
-    color: 'primary',
+    color: '#1b5782',
   },
   VCheckbox: {
-    // set v-checkbox default color to primary
-    color: 'primary',
+    // set v-checkbox default color to #1b5782
+    color: '#1b5782',
     density: 'comfortable',
     hideDetails: 'auto',
   },
   VRadioGroup: {
-    color: 'primary',
+    color: '#1b5782',
     density: 'comfortable',
     hideDetails: 'auto',
   },
@@ -101,7 +101,7 @@ export default {
   },
   VSelect: {
     variant: 'outlined',
-    color: 'primary',
+    color: '#1b5782',
     density: 'comfortable',
     hideDetails: 'auto',
     VChip: {
@@ -109,8 +109,8 @@ export default {
     },
   },
   VRangeSlider: {
-    // set v-range-slider default color to primary
-    color: 'primary',
+    // set v-range-slider default color to #1b5782
+    color: '#1b5782',
     trackSize: 6,
     thumbSize: 22,
     density: 'comfortable',
@@ -118,7 +118,7 @@ export default {
     hideDetails: 'auto',
   },
   VRating: {
-    // set v-rating default color to primary
+    // set v-rating default color to #1b5782
     activeColor: 'warning',
     color: 'disabled',
     emptyIcon: 'bx-bxs-star',
@@ -128,11 +128,11 @@ export default {
     roundedBar: true,
     rounded: true,
     bgColor: 'rgba(var(--v-track-bg))',
-    color: 'primary',
+    color: '#1b5782',
   },
   VSlider: {
-    // set v-range-slider default color to primary
-    color: 'primary',
+    // set v-range-slider default color to #1b5782
+    color: '#1b5782',
     thumbLabel: true,
     hideDetails: 'auto',
     thumbSize: 22,
@@ -142,12 +142,12 @@ export default {
   VTextField: {
     variant: 'outlined',
     density: 'comfortable',
-    color: 'primary',
+    color: '#1b5782',
     hideDetails: 'auto',
   },
   VAutocomplete: {
     variant: 'outlined',
-    color: 'primary',
+    color: '#1b5782',
     density: 'comfortable',
     hideDetails: 'auto',
     menuProps: {
@@ -160,7 +160,7 @@ export default {
   VCombobox: {
     variant: 'outlined',
     density: 'comfortable',
-    color: 'primary',
+    color: '#1b5782',
     hideDetails: 'auto',
     VChip: {
       label: true,
@@ -169,7 +169,7 @@ export default {
   VFileInput: {
     variant: 'outlined',
     density: 'comfortable',
-    color: 'primary',
+    color: '#1b5782',
     hideDetails: 'auto',
     prependIcon: '',
     prependInnerIcon: 'bx-link',
@@ -177,7 +177,7 @@ export default {
   VTextarea: {
     variant: 'outlined',
     density: 'comfortable',
-    color: 'primary',
+    color: '#1b5782',
     hideDetails: 'auto',
   },
   VSnackbar: {
@@ -186,9 +186,9 @@ export default {
     },
   },
   VSwitch: {
-    // set v-switch default color to primary
+    // set v-switch default color to #1b5782
     inset: true,
-    color: 'primary',
+    color: '#1b5782',
     hideDetails: 'auto',
     ripple: false,
   },

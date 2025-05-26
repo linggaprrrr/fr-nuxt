@@ -65,14 +65,8 @@ export const useAuth = () => {
         method: 'POST',
         body: { token: googleToken }
       })
-
-      const { user, access_token } = response
-
-      if (!user.email_verified) {
-        // Handle email not verified case (optional)
-        return
-      }
-      console.log(response)
+      
+      const { user, access_token } = response            
       if (process.client && access_token && user) {
         localStorage.setItem('token', access_token)
         localStorage.setItem('user', JSON.stringify(user))

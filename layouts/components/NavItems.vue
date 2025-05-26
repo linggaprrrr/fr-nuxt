@@ -65,9 +65,9 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
   
   <VerticalNavLink
     :item="{
-      title: 'Transactions',
+      title: 'History Transaction',
       icon: 'bx bxs-receipt',      
-      to: '/login',
+      to: '/admin/transactions',
     }"
   />
 
@@ -77,12 +77,25 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
       heading: 'Reports',
     }"
   />
+  <VerticalNavGroup
+    :item="{
+      title: 'Reports',
+      icon: 'bx bxs-report',
+    }"
+  >
     <VerticalNavLink
       :item="{
-        title: 'Report 1',
-        icon: 'bx bxs-report',
-        to: '/login',
+        title: 'Transactions',
+        to: '/admin/reports/transactions',
       }"
-    />  
+    />
+    
+    <VerticalNavLink
+      :item="{
+        title: 'Unit Transactions',
+        to: '/admin/reports/unit-transactions',
+      }"
+    />
+  </VerticalNavGroup>
 
 </template>
