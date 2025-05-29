@@ -63,7 +63,7 @@ definePageMeta({ layout: 'blank' })
         </VCardText>
 
         <VCardText>
-          <VForm @submit.prevent="$router.push('/')">
+          <VForm @submit.prevent="navigateTo('/')">
             <VRow>
               <!-- Username -->
               <VCol cols="12">

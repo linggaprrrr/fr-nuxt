@@ -1,37 +1,13 @@
 import type { GetUsersResponse } from '@/types/user'
 
-export const useUsers = () => {
-    const config = useRuntimeConfig()
-    const router = useRouter()
-    
-
-    const handleUnauthorized = () => {
-      localStorage.removeItem('token')
-      router.push('/login')
-    }
-
+export const useUsers = () => {    
     const getCurrentUser = async () => {                
-        const token = import.meta.client ? localStorage.getItem('token') : null
-        try {
-            const data = await $fetch('users/me', {
-            baseURL: config.public.apiBase,
-            method: 'GET',
-            headers: {
-                accept: 'application/json',
-                Authorization: `Bearer ${token}`,
-            }
-            })
-        
-            return data
-        } catch (error: any) {
-            if (error?.response?.data?.detail?.status_code === 401) {
-                localStorage.removeItem('token')
-                router.push('/login') 
-                return Promise.reject(error) 
-            }
-            throw error
-        }
+        const data = await authFetch('users/me', {        
+            method: 'GET',        
+        })    
+        return data
     }
+
     const getUsers = async ({
         page = 1,
         limit = 25,
@@ -40,86 +16,43 @@ export const useUsers = () => {
         page?: number
         limit?: number
         search?: string | null
-    }): Promise<GetUsersResponse> => {
+    }): Promise<GetUsersResponse> => {        
         const params: Record<string, any> = { page, limit }
         if (search) {
             params.search = search
         }
 
-        try {
-            const data = await $fetch<GetUsersResponse>('users/', {
-            baseURL: config.public.apiBase,
-            method: 'GET',
+        const data = await authFetch<GetUsersResponse>('users/', {            
+            method: 'GET',            
             params
-            })
-            return data
-        } catch (error: any) {
-            if (error?.status_code === 401) {
-            handleUnauthorized()
-            throw new Error('Unauthorized') // atau return Promise.reject('Unauthorized')
-            } else {
-            throw error
-            }
-        }
+        })
+
+        return data
     }
 
     
     const getUserById = async (userId: string) => {    
-        const token = import.meta.client ? localStorage.getItem('token') : null    
-        try {
-            const data = await $fetch(`users/${userId}`, {
-                baseURL: config.public.apiBase,
-                method: 'GET',
-                headers: {
-                    accept: 'application/json',
-                    Authorization: `Bearer ${token}`,
-                }
-            })
-        
-            return data
-        } catch (error: any) {
-            if (error?.status_code === 401) handleUnauthorized()
-            else throw error
-        }
+        const data = await authFetch(`users/${userId}`, {            
+            method: 'GET',            
+        })
+
+        return data
       }
     
     const updateUserById = async (userId: string, payload: Record<string, any>) => {        
-        const token = import.meta.client ? localStorage.getItem('token') : null
-        try {
-            const data = await $fetch(`users/${userId}`, {
-                baseURL: config.public.apiBase,
-                method: 'PUT',
-                headers: {
-                    accept: 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: payload
-            })
-        
-            return data
-        } catch (error: any) {
-            if (error?.status_code === 401) handleUnauthorized()
-            else throw error
-        }
+        const data = await authFetch(`users/${userId}`, {            
+            method: 'PUT',            
+            body: payload
+        })    
+        return data
     }
       
     const deleteUserById = async (userId: string) => {        
-        const token = import.meta.client ? localStorage.getItem('token') : null        
-        try {
-            const data = await $fetch(`users/${userId}`, {
-                baseURL: config.public.apiBase,
-                method: 'DELETE',
-                headers: {
-                    accept: 'application/json',
-                    Authorization: `Bearer ${token}`,
-                }
-            })
-        
-            return data
-        } catch (error: any) {
-            if (error?.status_code === 401) handleUnauthorized()
-            else throw error
-        }
+        const data = await authFetch(`users/${userId}`, {            
+            method: 'DELETE',            
+        })
+    
+        return data
     }
       
     return {

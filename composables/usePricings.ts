@@ -1,34 +1,23 @@
 import type { GetPhotoTypesResponse, GetPhotoPricesResponse} from "@/types/photo"
-import { baseURL } from "process"
 
 
 
 export const usePricings = () => {
-  const config = useRuntimeConfig()
-  const router = useRouter()
-
-
   const getPhotoTypes = async ({page=1, limit=25, search = null}: {
         page?: number
         limit?: number        
         search?: string | null
-    }): Promise<GetPhotoTypesResponse> => {
-    try {
-       const params: Record<string, any> = { page, limit }
-        if (search) {
-            params.search = search
-        }
-      const data = await $fetch<GetPhotoTypesResponse>(`/photo_types/`, {
-        baseURL: config.public.apiBase,
-        method: 'GET',        
-        params    
-      })
-      
-      return data
-
-    } catch (error) {
-      throw error
+  }): Promise<GetPhotoTypesResponse> => {
+    const params: Record<string, any> = { page, limit }
+    if (search) {
+        params.search = search
     }
+    const data = await authFetch<GetPhotoTypesResponse>(`/photo_types/`, {      
+      method: 'GET',
+      params    
+    })
+
+    return data
   }
 
   const getPhotoPrices = async ({page=1, limit=25, search=null}: {
@@ -36,139 +25,88 @@ export const usePricings = () => {
     limit?: number
     search?: string | null
   }): Promise<GetPhotoPricesResponse> => {
-    try {
-       const params: Record<string, any> = { page, limit }
-        if (search) {
-            params.search = search
-        }
-      const data = await $fetch<GetPhotoPricesResponse>(`/photo_prices/`, {
-        baseURL: config.public.apiBase,
-        method: 'GET',        
-        params    
-      })
-      
-      return data
-
-    } catch (error) {
-      throw error
+    const params: Record<string, any> = { page, limit }
+    if (search) {
+        params.search = search
     }
+    const data = await authFetch<GetPhotoPricesResponse>(`/photo_prices/`, {      
+      method: 'GET',         
+      params    
+    })
+
+    return data
   }
 
   const getPhotoPricesByUnit = async (unitId: string) => {
-    try {
-      const data = await $fetch(`/photo_prices/by-unit/${unitId}`, {
-        baseURL: config.public.apiBase,
+    const data = await authFetch(`/photo_prices/by-unit/${unitId}`, {        
         method: 'GET',
         params: {
           unit_id: unitId,         
         },
-      })
-      return data
-    } catch (error) {
-      throw error
-    }
+    })
+    return data
   }
 
   const createPhotoPricing = async (data: any) => {
-    try {
-      const response = await $fetch(`/photo_prices/`, {
-        baseURL: config.public.apiBase,
+    const response = await authFetch(`/photo_prices/`, {        
         method: 'POST',
         body: data
       })
       
       return response
-    } catch (error) {
-      throw error
-    }
   }
 
   const createPhotoType = async(data: any) => {
-    try {
-      const response = await $fetch(`/photo_types/`, {
-        baseURL: config.public.apiBase,
-        method: 'POST',
+    const response = await authFetch(`/photo_types/`, {        
+        method: 'POST',        
         body: data
-      })  
-      return response
-    } catch (error) {
-      throw error
-    }
+    })  
+    return response
   }
 
   const deletePhotoTypeById = async(id: string) => {
-    try {
-      const response = await $fetch(`/photo_types/${id}`, {
-        baseURL: config.public.apiBase,
-        method: 'DELETE'
-      })
-      return response
-    } catch (error) {
-      throw error
-    }
+    const response = await authFetch(`/photo_types/${id}`, {      
+      method: 'DELETE',
+    })
+    return response
   }
 
   const deletePhotoPriceById = async(id: string) => {
-    try {
-      const response = await $fetch(`/photo_prices/${id}`, {
-        baseURL: config.public.apiBase,
-        method: 'DELETE'
-      })
-      return response
-    } catch (error) {
-      throw error
-    }
+    const response = await authFetch(`/photo_prices/${id}`, {      
+      method: 'DELETE',      
+    })
+    return response
   }
 
   const getPhotoPriceById = async(id: string) => {
-    try {
-      const data = await $fetch(`/photo_prices/${id}`, {
-        baseURL: config.public.apiBase,
-        method: 'GET'
-      })
-      return data
-    } catch (error) {
-      throw error
-    }
+    const data = await authFetch(`/photo_prices/${id}`, {      
+      method: 'GET',      
+    })
+    return data
   }
 
   const updatePhotoPrice = async(id: string, data: any) => {
-    try {
-      const response = await $fetch(`/photo_prices/${id}`, {
-        baseURL: config.public.apiBase,
-        method: 'PUT',
-        body: data
-      })
+    const response = await authFetch(`/photo_prices/${id}`, {      
+      method: 'PUT',      
+      body: data
+    })
 
-      return response
-    } catch (error) {
-      throw error
-    }
+    return response
   }
 
   const getPhotoTypeById = async(id: string) => {
-    try {
-      const data = await $fetch(`/photo_types/${id}`, {
-        baseURL: config.public.apiBase,
-        method: 'GET'
-      })
-      return data
-    } catch (error) {
-      throw error      
-    }
+    const data = await authFetch(`/photo_types/${id}`, {      
+      method: 'GET',      
+    })
+    return data
   }
 
-   const updatePhotoType = async(id: string, data: any) => {
-    try {
-      const response = await $fetch(`/photo_types/${id}`, {
-        baseURL: config.public.apiBase,
-        method: 'PUT',
+  const updatePhotoType = async(id: string, data: any) => {
+    const response = await authFetch(`/photo_types/${id}`, {        
+        method: 'PUT',        
         body: data
       })
       return response
-    } catch (error) {
-      throw error
-    }
   }
 
   return {

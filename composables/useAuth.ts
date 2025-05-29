@@ -1,6 +1,6 @@
 export const useAuth = () => {
   const config = useRuntimeConfig()
-  const router = useRouter()
+  
 
 
   const login = async (email: string, password: string) => {
@@ -12,21 +12,23 @@ export const useAuth = () => {
       })
 
       if (isLoginResponse(data)) {
-        const token = data.access_token
+        const accessToken = data.access_token
+        const refreshToken = data.refresh_token
         const user = data.user
         
-        if (process.client && token && user) {
-          localStorage.setItem('token', token)
+        if (process.client && accessToken && user) {
+          localStorage.setItem('access_token', accessToken)
+          localStorage.setItem('refresh_token', refreshToken)
           localStorage.setItem('user', JSON.stringify(user))
+
           const userStr = JSON.stringify(user)
           if (userStr) {
-            const user = JSON.parse(userStr) as { role: string };
+            const parsedUser = JSON.parse(userStr) as { role: string }
     
-            if (user.role === 'superadmin') {
-              router.push('/admin/dashboard')
-            } else {
-              router.push('/photos')
-            }
+            const path = parsedUser.role === 'superadmin' ? '/admin/dashboard' : '/photos'
+            
+
+            await navigateTo(path) 
           }
           
         }
@@ -46,11 +48,12 @@ export const useAuth = () => {
       })
 
       if (isLoginResponse(data)) {
-        const token = data.access_token
+        const accessToken = data.access_token
+        const refreshToken = data.refresh_token
         const user = data.user        
-        if (process.client && token && user) {
+        if (process.client && accessToken && user) {
         
-          router.push('/login')
+          return navigateTo('/login')
         }
       }
     } catch (error) {
@@ -66,38 +69,70 @@ export const useAuth = () => {
         body: { token: googleToken }
       })
       
-      const { user, access_token } = response            
-      if (process.client && access_token && user) {
-        localStorage.setItem('token', access_token)
-        localStorage.setItem('user', JSON.stringify(user))
-        console.log(user)  
-        const userStr = JSON.stringify(user)
+      if (isLoginResponse(response)) {
+        const accessToken = response.access_token
+        const refreshToken = response.refresh_token
+        const user = response.user
+        
+        if (process.client && accessToken && user) {
+          localStorage.setItem('access_token', accessToken)
+          localStorage.setItem('refresh_token', refreshToken)
+          localStorage.setItem('user', JSON.stringify(user))
+          const userStr = JSON.stringify(user)
           if (userStr) {
             const user = JSON.parse(userStr) as { role: string };
     
             if (user.role === 'superadmin') {
-              router.push('/admin/dashboard')
+              return navigateTo('/admin/dashboard')
             } else {
-              router.push('/photos')
+              return navigateTo('/photos')
             }
           }
+          
+        }
+
       }
     } catch (err) {
       console.error('Google login error:', err)
     }
   }
-
-
   
-  function isLoginResponse(data: any): data is { access_token: string; user: { id: string; name: string; email: string } } {
-    return typeof data.access_token === 'string' && typeof data.user === 'object'
+  const refreshAuth = async (): Promise<boolean> => {
+    if (!import.meta.client) return false
+
+    const refreshToken = localStorage.getItem('refresh_token')
+
+    try {
+      const response = await $fetch<{ access_token: string, refresh_token: string }>('/auth/refresh', {
+        baseURL: config.public.apiBase,
+        method: 'POST',
+        body: {  'refresh_token': refreshToken }
+      })
+
+      if (response?.access_token && response?.refresh_token) {
+        localStorage.setItem('access_token', response.access_token)
+        localStorage.setItem('refresh_token', response.refresh_token)
+        return true
+      }
+      logout()
+      return false
+    } catch (error) {
+      console.error('Failed to refresh token:', error)
+      logout()
+      return false
+    }
+  }
+  
+  function isLoginResponse(data: any): data is { access_token: string; refresh_token: string; user: { id: string; name: string; email: string } } {
+    return typeof data.access_token === 'string' && typeof data.refresh_token === 'string' && typeof data.user === 'object'
   }
 
   const logout = () => {
-    if (process.client) {
-      localStorage.removeItem('token')
+    if (import.meta.client) {
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
       localStorage.removeItem('user')
-      router.push('/login')
+      return navigateTo('/login')      
     }
   }
 
@@ -108,7 +143,7 @@ export const useAuth = () => {
     return false
   }
 
- 
+  
 
   const getUser = () => {
     if (process.client) {
@@ -124,6 +159,7 @@ export const useAuth = () => {
     logout,
     isAuthenticated,
     getUser,
-    googleLogin
+    googleLogin,
+    refreshAuth
   }
 }

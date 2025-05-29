@@ -3,8 +3,7 @@
 import AnalyticsRevenue from '@/views/dashboard/AnalyticsRevenue.vue'
 import AnalyticsRevenuePerUnit from '@/views/dashboard/AnalyticsRevenuePerUnit.vue'
 
-const {
-  loading, 
+const {  
   getDasboardStatistcs,  
 } = useReports()
 

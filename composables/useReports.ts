@@ -1,5 +1,3 @@
-import { baseURL } from "process"
-import { load } from "webfontloader"
 
 interface TransactionReport {
   unit: string
@@ -61,43 +59,26 @@ export interface ReportResponse {
 
 
 export interface TransactionsReport {
-  start_date: string  // format YYYY-MM-DD
-  end_date: string    // format YYYY-MM-DD
+  start_date: string  
+  end_date: string    
   jumlah_transaksi: number
   total_pendapatan: number
   data: TransactionData[]
 }
 
-export function useReports() {
-  const config = useRuntimeConfig()
-
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-
+export function useReports() {  
   const getAllUnitReports = async (
     startDate: string | null,
     endDate: string | null
-  ): Promise<AllUnitReportResponse | null> => {
-    loading.value = true
-    error.value = null
-
-    try {
-      const data = await $fetch<AllUnitReportResponse>(`/statistics/reports/transactions-all-unit`, {
-        baseURL: config.public.apiBase,
-        method: 'GET',
-        params: {
-          start_date: startDate,
-          end_date: endDate
-        }
-      })
-      loading.value = false
-      return data
-    } catch (err: any) {
-      error.value = err.message || 'Unknown error'
-      return null
-    } finally {
-      loading.value = false
-    }
+  ): Promise<AllUnitReportResponse | null> => {    
+    const data = await authFetch<AllUnitReportResponse>(`/statistics/reports/transactions-all-unit`, {        
+      method: 'GET',
+      params: {
+        start_date: startDate,
+        end_date: endDate
+      }
+    })    
+    return data
   }
 
 
@@ -106,69 +87,41 @@ export function useReports() {
     startDate: string | null,
     endDate: string | null
   ): Promise<PerUnitReport | null> => {
-    loading.value = true
-    error.value = null
-    try {
-      const data = await $fetch<PerUnitReport>(`/statistics/reports/transactions-by-unit`, {
-        baseURL: config.public.apiBase,
-        params: {
-          unit_id,
-          start_date: startDate,
-          end_date: endDate,
-        },
-      })
-      console.log(data)
-      loading.value = false
-      return data
-    } catch (err: any) {
-      loading.value = false
-      error.value = err.message || 'Unknown error'      
-      return null
-    }
+    const data = await authFetch<PerUnitReport>(`/statistics/reports/transactions-by-unit`, {      
+      params: {
+        unit_id,
+        start_date: startDate,
+        end_date: endDate,
+      },
+    })
+    
+    return data
   }
 
   const getDasboardStatistcs = async (): Promise<ReportResponse | null>  => {
-    loading.value = true
-    try {
-      const data = await $fetch<ReportResponse>(`/statistics/`, {
-        baseURL: config.public.apiBase,
-        method: 'GET'        
-      })
-      loading.value = false
-      return data
-    } catch (err: any) {
-      loading.value = false
-      error.value = err.message || 'Unknown error'
-      return null
-    }
+    const data = await authFetch<ReportResponse>(`/statistics/`, {      
+      method: 'GET'        
+    })    
+    return data
   }
 
   const getTransactionsReport = async (
     startDate: string | null,
     endDate: string | null
   ): Promise<TransactionReport | null> => {
-    loading.value = true
-
-    try {
-      const data = await $fetch<TransactionReport>(`/statistics/reports/transactions`, {
-        baseURL: config.public.apiBase,
-        method: 'GET',
-        params: {
-          start_date: startDate,
-          end_date: endDate,
-        },        
-      })
-      loading.value = false
-      return data
-    } catch (err: any) {
-      return err
-    }
+    const data = await authFetch<TransactionReport>(`/statistics/reports/transactions`, {      
+      method: 'GET',
+      params: {
+        start_date: startDate,
+        end_date: endDate,
+      },        
+    })
+    
+    return data
   }
 
 
-  return {
-    loading,
-    error,
+  return {    
     getDasboardStatistcs,
     getTransactionsReport,
     getAllUnitReports,

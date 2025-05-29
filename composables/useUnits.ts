@@ -1,14 +1,6 @@
 import type { GetUnitsResponse } from "@/types/unit"
 
-export const useUnits = () => {
-    const config = useRuntimeConfig()
-    const router = useRouter()
-    
-    const handleUnauthorized = () => {
-      localStorage.removeItem('token')
-      router.push('/login')
-    }
-
+export const useUnits = () => { 
     const getUnits = async ({
         page = 1,
         limit = 25,
@@ -19,117 +11,44 @@ export const useUnits = () => {
         search?: string | null
     }): Promise<GetUnitsResponse> => {
         const params: Record<string, any> = { page, limit }
-        if (search) {
-            params.search = search
-        }
+        if (search) params.search = search
 
-        try {
-            const data = await $fetch<GetUnitsResponse>('units/', {
-            baseURL: config.public.apiBase,
+        return await authFetch<GetUnitsResponse>('units/', {
             method: 'GET',
             params
-            })
-            return data
-        } catch (error: any) {
-            if (error?.status_code === 401) {
-            handleUnauthorized()
-            throw new Error('Unauthorized') // atau return Promise.reject('Unauthorized')
-            } else {
-                throw error
-            }
-        }
+        })
     }
 
-    const createUnit = async (data: any) => {
-        const token = import.meta.client ? localStorage.getItem('token') : null
-        try {
-            const response = await $fetch('units/', {
-                baseURL: config.public.apiBase,
-                method: 'POST',
-                headers: {
-                    accept: 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: data
-            })
-            console.log('Unit created:', response)
-            return response
-        } catch (error: any) {
-            if (error?.response?.data?.detail?.status_code === 401) {
-                localStorage.removeItem('token')
-                router.push('/login')
-                return Promise.reject(error)
-            }
-            throw error
-        }
+
+    const createUnit = async (data: any) => {        
+        const response = await authFetch('units/', {            
+            method: 'POST',            
+            body: data
+        })        
+        return response
     }
 
   
 
     const deleteUnitById = async (id: string) => {
-        const token = import.meta.client ? localStorage.getItem('token') : null
-        try {
-            const response = await $fetch(`units/${id}`, {
-                baseURL: config.public.apiBase,
-                method: 'DELETE',
-                headers: {
-                    accept: 'application/json',
-                    Authorization: `Bearer ${token}`,
-                }
-            })
-            return response
-        } catch (error: any) {
-            if (error?.response?.data?.detail?.status_code === 401) {
-                localStorage.removeItem('token')
-                router.push('/login')
-                return Promise.reject(error)
-            }
-            throw error
-        }
+        const response = await authFetch(`units/${id}`, {            
+            method: 'DELETE',            
+        })
+        return response
     }
     const getUnitById = async (id: string) => {
-        const token = import.meta.client ? localStorage.getItem('token') : null
-        try {
-            const response = await $fetch(`units/${id}`, {
-                baseURL: config.public.apiBase,
-                method: 'GET',        
-                headers: {
-                    accept: 'application/json',
-                    Authorization: `Bearer ${token}`,
-                }
-            })
-            return response
-        } catch (error: any) {
-            if (error?.response?.data?.detail?.status_code === 401) {
-                localStorage.removeItem('token')
-                router.push('/login')
-                return Promise.reject(error)
-            }
-            throw error
-        }
+        const response = await authFetch(`units/${id}`, {            
+            method: 'GET',                    
+        })
+        return response
     }
 
     const updateUnitById = async (id: string, data: any) => {
-        const token = import.meta.client ? localStorage.getItem('token') : null
-        try {
-            const response = await $fetch(`units/${id}`, {
-                baseURL: config.public.apiBase,
-                method: 'PUT',
-                headers: {
-                    accept: 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: data
-            })
-            return response
-        } catch (error: any) {
-            if (error?.response?.data?.detail?.status_code === 401) {   
-                localStorage.removeItem('token')
-                router.push('/login')
-                return Promise.reject(error)
-            } 
-            throw error
-        }
+        const response = await authFetch(`units/${id}`, {            
+            method: 'PUT',            
+            body: data
+        })
+        return response
     }
 
 

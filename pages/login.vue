@@ -16,14 +16,22 @@ definePageMeta({ layout: 'blank' })
 
 // handle login
 const { login, googleLogin } = useAuth()
+
 const handleLogin = async () => {
   try {
-    await login(form.value.email, form.value.password)
+    const user = await login(form.value.email, form.value.password)
+
+    if (user) {
+      const path = user.role === 'superadmin' ? '/admin/dashboard' : '/photos'
+      console.log('Redirecting to:', path)
+      await navigateTo(path)
+    }
   } catch (error: any) {
     alert('Login gagal: ' + (error?.data?.message || 'Terjadi kesalahan'))
     console.error(error)
   }
 }
+
 
 import {
   GoogleSignInButton,

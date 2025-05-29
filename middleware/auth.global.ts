@@ -1,22 +1,27 @@
 export default defineNuxtRouteMiddleware((to, from) => {
-  if (process.client) {
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
+  
+  if (import.meta.client) {
 
-    if (token && to.path === '/login') {
+    
+    const accessToken = localStorage.getItem('access_token')
+    const refreshToken = localStorage.getItem('refresh_token')
+    const userStr = localStorage.getItem('user')
+    
+    if (accessToken && to.path === '/login') {
       if (userStr) {
-        const user = JSON.parse(userStr) as { role: string };
+        const user = JSON.parse(userStr) as { role: string }
 
         if (user.role === 'superadmin') {
-          return navigateTo('/admin/dashboard');
+          return navigateTo('/admin/dashboard')
         } else {
-          return navigateTo('/photos');
+          return navigateTo('/photos')
         }
       }
     }
 
-    if (!token && to.path !== '/login') {
-      return navigateTo('/login');
+    // Jika belum login dan mencoba akses halaman lain
+    if (!accessToken && to.path !== '/login') {
+      return navigateTo('/login')
     }
   }
-});
+})

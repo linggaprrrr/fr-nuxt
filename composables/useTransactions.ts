@@ -1,8 +1,7 @@
 import { ref } from 'vue'
 import type { TransactionResponse } from '@/types/transaction'
 
-export function useTransactions() {
-  const config = useRuntimeConfig()
+export function useTransactions() {  
   const transactions = ref<TransactionResponse | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -10,13 +9,11 @@ export function useTransactions() {
   const getTransactions = async (params?: Record<string, any>) => {
     loading.value = true
     error.value = null
-    try {
-      transactions.value = await $fetch<TransactionResponse>('/transactions/', {
-        baseURL: config.public.apiBase,
-        method: 'GET',
+    try {      
+      transactions.value = await authFetch<TransactionResponse>('/transactions/', {        
+        method: 'GET',        
         params,
-      })
-      
+      })      
     } catch (err: any) {
       error.value = err.data?.message || err.message || 'Failed to fetch transactions.'
     } finally {
@@ -27,10 +24,9 @@ export function useTransactions() {
   const deleteTransaction = async (id: string) => {
     loading.value = true
     error.value = null
-    try {
-      await $fetch(`/transactions/${id}`, {
-        baseURL: config.public.apiBase,
-        method: 'DELETE',
+    try {      
+      await authFetch(`/transactions/${id}`, {        
+        method: 'DELETE',        
       })
       
       if (transactions.value) {
