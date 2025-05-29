@@ -26,7 +26,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: 'http://localhost:8001/',    
+      apiBase: 'https://api.frameitalbum.com/',    
       
     }
   },
