@@ -48,13 +48,51 @@ export interface PendapatanPerHari {
 }
 
 export interface ReportResponse {
+  // Total pendapatan
   total_pendapatan_hari_ini: number
-  pendapatan_per_unit: PendapatanPerUnit[]
+  total_pendapatan_minggu_ini: number
+  total_pendapatan_bulan_ini: number
+  total_pendapatan_tahun_ini: number
+
+  // Total transaksi
   total_transaksi_hari_ini: number
+  total_transaksi_minggu_ini: number
+  total_transaksi_bulan_ini: number
+  total_transaksi_tahun_ini: number
+
+  // Pendapatan lainnya
+  pendapatan_per_unit: PendapatanPerUnit[]
+  pendapatan_per_hari: PendapatanPerHari[]
+  pendapatan_per_bulan: PendapatanPerBulan[]
+
+  // Info tambahan
   total_user: number
   transaksi_terakhir: TransaksiTerakhir[]
-  pendapatan_per_hari: PendapatanPerHari[]
 }
+
+export interface PendapatanPerUnit {
+  unit: string
+  total: number
+}
+
+export interface PendapatanPerHari {
+  tanggal: string // format ISO, contoh: "2025-05-30"
+  total: number
+}
+
+export interface PendapatanPerBulan {
+  bulan: string // contoh: "Januari", "Februari", dst
+  total: number
+}
+
+export interface TransaksiTerakhir {
+  id: string
+  final_price: number
+  created_at: string
+  user_name: string
+  email: string
+}
+
 
 
 
@@ -78,7 +116,10 @@ export function useReports() {
         end_date: endDate
       }
     })    
+    
     return data
+
+    
   }
 
 
@@ -102,6 +143,7 @@ export function useReports() {
     const data = await authFetch<ReportResponse>(`/statistics/`, {      
       method: 'GET'        
     })    
+    console.log(data)
     return data
   }
 

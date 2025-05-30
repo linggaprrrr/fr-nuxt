@@ -1,7 +1,7 @@
 <template>
   <VCard class="h-100 d-flex flex-column">
     <VCardText class="pb-0">
-      <div class="text-base font-medium">Pendapatan Per Unit Hari Ini</div>
+      <div class="text-base font-medium">Pendapatan Per Unit Bulan Ini</div>
     </VCardText>
 
     <VueApexCharts
