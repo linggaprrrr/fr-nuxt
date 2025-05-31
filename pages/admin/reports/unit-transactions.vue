@@ -209,6 +209,7 @@ onMounted(() => {
         <tr>
           <th class="text-center">#</th>
           <th class="text-center">Tanggal</th>
+          <th class="text-center">Kode Transaksi</th>
           <th class="text-center">User</th>
           <th class="text-center">Foto Terjual</th>
           <th class="text-center">Jumlah Transaksi</th>
@@ -218,6 +219,7 @@ onMounted(() => {
         <tr v-for="(trx, index) in report.data" :key="trx.id">
           <td class="text-center">{{ index + 1 }}</td>
           <td class="text-center">{{ formatTanggal(trx.created_at) }}</td>
+          <td class="text-center">{{ trx.trx_code.toUpperCase() }}</td>
           <td class="text-center">{{ trx.user }}</td>
           <td class="text-center">{{ trx.jumlah_foto }}</td>
           <td class="text-center">Rp {{ trx.final_price.toLocaleString() }}</td>

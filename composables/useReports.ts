@@ -13,6 +13,7 @@ interface AllUnitReportResponse {
 
 export interface TransactionData {
   id: string
+  trx_code: string
   user: string
   jumlah_foto: number
   final_price: number

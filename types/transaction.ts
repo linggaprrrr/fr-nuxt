@@ -7,6 +7,7 @@ export interface TransactionResponse {
 
 export interface Transaction {
   id: string
+  trx_code: string
   user: User
   photos: Photo[]
   unit: Unit

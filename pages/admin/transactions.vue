@@ -57,6 +57,7 @@ const handleDelete = async (id: string) => {
       <thead>
         <tr>
           <th>#</th>          
+          <th>Kode Transaksi</th>                    
           <th>Email</th>                    
           <th>Jumlah Foto</th>    
           <th>Final Price</th>
@@ -73,6 +74,7 @@ const handleDelete = async (id: string) => {
         </tr>
         <tr v-for="(trx, index) in transactions?.data" :key="trx.id">
           <td>{{ index + 1 + (page - 1) * limit }}</td>          
+          <td>{{ trx.trx_code ?? '-' }}</td>                    
           <td>{{ trx.user?.email ?? '-' }}</td>                    
           <td class="text-center">{{ trx.photos.length }}</td>   
           <td>Rp {{ trx.final_price.toLocaleString('id-ID') }}</td>          
