@@ -14,6 +14,7 @@ interface AllUnitReportResponse {
 export interface TransactionData {
   id: string
   user: string
+  jumlah_foto: number
   final_price: number
   created_at: string
 }
@@ -24,6 +25,7 @@ export interface PerUnitReport {
   start_date: string 
   end_date: string   
   jumlah_transaksi: number
+  jumlah_foto_terjual: number
   total_pendapatan: number
   data: TransactionData[]
 }
@@ -76,12 +78,12 @@ export interface PendapatanPerUnit {
 }
 
 export interface PendapatanPerHari {
-  tanggal: string // format ISO, contoh: "2025-05-30"
+  tanggal: string 
   total: number
 }
 
 export interface PendapatanPerBulan {
-  bulan: string // contoh: "Januari", "Februari", dst
+  bulan: string 
   total: number
 }
 
@@ -135,15 +137,14 @@ export function useReports() {
         end_date: endDate,
       },
     })
-    
+    console.log(data)
     return data
   }
 
   const getDasboardStatistcs = async (): Promise<ReportResponse | null>  => {
     const data = await authFetch<ReportResponse>(`/statistics/`, {      
       method: 'GET'        
-    })    
-    console.log(data)
+    })        
     return data
   }
 

@@ -81,6 +81,7 @@ const exportToExcel = () => {
       'Unit': report.value.unit_name,
       'Periode': `${report.value.start_date} - ${report.value.end_date}`,
       'Jumlah Transaksi': report.value.jumlah_transaksi,
+      'Jumlah Foto Terjuak': report.value.jumlah_foto_terjual,
       'Total Pendapatan': report.value.total_pendapatan
     }
   ]
@@ -91,13 +92,35 @@ const exportToExcel = () => {
     'User': trx.user,
     'Jumlah Transaksi': trx.final_price
   }))
-
+  
+  // 1. Buat workbook baru
   const wb = XLSX.utils.book_new()
-  const summaryWs = XLSX.utils.json_to_sheet(summarySheet)
-  const detailWs = XLSX.utils.json_to_sheet(detailSheet)
 
-  XLSX.utils.book_append_sheet(wb, summaryWs, 'Ringkasan')
-  XLSX.utils.book_append_sheet(wb, detailWs, 'Detail Transaksi')
+  // 2. Buat worksheet sementara dari JSON
+  const summaryTempWs = XLSX.utils.json_to_sheet(summarySheet)
+  const detailTempWs = XLSX.utils.json_to_sheet(detailSheet)
+
+  // 3. Ubah worksheet jadi array of arrays (baris dan kolom)
+  const summaryRows: (string | number | boolean | Date | null | undefined)[][] =
+    XLSX.utils.sheet_to_json(summaryTempWs, { header: 1 })
+  const detailRows: (string | number | boolean | Date | null | undefined)[][] =
+    XLSX.utils.sheet_to_json(detailTempWs, { header: 1 })
+
+  // 4. Tambahkan 2 baris kosong pemisah dan header opsional
+  summaryRows.push([], ['Detail Transaksi']) // opsional, bisa ubah jadi [] kalau tidak perlu judul
+
+  // 5. Gabungkan semua baris
+  const combinedRows = [...summaryRows, ...detailRows]
+
+  // 6. Buat worksheet dari array 2D
+  const ws = XLSX.utils.aoa_to_sheet(combinedRows)
+
+  // 7. Tambahkan worksheet ke workbook
+  XLSX.utils.book_append_sheet(wb, ws, 'Ringkasan')
+
+  // 8. Ekspor ke file (opsional)
+  XLSX.writeFile(wb, 'laporan-transaksi.xlsx')
+
 
   const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
   saveAs(new Blob([wbout], { type: 'application/octet-stream' }), `Laporan-Unit-${report.value.unit_name}.xlsx`)
@@ -174,6 +197,7 @@ onMounted(() => {
       <div><strong>Unit:</strong> {{ report.unit_name }}</div>
       <div><strong>Periode:</strong> {{ report.start_date }} - {{ report.end_date }}</div>
       <div><strong>Jumlah Transaksi:</strong> {{ report.jumlah_transaksi }}</div>
+      <div><strong>Jumlah Foto yang terjual:</strong> {{ report.jumlah_foto_terjual }}</div>
       <div><strong>Total Pendapatan:</strong> Rp {{ report.total_pendapatan.toLocaleString() }}</div>
     </VCardText>
 
@@ -186,6 +210,7 @@ onMounted(() => {
           <th class="text-center">#</th>
           <th class="text-center">Tanggal</th>
           <th class="text-center">User</th>
+          <th class="text-center">Foto Terjual</th>
           <th class="text-center">Jumlah Transaksi</th>
         </tr>
       </thead>
@@ -194,6 +219,7 @@ onMounted(() => {
           <td class="text-center">{{ index + 1 }}</td>
           <td class="text-center">{{ formatTanggal(trx.created_at) }}</td>
           <td class="text-center">{{ trx.user }}</td>
+          <td class="text-center">{{ trx.jumlah_foto }}</td>
           <td class="text-center">Rp {{ trx.final_price.toLocaleString() }}</td>
         </tr>
       </tbody>

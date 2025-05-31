@@ -165,7 +165,7 @@ onMounted(() => {
               <v-select
                 v-model="photoParams.unit_id"
                 density="comfortable"
-                label="Unit"                
+                label="1. Pilih unit"                
                 :items="units"
                 item-value="id"
                 item-title="name"
@@ -178,10 +178,11 @@ onMounted(() => {
 
             <v-col cols="12" md="6">
                <v-select
-                v-model="photoParams.photo_type_id"              
+                v-model="photoParams.photo_type_id"  
+                label="2. Pilih harga foto"                            
                 :items="photoPricesByUnit"                  
                 item-value="photo_type_id"                
-                 :item-title="item => `${item.photo_type_name ?? 'Select first'} - ${item.price?.toLocaleString() ?? '0'} IDR`"
+                :item-title="item => `${item.photo_type_name ?? 'Select first'} - ${item.price?.toLocaleString() ?? '0'} IDR`"
                 class="mb-4"
               />
 
@@ -191,7 +192,7 @@ onMounted(() => {
           <v-row>
             <v-col cols="12">
               <v-file-upload    
-                v-model="files"
+                v-model="files"                 
                 accept="image/*"
                 clearable
                 prepend-icon="bx bx-upload"

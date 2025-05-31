@@ -1,6 +1,7 @@
 import type { GetUnitsResponse } from "@/types/unit"
 
 export const useUnits = () => { 
+    
     const getUnits = async ({
         page = 1,
         limit = 25,
@@ -13,10 +14,12 @@ export const useUnits = () => {
         const params: Record<string, any> = { page, limit }
         if (search) params.search = search
 
-        return await authFetch<GetUnitsResponse>('units/', {
+        const response = await authFetch<GetUnitsResponse>('units/', {
             method: 'GET',
             params
         })
+
+        return response
     }
 
 
