@@ -116,7 +116,9 @@ export default defineNuxtConfig({
         '@configured-variables': fileURLToPath(new URL('./assets/styles/variables/_template.scss', import.meta.url)),
       },
     },
-
+     ssr: {
+      noExternal: ['vuetify'], 
+    },
     build: {
       chunkSizeWarningLimit: 5000,
     },
