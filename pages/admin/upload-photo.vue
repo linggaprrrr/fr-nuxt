@@ -60,6 +60,7 @@ const handleUpload = async () => {
   try {
     const response = await uploadImages(
       photoParams.unit_id,
+      photoParams.outlet_id,
       photoParams.photo_type_id,
       files.value,
       (uploadedPercentage: number) => {

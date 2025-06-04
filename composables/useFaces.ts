@@ -8,6 +8,7 @@ export const useFaces = () => {
 
     const uploadImages = async (
       unit_id: string,
+      outlet_id: string,
       type_id: string,
       files: File[],
       onProgress: (progress: number) => void
@@ -25,6 +26,7 @@ export const useFaces = () => {
           },
           params: {
             unit_id,
+            outlet_id,
             photo_type_id: type_id
           },
           onUploadProgress: (progressEvent) => {

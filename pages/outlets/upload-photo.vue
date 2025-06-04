@@ -2,11 +2,12 @@
 import { ref } from 'vue'
 import type { Unit } from '@/types/unit'
 import type { PhotoPrice } from '@/types/photo'
-
+import type { Outlet, OutletList, GetOutletsByUnitResponse } from '@/types/outlet'
 
 const { uploadImages } = useFaces()
 const { getUnits } = useUnits()
-const { getPhotoPrices, getPhotoPricesByUnit } = usePricings() 
+const { getPhotoPrices, getPhotoPricesByUnit, getPhotoPricesByOutlet } = usePricings() 
+const { getOutlets, getOutletsByUnit } = useOutlets()
  
 const files = ref<File[]>([])  
 const loading = ref(false) 
@@ -15,16 +16,14 @@ const showAlert = ref(false)
 const uploadStatus = ref<{ type: string, message: string } | null>(null)  
 
 const photoParams = reactive({
-  unit_id: null,
+  unit_id: '',
+  outlet_id: '',
   photo_type_id: null 
 })
 
 // load units
 const units = ref<Unit[]>([])
-
-
 async function fetchUnits() {
-  
   try {
     const res = await getUnits({
       page: 1,
@@ -61,6 +60,7 @@ const handleUpload = async () => {
   try {
     const response = await uploadImages(
       photoParams.unit_id,
+      photoParams.outlet_id,
       photoParams.photo_type_id,
       files.value,
       (uploadedPercentage: number) => {
@@ -99,32 +99,50 @@ const selectedUnit = computed(() => {
   return units.value.find(u => u.id === photoParams.unit_id) || null
 })
 
-const photoPricesByUnit = ref([])
+const photoPricesByOutlet = ref([])
 
-async function fetchPhotoPricesByUnit(unitId: string) {
+async function fetchPhotoPricesByOutlet(id: string) {
   try {
-    const res = await getPhotoPricesByUnit(unitId)
-    console.log(res)
+    const res = await getPhotoPricesByOutlet(id)
     
     
-    photoPricesByUnit.value = res?.photo_prices || []    
+    photoPricesByOutlet.value = res?.photo_prices || []    
     
-    if (photoPricesByUnit.value.length > 0 && !photoParams.photo_type_id) {
-      photoParams.photo_type_id = photoPricesByUnit.value[0].photo_type_id
+    if (photoPricesByOutlet.value.length > 0 && !photoParams.photo_type_id) {
+      photoParams.photo_type_id = photoPricesByOutlet.value[0].photo_type_id
     }
   } catch (error) {
     console.error('Failed to fetch photo prices by unit:', error)
-    photoPricesByUnit.value = []
+    photoPricesByOutlet.value = []
   }
 }
 
 
-watch(() => photoParams.unit_id, async (newUnitId) => {
-  if (newUnitId) {
-    await fetchPhotoPricesByUnit(newUnitId)
-  }
-})
+// watch(() => photoParams.unit_id, async (newUnitId) => {
+//   if (newUnitId) {
+//     await fetchOutletByUnit(newUnitId)
+//     // await fetchPhotoPricesByUnit(newUnitId)
+//   }
+// })
+const outletList = ref<OutletList[]>([])
 
+watch(
+  () => photoParams.unit_id,
+  async (newUnitId) => {
+    if (newUnitId) {
+      const outletRes = await getOutletsByUnit(newUnitId) as GetOutletsByUnitResponse
+      if (outletRes?.status_code === 200 && Array.isArray(outletRes.outlets)) {
+        outletList.value = outletRes.outlets
+        photoParams.outlet_id = outletRes.outlets[0]?.id || ''        
+        await fetchPhotoPricesByOutlet(photoParams.outlet_id)
+      } else {
+        outletList.value = []
+        photoParams.outlet_id = ''
+      }
+    }
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
   fetchUnits()  
@@ -134,8 +152,8 @@ onMounted(() => {
 definePageMeta({
   layout: 'outlet'
 })
-
 </script>
+
 <template>
   <v-container fluid>
     <!-- Alert Section -->
@@ -165,7 +183,7 @@ definePageMeta({
       <v-card-text>
         <v-form>
           <v-row>
-            <v-col cols="12" md="6">
+            <v-col cols="12" md="4">
               <v-select
                 v-model="photoParams.unit_id"
                 density="comfortable"
@@ -179,12 +197,21 @@ definePageMeta({
                 variant="outlined"
               />
             </v-col>
-
-            <v-col cols="12" md="6">
+            <v-col cols="12" md="4">
+               <v-select
+                v-model="photoParams.outlet_id"  
+                label="2. Pilih outlet"                            
+                :items="outletList"                  
+                item-value="id"                
+                item-title="name"
+                class="mb-4"
+              />
+            </v-col>
+            <v-col cols="12" md="4">
                <v-select
                 v-model="photoParams.photo_type_id"  
-                label="2. Pilih harga foto"                            
-                :items="photoPricesByUnit"                  
+                label="3. Pilih harga foto"                            
+                :items="photoPricesByOutlet"                  
                 item-value="photo_type_id"                
                 :item-title="item => `${item.photo_type_name ?? 'Select first'} - ${item.price?.toLocaleString() ?? '0'} IDR`"
                 class="mb-4"
@@ -225,3 +252,5 @@ definePageMeta({
     </v-progress-linear>
   </v-container>
 </template>
+
+
