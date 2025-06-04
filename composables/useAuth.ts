@@ -24,11 +24,17 @@ export const useAuth = () => {
           const userStr = JSON.stringify(user)
           if (userStr) {
             const parsedUser = JSON.parse(userStr) as { role: string }
-    
-            const path = parsedUser.role === 'superadmin' ? '/admin/dashboard' : '/photos'
+            if (parsedUser.role === 'superadmin') {              
+              await navigateTo('/admin/dashboard') 
+            } else if (parsedUser.role === 'unit') {
+              await navigateTo('/units/dashboard')
+            } else if (parsedUser.role === 'outlet') {
+              await navigateTo('/outlets/dashboard')
+            } else {
+              await navigateTo('/photos')
+            }
+             
             
-
-            await navigateTo(path) 
           }
           
         }

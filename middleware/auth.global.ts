@@ -11,11 +11,15 @@ export default defineNuxtRouteMiddleware((to, from) => {
       if (userStr) {
         const user = JSON.parse(userStr) as { role: string }
 
-        if (user.role === 'superadmin') {
-          return navigateTo('/admin/dashboard')
+        if (user.role === 'superadmin') {              
+          return navigateTo('/admin/dashboard') 
+        } else if (user.role === 'unit') {
+          return navigateTo('/units/dashboard')
+        } else if (user.role === 'outlet') {
+          return navigateTo('/outlets/dashboard')
         } else {
           return navigateTo('/photos')
-        }
+        }        
       }
     }
 

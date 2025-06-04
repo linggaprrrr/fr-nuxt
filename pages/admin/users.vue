@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import type { User } from '~/types/user'
+import type { Outlet,OutletList, GetOutletsByUnitResponse } from '~/types/outlet'
+import type { Unit } from '@/types/unit'
+import { create } from 'domain'
 
+const { getUsers, updateUserById, deleteUserById, createUser } = useUsers()
+const { getUnits } = useUnits()
+const { getOutlets, getOutletsByUnit } = useOutlets()
 
-const { getUsers, updateUserById, deleteUserById } = useUsers()
 
 const page = ref(1)
 const limit = 24
@@ -12,8 +17,22 @@ const isLoading = ref(false)
 const users = ref<User[]>([])
 const search = ref('')
 
+const showCreate = ref(false)
+
 // Modal
 const showEdit = ref(false)
+const createForm = ref({  
+  name: '',
+  email: '',
+  password: '',
+  phone: '',
+  address: '',
+  picture: '',
+  role: '',
+  unit_id: '',
+  outlet_id: '',
+})
+
 const editForm = ref({
   id: '',
   name: '',
@@ -21,8 +40,57 @@ const editForm = ref({
   password: '',
   phone: '',
   address: '',
-  picture: ''
+  picture: '',
+  role: '',
+  unit_id: '',
+  outlet_id: '',
 })
+
+const outlets = ref<Outlet[]>([])
+const units = ref<Unit[]>([])
+async function fetchUnits() {  
+  try {
+    const res = await getUnits({
+      page: 1,
+      limit: 9999,
+      
+    })
+    units.value = res?.data || []    
+    
+  } catch (error) {
+    console.error('Failed to fetch units:', error)
+    units.value = []    
+  } finally {
+
+  }  
+}
+
+
+
+
+const handleCreateUser = async () => {
+  showCreate.value = false
+  createForm.value.role = createForm.value.role.toLowerCase()
+  if (createForm.value.role == 'customer' || createForm.value.role == 'superadmin') {
+    createForm.value.unit_id = ''
+    createForm.value.outlet_id = ''
+  }
+  await createUser(createForm.value)
+  
+  await fetchUsers()
+  createForm.value = {
+    name: '',
+    email: '',
+    password: '',
+    phone: '',
+    address: '',
+    picture: '',
+    role: '',
+    unit_id: '',
+    outlet_id: '',
+   }
+
+}
 
 // Fetch user data
 async function fetchUsers() {
@@ -72,12 +140,193 @@ async function confirmDelete(id: string) {
 // Handle pagination & search
 watch([page, search], fetchUsers)
 
-onMounted(fetchUsers)
+// Handle unit & outlet
 
+
+
+const outletList = ref<OutletList[]>([])
+const selectedUnit = computed(() => {
+  return units.value.find(u => u.id === createForm.value.unit_id) || null
+})
+
+watch(
+  () => createForm.value.unit_id,
+  async (newUnitId) => {
+    if (newUnitId) {
+      const outletRes = await getOutletsByUnit(newUnitId) as GetOutletsByUnitResponse
+      if (outletRes?.status_code === 200 && Array.isArray(outletRes.outlets)) {
+        outletList.value = outletRes.outlets
+        createForm.value.outlet_id = outletRes.outlets[0]?.id || ''        
+        
+      } else {
+        outletList.value = []
+        createForm.value.outlet_id
+      }
+    }
+  },
+  { immediate: true }
+)
+
+const rules = {
+  required: (value: string) => !!value || 'Required.',
+  min: (v: string) => v.length >= 6 || 'Min 6 characters',
+  emailMatch: () => `The email and password you entered don't match`,
+}
+
+
+const show1 = ref(false)  
+const password = ref('Password')
+
+
+onMounted(() => {
+  fetchUsers()
+  fetchUnits()  
+})
 
 </script>
 <template>
   <VCard title="Users Table" class="mb-4">
+     <template v-slot:append>
+        <v-btn
+          class="text-none"
+          color="primary"
+          text="Tambah User"
+          variant="tonal"
+          slim
+          @click="showCreate = true"
+        ></v-btn>
+
+      <VDialog v-model="showCreate" max-width="766">
+        <VCard>
+          <VCardTitle>Tambah User</VCardTitle>            
+          <v-container fluid>
+             <v-row>
+              <v-col cols="3">
+                <v-list-subheader>Email</v-list-subheader>
+              </v-col>
+
+              <v-col cols="9">
+                <v-text-field                                                                       
+                  v-model="createForm.email"
+                  persistent-hint
+                  placeholder="johndoe@gmail.com"
+                  type="email"
+                ></v-text-field>
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="3">
+                <v-list-subheader>Nama</v-list-subheader>
+              </v-col>
+
+              <v-col cols="9">
+                <v-text-field                                                                       
+                  v-model="createForm.name"
+                  placeholder="John Doe"
+                  persistent-hint
+                ></v-text-field>
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="3">
+                <v-list-subheader>No Telp</v-list-subheader>
+              </v-col>
+
+              <v-col cols="9">
+                <v-text-field                                                                       
+                  v-model="createForm.phone"
+                  persistent-hint
+                ></v-text-field>
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="3">
+                <v-list-subheader>Alamat</v-list-subheader>
+              </v-col>
+
+              <v-col cols="9">
+                <v-textarea 
+                  v-model="createForm.address"
+                  variant="outlined">
+                </v-textarea>                
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="3">
+                <v-list-subheader>Role</v-list-subheader>
+              </v-col>
+              <v-col cols="9">
+                <v-select
+                    v-model="createForm.role"
+                    density="comfortable"                    
+                    :items="['Customer', 'Unit', 'Outlet', 'Superadmin']"                    
+                    class="mb-4"
+                  />               
+              </v-col>
+            </v-row>
+            <v-row v-if="createForm.role === 'Unit' || createForm.role === 'Outlet'">
+              <v-col cols="3">
+                <v-list-subheader>Unit</v-list-subheader>
+              </v-col>
+              <v-col cols="9">
+                <v-select
+                  v-model="createForm.unit_id"
+                  density="comfortable"
+                  label="Pilih unit"                
+                  :items="units"
+                  item-value="id"
+                  item-title="name"
+                  :hint="selectedUnit?.location"
+                  persistent-hint
+                  class="mb-4"
+                  variant="outlined"
+                />
+              </v-col>
+            </v-row>
+            <v-row v-if="createForm.role === 'Outlet' ">
+              <v-col cols="3">
+                <v-list-subheader>Outlet</v-list-subheader>
+              </v-col>
+              <v-col cols="9">
+                <v-select
+                  v-model="createForm.outlet_id"
+                  density="comfortable"
+                  label="Pilih outlet"                
+                  :items="outletList"
+                  item-value="id"
+                  item-title="name"                  
+                  persistent-hint
+                  class="mb-4"
+                  variant="outlined"
+                />
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="3">
+                <v-list-subheader>Password</v-list-subheader>
+              </v-col>
+              <v-col cols="9">
+                <v-text-field
+                  v-model="createForm.password"
+                  :append-icon="show1 ? 'bx-show' : 'bx-hide'"
+                  :rules="[rules.required, rules.min]"
+                  :type="show1 ? 'text' : 'password'"
+                  hint="At least 6 characters"                  
+                  name="input-10-1"
+                  counter
+                  @click:append="show1 = !show1"
+                ></v-text-field>
+              </v-col>
+            </v-row>            
+          </v-container>            
+          <VCardActions>
+            <VSpacer />
+            <VBtn text="Batal" @click="showCreate = false" />
+            <VBtn color="primary" @click="handleCreateUser">Simpan</VBtn>
+          </VCardActions>
+        </VCard>
+      </VDialog>   
+    </template>
     <VCardText>
       <VTextField
         v-model="search"

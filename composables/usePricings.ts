@@ -47,6 +47,16 @@ export const usePricings = () => {
     return data
   }
 
+  const getPhotoPricesByOutlet = async (outletId: string) => {
+    const data = await authFetch(`/photo_prices/by-outlet/${outletId}`, {        
+        method: 'GET',
+        params: {
+          outlet_id: outletId,         
+        },
+    })
+    return data
+  }
+
   const createPhotoPricing = async (data: any) => {
     const response = await authFetch(`/photo_prices/`, {        
         method: 'POST',
@@ -120,7 +130,8 @@ export const usePricings = () => {
     getPhotoTypeById,
     updatePhotoType,
     updatePhotoPrice,
-    getPhotoPricesByUnit
+    getPhotoPricesByUnit,
+    getPhotoPricesByOutlet
 
   }
 }

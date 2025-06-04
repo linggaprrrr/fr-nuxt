@@ -54,9 +54,19 @@ export const useUsers = () => {
     
         return data
     }
+
+    const createUser = async (payload: Record<string, any>) => {
+        const data = await authFetch('/auth/register', {
+            method: 'POST',
+            body: payload
+        })
+
+        return data
+    } 
       
     return {
         getUsers,
+        createUser,
         getUserById,
         updateUserById,
         deleteUserById,

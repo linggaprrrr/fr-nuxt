@@ -10,7 +10,7 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
       :item="{
         title: 'Dashboard',
         icon: 'bx bx-home-smile',        
-        to: '/admin/dashboard',
+        to: '/units/dashboard',
       }"
     />
 
@@ -20,61 +20,26 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
       heading: 'Managements',
     }"
   />
-  
-  <VerticalNavLink
-    :item="{
-      title: 'Users',
-      icon: 'bx bxs-user-account',
-      to: '/admin/users',
-    }"
-  />
-   <VerticalNavLink
-    :item="{
-      title: 'Units',
-      icon: 'bx bx-store-alt',
-      to: '/admin/units',
-    }"
-  />
   <VerticalNavLink
     :item="{
       title: 'Outlets',
       icon: 'bx  bx-store',
-      to: '/admin/outlets',      
+      to: '/units/outlets',      
     }"
   />  
-   <VerticalNavLink
-    :item="{
-      title: 'Pricing',
-      icon: 'bx bxs-purchase-tag',
-      to: '/admin/photo-pricing',
-    }"
-  />
-  <VerticalNavGroup
-    :item="{
-      title: 'Photos',
-      icon: 'bx bx-images',
-    }"
-  >
-    <VerticalNavLink
+  <VerticalNavLink
       :item="{
-        title: 'Upload Photo',
-        to: '/admin/upload-photo',
+        title: 'Photos',
+        icon: 'bx bx-images',
+        to: '/units/photos',
       }"
-    />
+    />  
     
-    <VerticalNavLink
-      :item="{
-        title: 'List Photo',
-        to: '/admin/photos',
-      }"
-    />
-  </VerticalNavGroup>
-  
   <VerticalNavLink
     :item="{
       title: 'History Transaction',
       icon: 'bx bxs-receipt',      
-      to: '/admin/transactions',
+      to: '/units/transactions',
     }"
   />
 
@@ -93,14 +58,14 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
     <VerticalNavLink
       :item="{
         title: 'Transactions',
-        to: '/admin/reports/transactions',
+        to: '/units/reports/transactions',
       }"
     />
     
     <VerticalNavLink
       :item="{
         title: 'Unit Transactions',
-        to: '/admin/reports/unit-transactions',
+        to: '/units/reports/unit-transactions',
       }"
     />
   </VerticalNavGroup>

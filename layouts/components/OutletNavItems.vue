@@ -21,32 +21,11 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
     }"
   />
   
-  <VerticalNavLink
-    :item="{
-      title: 'Users',
-      icon: 'bx bxs-user-account',
-      to: '/admin/users',
-    }"
-  />
-   <VerticalNavLink
-    :item="{
-      title: 'Units',
-      icon: 'bx bx-store-alt',
-      to: '/admin/units',
-    }"
-  />
-  <VerticalNavLink
-    :item="{
-      title: 'Outlets',
-      icon: 'bx  bx-store',
-      to: '/admin/outlets',      
-    }"
-  />  
    <VerticalNavLink
     :item="{
       title: 'Pricing',
       icon: 'bx bxs-purchase-tag',
-      to: '/admin/photo-pricing',
+      to: '/outlets/photo-pricing',
     }"
   />
   <VerticalNavGroup
@@ -58,14 +37,14 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
     <VerticalNavLink
       :item="{
         title: 'Upload Photo',
-        to: '/admin/upload-photo',
+        to: '/outlets/upload-photo',
       }"
     />
     
     <VerticalNavLink
       :item="{
         title: 'List Photo',
-        to: '/admin/photos',
+        to: '/outlets/photos',
       }"
     />
   </VerticalNavGroup>
@@ -74,7 +53,7 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
     :item="{
       title: 'History Transaction',
       icon: 'bx bxs-receipt',      
-      to: '/admin/transactions',
+      to: '/outlets/transactions',
     }"
   />
 
@@ -93,14 +72,14 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
     <VerticalNavLink
       :item="{
         title: 'Transactions',
-        to: '/admin/reports/transactions',
+        to: '/outlets/reports/transactions',
       }"
     />
     
     <VerticalNavLink
       :item="{
         title: 'Unit Transactions',
-        to: '/admin/reports/unit-transactions',
+        to: '/outlets/reports/unit-transactions',
       }"
     />
   </VerticalNavGroup>

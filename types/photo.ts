@@ -28,6 +28,7 @@ export interface GetPhotoTypesResponse {
 
 export interface PhotoPrice {
   id: string
+  outlet_name: string
   unit_name: string
   photo_type_name: string
   price: number
