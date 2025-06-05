@@ -144,6 +144,34 @@ watch(
   { immediate: true }
 )
 
+watch(
+  () => photoParams.outlet_id,
+  async (outletId) => {
+    if (outletId) {
+      try {
+        const res = await getPhotoPricesByOutlet(outletId)
+        if (res?.status_code === 200) {
+          photoPricesByOutlet.value = res.photo_prices || []
+          // Set default photo_type_id jika kosong
+          if (photoPricesByOutlet.value.length > 0) {
+            photoParams.photo_type_id = photoPricesByOutlet.value[0].photo_type_id
+          } else {
+            photoParams.photo_type_id = null
+          }
+        } else {
+          photoPricesByOutlet.value = []
+          photoParams.photo_type_id = null
+        }
+      } catch (error) {
+        console.error('Failed to fetch prices by outlet:', error)
+        photoPricesByOutlet.value = []
+        photoParams.photo_type_id = null
+      }
+    }
+  }
+)
+
+
 onMounted(() => {
   fetchUnits()  
   
@@ -162,7 +190,7 @@ onMounted(() => {
       color="#2A3B4D"
       density="compact"      
       prominent
-      v-model="showAlert"
+      v-model="showAlert" 
     >
       <v-icon class="me-2">mdi-information</v-icon>
       {{ uploadStatus.message }}
