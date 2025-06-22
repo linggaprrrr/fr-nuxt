@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useTransactions } from '@/composables/useTransactions'
+import dayjs from 'dayjs'
 
 const {
   transactions,
@@ -85,7 +86,7 @@ const handleDelete = async (id: string) => {
           </td>          
           <td>{{ trx.paid_at ? new Date(trx.paid_at).toLocaleString('id-ID') : '-' }}</td>
           
-          <td>{{ new Date(trx.created_at).toLocaleString('id-ID') }}</td>
+          {{ dayjs(trx.created_at).format('DD/MM/YYYY HH:mm') }}
           <td>
             <VBtn icon variant="text" size="small" @click="handleDelete(trx.id)">
               <VIcon color="error">bx bx-trash-alt</VIcon>
