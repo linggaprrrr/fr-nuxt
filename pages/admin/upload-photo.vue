@@ -118,12 +118,6 @@ async function fetchPhotoPricesByOutlet(id: string) {
 }
 
 
-// watch(() => photoParams.unit_id, async (newUnitId) => {
-//   if (newUnitId) {
-//     await fetchOutletByUnit(newUnitId)
-//     // await fetchPhotoPricesByUnit(newUnitId)
-//   }
-// })
 const outletList = ref<OutletList[]>([])
 
 watch(
@@ -170,7 +164,11 @@ watch(
     }
   }
 )
-
+watch(files, async (newFiles) => {
+  if (newFiles && newFiles.length > 0) {
+    await handleUpload();
+  }
+});
 
 onMounted(() => {
   fetchUnits()  

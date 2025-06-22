@@ -14,6 +14,7 @@ export function useTransactions() {
         method: 'GET',        
         params,
       })      
+      console.log('Fetched transactions:', transactions.value)
     } catch (err: any) {
       error.value = err.data?.message || err.message || 'Failed to fetch transactions.'
     } finally {

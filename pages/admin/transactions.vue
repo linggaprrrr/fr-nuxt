@@ -60,9 +60,8 @@ const handleDelete = async (id: string) => {
           <th>Kode Transaksi</th>                    
           <th>Email</th>                    
           <th>Jumlah Foto</th>    
-          <th>Final Price</th>
-          
-          <th>Dibayar</th>
+          <th>Final Price</th>          
+          <th>Status</th>
           <th>Waktu Bayar</th>          
           <th>Dibuat</th>
           <th>Aksi</th>
@@ -79,9 +78,10 @@ const handleDelete = async (id: string) => {
           <td class="text-center">{{ trx.photos.length }}</td>   
           <td>Rp {{ trx.final_price.toLocaleString('id-ID') }}</td>          
           <td>
-            <VChip :color="trx.paid ? 'success' : 'warning'" size="small">
-              {{ trx.paid ? 'Lunas' : 'Pending' }}
+            <VChip :color="trx.status === 'paid' ? 'success' : trx.status === 'cancelled' ? 'error' : trx.status === 'expired' ? 'grey' : 'warning'" size="small">
+              {{ trx.status === 'paid' ? 'Lunas' : trx.status === 'cancelled' ? 'Dibatalkan' : trx.status === 'expired' ? 'Kadaluarsa' : 'Pending' }}
             </VChip>
+
           </td>          
           <td>{{ trx.paid_at ? new Date(trx.paid_at).toLocaleString('id-ID') : '-' }}</td>
           
