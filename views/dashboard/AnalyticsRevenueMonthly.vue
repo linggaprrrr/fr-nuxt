@@ -48,7 +48,13 @@ const chartOptions = {
 </script>
 
 <template>
-  <div style="height: 400px">
-    <Bar :data="chartData" :options="chartOptions" />
-  </div>
+  <VCard class="h-100 d-flex flex-column">
+    <VCardText class="pb-0">
+      <div class="text-base font-medium">Pendapatan Per Bulan</div>
+    </VCardText>
+    <div style="height: 400px; margin: 20px;">
+      <Bar :data="chartData" :options="chartOptions" />
+    </div>
+  </VCard>
+  
 </template>

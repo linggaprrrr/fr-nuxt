@@ -5,6 +5,7 @@
     </VCardText>
 
     <VueApexCharts
+      style="margin: 20px;"
       type="pie"
       :height="400"
       :options="chartOptions"

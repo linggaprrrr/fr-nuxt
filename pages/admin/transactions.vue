@@ -82,7 +82,6 @@ const handleDelete = async (id: string) => {
             <VChip :color="trx.status === 'paid' ? 'success' : trx.status === 'cancelled' ? 'error' : trx.status === 'expired' ? 'grey' : 'warning'" size="small">
               {{ trx.status === 'paid' ? 'Lunas' : trx.status === 'cancelled' ? 'Dibatalkan' : trx.status === 'expired' ? 'Kadaluarsa' : 'Pending' }}
             </VChip>
-
           </td>          
           <td>{{ trx.paid_at ? new Date(trx.paid_at).toLocaleString('id-ID') : '-' }}</td>
           

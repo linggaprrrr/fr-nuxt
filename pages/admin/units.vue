@@ -157,6 +157,7 @@ onMounted(() => {
           <th>#</th>
           <th>Name</th>
           <th>Alamat</th>
+          <th>API Key</th>
           <th>Dibuat</th>
         </tr>
       </thead>
@@ -168,6 +169,7 @@ onMounted(() => {
           <td>{{ index + 1 + (page - 1) * limit }}</td>
           <td>{{ unit.name }}</td>
           <td>{{ unit.location }}</td>
+          <td><code>{{ unit.api_key }}</code></td>
           <td>{{ new Date(unit.created_at).toISOString().slice(0, 10) }}</td>
           <td>
             <VBtn icon variant="text" size="small" @click="openEditModal(unit)">
