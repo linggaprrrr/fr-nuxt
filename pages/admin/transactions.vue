@@ -47,7 +47,7 @@ const handleDelete = async (id: string) => {
     <VCardText>
       <VTextField
         v-model="search"
-        label="Cari email..."
+        label="Search..."
         prepend-inner-icon="bx bx-search"
         clearable
         class="mb-4"

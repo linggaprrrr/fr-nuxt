@@ -3,6 +3,7 @@ export interface Unit {
   name: string
   location: string
   api_key: string
+  kode_folder: string
   created_at: string
 }
 

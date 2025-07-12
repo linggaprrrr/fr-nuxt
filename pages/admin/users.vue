@@ -330,7 +330,7 @@ onMounted(() => {
     <VCardText>
       <VTextField
         v-model="search"
-        label="Cari user..."
+        label="Search..."
         @input="fetchUsers"  
         prepend-inner-icon="bx bx-search"
         clearable

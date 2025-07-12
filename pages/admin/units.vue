@@ -18,12 +18,14 @@ const form = ref({
   id: '',
   name: '',
   location: '',
+  kode_folder: ''
 })
 
 
 const createForm = ref({    
   name: '',
   location: '',
+  kode_folder: ''
 })
 
 
@@ -131,6 +133,18 @@ onMounted(() => {
                 ></v-text-field>
               </v-col>
             </v-row>
+            <v-row>
+              <v-col cols="3">
+                <v-list-subheader>Kode Folder</v-list-subheader>
+              </v-col>
+
+              <v-col cols="9">
+                <v-text-field                                                                       
+                  v-model="createForm.kode_folder"
+                  persistent-hint
+                ></v-text-field>
+              </v-col>
+            </v-row>
           </v-container>            
           <VCardActions>
             <VSpacer />
@@ -143,7 +157,7 @@ onMounted(() => {
     <VCardText>
       <VTextField
         v-model="search"
-        label="Cari user..."
+        label="Search..."
         @input="fetchUnits"  
         prepend-inner-icon="bx bx-search"
         clearable
@@ -158,6 +172,7 @@ onMounted(() => {
           <th>Name</th>
           <th>Alamat</th>
           <th>API Key</th>
+          <th>Kode Folder</th>
           <th>Dibuat</th>
         </tr>
       </thead>
@@ -170,6 +185,7 @@ onMounted(() => {
           <td>{{ unit.name }}</td>
           <td>{{ unit.location }}</td>
           <td><code>{{ unit.api_key }}</code></td>
+          <td><span class="font-weight-bold text-error ">{{ unit.kode_folder }}</span></td>
           <td>{{ new Date(unit.created_at).toISOString().slice(0, 10) }}</td>
           <td>
             <VBtn icon variant="text" size="small" @click="openEditModal(unit)">
@@ -220,6 +236,18 @@ onMounted(() => {
           <v-col cols="9">
             <v-text-field                                                                       
               v-model="form.location"
+              persistent-hint
+            ></v-text-field>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="3">
+            <v-list-subheader>Kode Folder</v-list-subheader>
+          </v-col>
+
+          <v-col cols="9">
+            <v-text-field                                                                       
+              v-model="form.kode_folder"
               persistent-hint
             ></v-text-field>
           </v-col>

@@ -20,7 +20,7 @@ export const usePhotos = () => {
       method: 'GET',        
       params: { page, limit }
     }) as GetPhotosResponse
-    
+    console.log('getPhotos response:', response)
     return response
   }
 

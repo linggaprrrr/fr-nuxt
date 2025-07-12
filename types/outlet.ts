@@ -8,7 +8,8 @@ export interface Outlet {
   name: string
   phone: string
   address: string
-  unit: Unit
+  kode_folder: string
+  unit: Unit  
   created_at: string
 }
 
@@ -17,6 +18,7 @@ export interface OutletList {
     name: string
     address: string
     phone: string
+    kode_folder: string
     unit: string
     created_at: string
 }

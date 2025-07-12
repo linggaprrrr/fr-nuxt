@@ -22,7 +22,8 @@ const form = ref({
   name: '',
   address: '',
   phone: '',
-  unit_id: '',
+  kode_folder: '',
+  unit_id: '',  
 })
 
 
@@ -30,6 +31,7 @@ const createForm = ref({
   name: '',
   address: '',
   phone: '',
+  kode_folder: '',
   unit_id: '',
 })
 
@@ -168,6 +170,18 @@ onMounted(() => {
                 ></v-text-field>
               </v-col>
             </v-row>
+            <v-row>
+              <v-col cols="3">
+                <v-list-subheader>Kode Folder</v-list-subheader>
+              </v-col>
+
+              <v-col cols="9">
+                <v-text-field                                                                       
+                  v-model="createForm.kode_folder"
+                  persistent-hint
+                ></v-text-field>
+              </v-col>
+            </v-row>
              <v-row>
               <v-col cols="3">
                 <v-list-subheader>Unit</v-list-subheader>
@@ -198,7 +212,7 @@ onMounted(() => {
     <VCardText>
       <VTextField
         v-model="search"
-        label="Cari user..."
+        label="Search..."
         @input="fetchOutlets"  
         prepend-inner-icon="bx bx-search"
         clearable
@@ -213,6 +227,7 @@ onMounted(() => {
           <th>Name</th>          
           <th>Telp</th>
           <th>Unit</th>
+          <th>Kode Folder</th>
           <th>Dibuat</th>
           <th></th>
         </tr>
@@ -226,6 +241,7 @@ onMounted(() => {
           <td>{{ outlet.name }}</td>          
           <td>{{ outlet.phone }}</td>
           <td>{{ outlet.unit.name }}</td>
+          <td><span class="font-weight-bold text-error ">{{ outlet.kode_folder }}</span></td>
           <td>{{ new Date(outlet.created_at).toISOString().slice(0, 10) }}</td>
           <td>
             <VBtn icon variant="text" size="small" @click="openEditModal(outlet)">
@@ -276,6 +292,18 @@ onMounted(() => {
           <v-col cols="9">
             <v-text-field                                                                       
               v-model="form.address"
+              persistent-hint
+            ></v-text-field>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="3">
+            <v-list-subheader>Kode Folder</v-list-subheader>
+          </v-col>
+
+          <v-col cols="9">
+            <v-text-field                                                                       
+              v-model="form.kode_folder"
               persistent-hint
             ></v-text-field>
           </v-col>

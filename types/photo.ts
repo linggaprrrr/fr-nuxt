@@ -15,6 +15,7 @@ export interface PhotoType {
   id: string
   name: string
   description: string 
+  kode_folder: string
 }
 export interface GetPhotoTypesResponse {
   data: PhotoType[]

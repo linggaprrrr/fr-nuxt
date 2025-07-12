@@ -24,8 +24,8 @@ const totalPhotoTypes = ref(0)
 const searchPhotoTypes = ref('')
 const photoTypes = ref<PhotoType[]>([])
 
-const formPhotoType = ref({ name: '', description: '' })
-const formEditPhotoType = ref({ id: '', name: '', description: '' })
+const formPhotoType = ref({ name: '', description: '', kode_folder: '' })
+const formEditPhotoType = ref({ id: '', name: '', description: '', kode_folder: '' })
 const showCreatePhotoType = ref(false)
 const showEditPhotoType = ref(false)
 
@@ -272,6 +272,18 @@ onMounted(() => {
                   ></v-text-field>
                 </v-col>
               </v-row>
+              <v-row>
+                <v-col cols="3">
+                  <v-list-subheader>Kode Folder</v-list-subheader>
+                </v-col>
+
+                <v-col cols="9">
+                  <v-text-field                                                                       
+                    v-model="formPhotoType.kode_folder"
+                    persistent-hint
+                  ></v-text-field>
+                </v-col>
+              </v-row>
             </v-container>            
             <VCardActions>
               <VSpacer />
@@ -284,7 +296,7 @@ onMounted(() => {
     <VCardText>
       <VTextField
         v-model="searchPhotoTypes"
-        label="Cari tipe foto..."
+        label="Search..."
         @input="fetchPhotoPrices"  
         prepend-inner-icon="bx bx-search"
         clearable
@@ -298,6 +310,7 @@ onMounted(() => {
           <th>#</th>
           <th>Nama</th>
           <th>Deskripsi</th>
+          <th>Kode Folder</th>
           <th></th>        
         </tr>
       </thead>
@@ -308,7 +321,8 @@ onMounted(() => {
         <tr v-for="(photoType, index) in photoTypes" :key="photoType.id">
           <td>{{ index + 1 + (pagePhotoTypes - 1) * limit }}</td>
           <td>{{ photoType.name }}</td>
-          <td>{{ photoType.description }}</td>          
+          <td>{{ photoType.description }}</td> 
+          <td><span class="font-weight-bold text-error ">{{ photoType.kode_folder }}</span></td>         
           <td>
             <VBtn icon variant="text" size="small" @click="openEditPhotoTypeModal(photoType.id)">
               <VIcon color="warning">bx bx-edit-alt</VIcon>
@@ -345,6 +359,18 @@ onMounted(() => {
             <v-col cols="9">
               <v-text-field                                                                       
                 v-model="formEditPhotoType.description"
+                persistent-hint
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="3">
+              <v-list-subheader>Kode Folder</v-list-subheader>
+            </v-col>
+
+            <v-col cols="9">
+              <v-text-field                                                                       
+                v-model="formEditPhotoType.kode_folder"
                 persistent-hint
               ></v-text-field>
             </v-col>
@@ -449,6 +475,7 @@ onMounted(() => {
                   ></v-text-field>
                 </v-col>
               </v-row>
+              
             </v-container>            
             <VCardActions>
               <VSpacer />
@@ -461,7 +488,7 @@ onMounted(() => {
     <VCardText>
       <VTextField
         v-model="searchPhotoPrices"
-        label="Cari..."
+        label="Search..."
         @input="fetchPhotoPrices"  
         prepend-inner-icon="bx bx-search"
         clearable
@@ -535,6 +562,7 @@ onMounted(() => {
               />
             </v-col>
           </v-row>
+          
         </v-container>
 
         <VCardActions>
