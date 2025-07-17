@@ -1,13 +1,16 @@
 
 interface TransactionReport {
+  tanggal: string // YYYY-MM-DD
   unit: string
-  jumlah_transaksi: number
+  outlet: string
+  photo_type: string
+  foto_terjual: number
   total_pendapatan: number
 }
 
 interface AllUnitReportResponse {
   start_date: string
-  end_date: string
+  end_date: string  
   data: TransactionReport[]
 }
 
@@ -15,7 +18,7 @@ export interface TransactionData {
   id: string
   trx_code: string
   user: string
-  jumlah_foto: number
+  foto_terjual: number
   final_price: number
   created_at: string
 }
@@ -29,6 +32,23 @@ export interface PerUnitReport {
   jumlah_foto_terjual: number
   total_pendapatan: number
   data: TransactionData[]
+}
+
+export interface OutletData {
+  photo_type: string
+  jumlah_transaksi: number
+  total_pendapatan: number
+}
+
+export interface PerOutletReport {
+  outlet_id: string
+  outlet_name: string
+  start_date: string 
+  end_date: string   
+  jumlah_transaksi: number
+  jumlah_foto_terjual: number
+  total_pendapatan: number
+  data: OutletData[]
 }
 
 
@@ -142,6 +162,22 @@ export function useReports() {
     return data
   }
 
+  const getPerOutletReports = async (
+    outlet_id: string,
+    startDate: string | null,
+    endDate: string | null
+  ): Promise<PerOutletReport | null> => {
+    const data = await authFetch<PerOutletReport>(`/statistics/reports/transactions-by-outlet-id`, {      
+      params: {
+        outlet_id: outlet_id,
+        start_date: startDate,
+        end_date: endDate,
+      },
+    })
+    console.log(data)
+    return data
+  }
+
   const getDasboardStatistcs = async (): Promise<ReportResponse | null>  => {
     const data = await authFetch<ReportResponse>(`/statistics/`, {      
       method: 'GET'        
@@ -164,11 +200,24 @@ export function useReports() {
     return data
   }
 
+  const getFotoTerjualReport = async (startDate: string, endDate: string) => {
+    const config = useRuntimeConfig()
+    // Call ke endpoint /reports/foto-terjual
+    const response = await $fetch(`${config.public.apiBase}/statistics/reports/transactions`, {
+      method: 'GET',
+      query: { start_date: startDate, end_date: endDate }
+    })
+    return response
+  }
+  
+  
 
   return {    
     getDasboardStatistcs,
     getTransactionsReport,
     getAllUnitReports,
     getPerUnitReports,
+    getPerOutletReports,
+    getFotoTerjualReport
   }
 }

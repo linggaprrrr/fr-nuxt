@@ -81,7 +81,8 @@ async function handleCreateUnit() {
     name: createForm.value.name,
     address: createForm.value.address,
     phone: createForm.value.phone,
-    unit_id: createForm.value.unit_id
+    unit_id: createForm.value.unit_id,
+    kode_folder: createForm.value.kode_folder
   })
   showCreate.value = false
   await fetchOutlets()

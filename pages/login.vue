@@ -176,16 +176,7 @@ const handleLoginError = () => {
                 <span class="mx-4 text-high-emphasis">or</span>
                 <VDivider />
               </VCol>
-              <VCol
-                cols="12"
-                class="text-body-1 text-center"
-              >
-                <GoogleSignInButton
-                  @success="handleLoginSuccess"                
-                  @error="handleLoginError"
-                ></GoogleSignInButton>
-              </VCol>
-               
+
               <VCol
                 cols="12"
                 class="d-flex align-center"

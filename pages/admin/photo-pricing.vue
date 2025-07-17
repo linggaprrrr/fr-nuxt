@@ -168,6 +168,8 @@ async function confirmDeletePhotoPrice(id: string) {
 async function handleCreatePhotoType() {
   await createPhotoType(formPhotoType.value)
   showCreatePhotoType.value = false
+  // clear
+  formPhotoType.value = { name: '', description: '', kode_folder: '' }
   await fetchPhotoTypes()
 }
 
