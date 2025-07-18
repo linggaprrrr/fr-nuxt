@@ -26,7 +26,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: 'https://api.frameitalbum.com',    
+      apiBase: 'https://api.ownize.app',    
       
     }
   },

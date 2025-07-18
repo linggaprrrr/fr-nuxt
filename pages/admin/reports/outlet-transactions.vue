@@ -351,7 +351,7 @@ definePageMeta({
   <VCard class="mb-4" title="Filter Laporan">
     <VCardText>
       <VRow dense>
-        <VCol cols="12" md="4">
+        <VCol cols="12" md="3">
           <VSelect
             v-model="selectedOutlet"
             :items="outletItems"
