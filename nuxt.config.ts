@@ -26,7 +26,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: 'https://api.ownize.app',    
+      apiBase: 'http://localhost:8001',    
       
     }
   },

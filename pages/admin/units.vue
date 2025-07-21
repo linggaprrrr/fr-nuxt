@@ -55,7 +55,8 @@ async function fetchUnits() {
 async function handleCreateUnit() {
   await createUnit({
     name: createForm.value.name,
-    location: createForm.value.location
+    location: createForm.value.location,
+    kode_folder: createForm.value.kode_folder
   })
   showCreate.value = false
   await fetchUnits()
@@ -70,7 +71,8 @@ function openEditModal(unit: any) {
 async function saveEdit() {
   await updateUnitById(form.value.id, {
     name: form.value.name,
-    location: form.value.location
+    location: form.value.location,
+    kode_folder: form.value.kode_folder
   })
   showEdit.value = false
   await fetchUnits()
