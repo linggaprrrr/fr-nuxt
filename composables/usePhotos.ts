@@ -15,17 +15,23 @@ export const usePhotos = () => {
   const getPhotos = async ({
     page = 1,
     limit = 25,
-  }: { page?: number; limit?: number }): Promise<GetPhotosResponse> => {
+    outlet_id = null,
+  }: { page?: number; limit?: number; outlet_id?: string | null }): Promise<GetPhotosResponse> => {
+    const params: any = { page, limit }
+    if (outlet_id) {
+      params.outlet_id = outlet_id
+    }
+    
     const response = await authFetch('/photos/', {        
       method: 'GET',        
-      params: { page, limit }
+      params
     }) as GetPhotosResponse
     console.log('getPhotos response:', response)
     return response
   }
 
   const deletePhotoById = async (id: string) => {
-    const response =  await authFetch(`photos/${id}`, {      
+    const response = await authFetch(`photos/${id}`, {      
       method: 'DELETE',      
     })
 
