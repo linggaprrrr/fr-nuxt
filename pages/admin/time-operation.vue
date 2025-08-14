@@ -67,10 +67,7 @@ const availableUnits = computed(() => {
 async function fetchTimeOperations() {
   isLoading.value = true
   try {
-    const data = await getTimeOperations({
-      is_active: true,
-      skip: (page.value - 1) * limit,
-      limit
+    const data = await getTimeOperations({      
     })
     timeOperations.value = data || []
     total.value = data?.length || 0

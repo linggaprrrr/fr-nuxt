@@ -67,20 +67,12 @@ export const useTimeOperation = () => {
   }
 
   // Get all time operations
-  const getTimeOperations = async (params?: {
-    unit_id?: string
-    is_active?: boolean
-    skip?: number
-    limit?: number
+  const getTimeOperations = async ({
+     
   }) => {
     try {
-      const query = new URLSearchParams()
-      if (params?.unit_id) query.append('unit_id', params.unit_id)
-      if (params?.is_active !== undefined) query.append('is_active', params.is_active.toString())
-      if (params?.skip) query.append('skip', params.skip.toString())
-      if (params?.limit) query.append('limit', params.limit.toString())
-
-      const data = await apiCall<TimeOperation[]>(`${baseURL}/time_operation?${query}`)
+  
+      const data = await apiCall<TimeOperation[]>(`${baseURL}/time_operation/`)
       return data
     } catch (error) {
       console.error('Failed to fetch time operations:', error)
@@ -139,7 +131,7 @@ export const useTimeOperation = () => {
   }
 
 
-  
+
   // Set unit hours (upsert)
   const setUnitHours = async (unitId: string, timeOperation: TimeOperationCreate) => {
     try {
