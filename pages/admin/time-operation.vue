@@ -132,7 +132,7 @@ async function handleUpdateTimeOperation() {
     
   }
 }
-
+ 
 // Delete time operation
 async function confirmDelete(id: string, unitName: string) {
   if (confirm(`Yakin ingin menonaktifkan jam operasional untuk ${unitName}?`)) {
