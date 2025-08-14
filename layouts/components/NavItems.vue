@@ -115,6 +115,8 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
         to: '/admin/reports/outlet-transactions',
       }"
     />
+
+    
   </VerticalNavGroup>
 
 </template>
