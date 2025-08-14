@@ -69,7 +69,13 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
       }"
     />
   </VerticalNavGroup>
-  
+  <VerticalNavLink
+    :item="{
+      title: 'Time Operation',
+      icon: 'bx bxs-time',
+      to: '/admin/time-operation',
+    }"
+  />
   <VerticalNavLink
     :item="{
       title: 'History Transaction',
