@@ -122,8 +122,7 @@ const uploadAndSend = async () => {
     alert('❌ Error: ' + err.message)
   }
 
-  // reset reference setelah pencarian
-  await resetReference()
+  
 }
 
 const resetReference = async () => {
@@ -142,9 +141,9 @@ const resetReference = async () => {
       alert('❌ Reset gagal: ' + error.value.message)
     } else {
       alert('🧹 Reference berhasil direset!')
-      // searchResults.value = []
-      // selectedFile.value = null
-      // previewUrl.value = null
+      searchResults.value = []
+      selectedFile.value = null
+      previewUrl.value = null
     }
   } catch (err) {
     alert('❌ Error: ' + err.message)
