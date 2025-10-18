@@ -67,7 +67,7 @@ const previewUrl = ref(null)
 const searchResults = ref([])
 const processingTime = ref(null)
 
-const userId = '2fecc2b3-0b2b-4d69-9ae7-5a1debb5caa4' // Ganti sesuai konteks pengguna
+const userId = 'e1abd475-fca3-46a8-bd85-4e4c4663aa8f' // Ganti sesuai konteks pengguna
 
 const handleFileUpload = (e) => {
   const file = e.target.files[0]
