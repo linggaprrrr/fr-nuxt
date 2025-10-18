@@ -89,7 +89,7 @@ const uploadAndSend = async () => {
 
   try {
     // Kirim foto ke endpoint register-reference
-    const { error } = await useFetch('http://localhost:8001/faces/register-reference?is_reference=true', {
+    const { error } = await useFetch('https://api.ownize.app/faces/register-reference?is_reference=true', {
       method: 'POST',
       body: formData,
       headers: {
@@ -104,8 +104,9 @@ const uploadAndSend = async () => {
 
     alert('✅ Foto berhasil dikirim! Mencari wajah...')
 
+
     // Setelah register, panggil search API
-    const { data: searchData, error: searchError } = await useFetch(`http://localhost:8001/faces/search?user_id=${userId}`, {
+    const { data: searchData, error: searchError } = await useFetch(`https://api.ownize.app/faces/search?user_id=${userId}`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -120,12 +121,15 @@ const uploadAndSend = async () => {
   } catch (err) {
     alert('❌ Error: ' + err.message)
   }
+
+  // reset reference setelah pencarian
+  await resetReference()
 }
 
 const resetReference = async () => {
   const token = import.meta.client ? localStorage.getItem('access_token') : null
   try {
-    const { error } = await useFetch('http://localhost:8001/faces/reset-reference', {
+    const { error } = await useFetch('https://api.ownize.app/faces/reset-reference', {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
