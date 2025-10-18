@@ -142,9 +142,9 @@ const resetReference = async () => {
       alert('❌ Reset gagal: ' + error.value.message)
     } else {
       alert('🧹 Reference berhasil direset!')
-      searchResults.value = []
-      selectedFile.value = null
-      previewUrl.value = null
+      // searchResults.value = []
+      // selectedFile.value = null
+      // previewUrl.value = null
     }
   } catch (err) {
     alert('❌ Error: ' + err.message)
