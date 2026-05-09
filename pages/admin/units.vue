@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import type { Unit } from '~/types/unit'
+import { getApiErrorMessage } from '@/utils/apiHelpers'
 
 const { getUnits, createUnit, updateUnitById, getUnitById, deleteUnitById } = useUnits()
 
@@ -8,6 +9,7 @@ const page = ref(1)
 const limit = 24
 const total = ref(0)
 const isLoading = ref(false)
+const isSubmitting = ref(false)
 const units = ref<Unit[]>([])
 const search = ref('')
 
@@ -53,13 +55,20 @@ async function fetchUnits() {
 
 // Create unit
 async function handleCreateUnit() {
-  await createUnit({
-    name: createForm.value.name,
-    location: createForm.value.location,
-    kode_folder: createForm.value.kode_folder
-  })
-  showCreate.value = false
-  await fetchUnits()
+  isSubmitting.value = true
+  try {
+    await createUnit({
+      name: createForm.value.name,
+      location: createForm.value.location,
+      kode_folder: createForm.value.kode_folder
+    })
+    showCreate.value = false
+    await fetchUnits()
+  } catch (error: any) {
+    alert(getApiErrorMessage(error))
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 // Edit Unit
@@ -69,20 +78,31 @@ function openEditModal(unit: any) {
 }
 
 async function saveEdit() {
-  await updateUnitById(form.value.id, {
-    name: form.value.name,
-    location: form.value.location,
-    kode_folder: form.value.kode_folder
-  })
-  showEdit.value = false
-  await fetchUnits()
+  isSubmitting.value = true
+  try {
+    await updateUnitById(form.value.id, {
+      name: form.value.name,
+      location: form.value.location,
+      kode_folder: form.value.kode_folder
+    })
+    showEdit.value = false
+    await fetchUnits()
+  } catch (error: any) {
+    alert(getApiErrorMessage(error))
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 // Delete unit
 async function confirmDelete(id: string) {
   if (confirm('Yakin ingin menghapus unit ini?')) {
-    await deleteUnitById(id)
-    await fetchUnits()
+    try {
+      await deleteUnitById(id)
+      await fetchUnits()
+    } catch (error: any) {
+      alert(getApiErrorMessage(error))
+    }
   }
 }
 
@@ -150,8 +170,8 @@ onMounted(() => {
           </v-container>            
           <VCardActions>
             <VSpacer />
-            <VBtn text="Batal" @click="showCreate = false" />
-            <VBtn color="primary" @click="handleCreateUnit">Simpan</VBtn>
+            <VBtn text="Batal" @click="showCreate = false" :disabled="isSubmitting" />
+            <VBtn color="primary" @click="handleCreateUnit" :loading="isSubmitting" :disabled="isSubmitting">Simpan</VBtn>
           </VCardActions>
         </VCard>
       </VDialog>   
@@ -257,8 +277,8 @@ onMounted(() => {
       </v-container>            
       <VCardActions>
         <VSpacer />
-        <VBtn text="Batal" @click="showEdit = false" />
-        <VBtn color="primary" @click="saveEdit">Update</VBtn>
+        <VBtn text="Batal" @click="showEdit = false" :disabled="isSubmitting" />
+        <VBtn color="primary" @click="saveEdit" :loading="isSubmitting" :disabled="isSubmitting">Update</VBtn>
       </VCardActions>
     </VCard>
   </VDialog>   

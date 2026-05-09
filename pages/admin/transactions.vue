@@ -8,6 +8,7 @@ const {
   loading,
   error,
   getTransactions,
+  updateTransactionStatus,
   deleteTransaction
 } = useTransactions()
 
@@ -17,13 +18,10 @@ const limit = 24
 const total = ref(0)
 const search = ref('')
 
-// Ambil data saat komponen dimuat
 onMounted(() => {
   fetchTransactions()
-  console.log(transactions.value)
 })
 
-// Fungsi ambil data
 const fetchTransactions = async () => {
   await getTransactions({ page: page.value, limit, search: search.value })
   if (transactions.value) {
@@ -31,15 +29,35 @@ const fetchTransactions = async () => {
   }
 }
 
-// Watch perubahan pada page dan search
 watch([page, search], fetchTransactions)
-
 
 const handleDelete = async (id: string) => {
   if (confirm('Hapus transaksi ini?')) {
     await deleteTransaction(id)
-    fetchTransactions() // refresh data setelah hapus
+    fetchTransactions()
   }
+}
+
+// Edit status modal
+const editDialog = ref(false)
+const editingTrxId = ref<string>('')
+const editingStatus = ref<string>('')
+const statusOptions = [
+  { title: 'Pending', value: 'pending' },
+  { title: 'Lunas', value: 'paid' },
+  { title: 'Dibatalkan', value: 'cancelled' },
+  { title: 'Kadaluarsa', value: 'expired' },
+]
+
+const openEditDialog = (trx: any) => {
+  editingTrxId.value = trx.id
+  editingStatus.value = trx.status
+  editDialog.value = true
+}
+
+const handleUpdateStatus = async () => {
+  await updateTransactionStatus(editingTrxId.value, editingStatus.value)
+  if (!error.value) editDialog.value = false
 }
 </script>
 <template>
@@ -87,6 +105,9 @@ const handleDelete = async (id: string) => {
           
           {{ dayjs(trx.created_at).format('DD/MM/YYYY HH:mm') }}
           <td>
+            <VBtn icon variant="text" size="small" @click="openEditDialog(trx)">
+              <VIcon color="primary">bx bx-edit-alt</VIcon>
+            </VBtn>
             <VBtn icon variant="text" size="small" @click="handleDelete(trx.id)">
               <VIcon color="error">bx bx-trash-alt</VIcon>
             </VBtn>
@@ -106,4 +127,25 @@ const handleDelete = async (id: string) => {
       />
     </VCardActions>
   </VCard>
+
+  <!-- Edit Status Dialog -->
+  <VDialog v-model="editDialog" max-width="400">
+    <VCard title="Edit Status Transaksi">
+      <VCardText>
+        <VAlert v-if="error" type="error" class="mb-4" density="compact">{{ error }}</VAlert>
+        <VSelect
+          v-model="editingStatus"
+          :items="statusOptions"
+          item-title="title"
+          item-value="value"
+          label="Status"
+          variant="outlined"
+        />
+      </VCardText>
+      <VCardActions class="justify-end">
+        <VBtn variant="text" @click="editDialog = false">Batal</VBtn>
+        <VBtn color="primary" :loading="loading" @click="handleUpdateStatus">Simpan</VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
 </template>

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import type { Outlet } from '~/types/outlet'
 import type { Unit } from '@/types/unit'
+import { getApiErrorMessage } from '@/utils/apiHelpers'
 
 const { getOutlets, createOutlet, updateOutletById, getOutletById, deleteOutletById } = useOutlets()
 const { getUnits } = useUnits()
@@ -10,6 +11,7 @@ const page = ref(1)
 const limit = 24
 const total = ref(0)
 const isLoading = ref(false)
+const isSubmitting = ref(false)
 const outlets = ref<Outlet[]>([])
 const units = ref<Unit[]>([])
 const search = ref('')
@@ -77,15 +79,22 @@ async function fetchOutlets() {
 
 // Create outlet
 async function handleCreateUnit() {
-  await createOutlet({
-    name: createForm.value.name,
-    address: createForm.value.address,
-    phone: createForm.value.phone,
-    unit_id: createForm.value.unit_id,
-    kode_folder: createForm.value.kode_folder
-  })
-  showCreate.value = false
-  await fetchOutlets()
+  isSubmitting.value = true
+  try {
+    await createOutlet({
+      name: createForm.value.name,
+      address: createForm.value.address,
+      phone: createForm.value.phone,
+      unit_id: createForm.value.unit_id,
+      kode_folder: createForm.value.kode_folder
+    })
+    showCreate.value = false
+    await fetchOutlets()
+  } catch (error: any) {
+    alert(getApiErrorMessage(error))
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 // Edit Unit
@@ -95,19 +104,30 @@ function openEditModal(outlet: any) {
 }
 
 async function saveEdit() {
-  await updateOutletById(form.value.id, {
-    name: form.value.name,
-    location: form.value.address
-  })
-  showEdit.value = false
-  await fetchOutlets()
+  isSubmitting.value = true
+  try {
+    await updateOutletById(form.value.id, {
+      name: form.value.name,
+      location: form.value.address
+    })
+    showEdit.value = false
+    await fetchOutlets()
+  } catch (error: any) {
+    alert(getApiErrorMessage(error))
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 // Delete outlet
 async function confirmDelete(id: string) {
   if (confirm('Yakin ingin menghapus outlet ini?')) {
-    await deleteOutletById(id)
-    await fetchOutlets()
+    try {
+      await deleteOutletById(id)
+      await fetchOutlets()
+    } catch (error: any) {
+      alert(getApiErrorMessage(error))
+    }
   }
 }
 
@@ -204,8 +224,8 @@ onMounted(() => {
           </v-container>            
           <VCardActions>
             <VSpacer />
-            <VBtn text="Batal" @click="showCreate = false" />
-            <VBtn color="primary" @click="handleCreateUnit">Simpan</VBtn>
+            <VBtn text="Batal" @click="showCreate = false" :disabled="isSubmitting" />
+            <VBtn color="primary" @click="handleCreateUnit" :loading="isSubmitting" :disabled="isSubmitting">Simpan</VBtn>
           </VCardActions>
         </VCard>
       </VDialog>   
@@ -312,8 +332,8 @@ onMounted(() => {
       </v-container>            
       <VCardActions>
         <VSpacer />
-        <VBtn text="Batal" @click="showEdit = false" />
-        <VBtn color="primary" @click="saveEdit">Update</VBtn>
+        <VBtn text="Batal" @click="showEdit = false" :disabled="isSubmitting" />
+        <VBtn color="primary" @click="saveEdit" :loading="isSubmitting" :disabled="isSubmitting">Update</VBtn>
       </VCardActions>
     </VCard>
   </VDialog>   

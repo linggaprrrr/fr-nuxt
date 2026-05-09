@@ -22,6 +22,26 @@ export function useTransactions() {
     }
   }
 
+  const updateTransactionStatus = async (id: string, status: string) => {
+    loading.value = true
+    error.value = null
+    try {
+      await authFetch(`/transactions/${id}`, {
+        method: 'PATCH',
+        body: { status },
+      })
+
+      if (transactions.value) {
+        const trx = transactions.value.data.find(tx => tx.id === id)
+        if (trx) trx.status = status
+      }
+    } catch (err: any) {
+      error.value = err.data?.message || err.message || 'Failed to update transaction status.'
+    } finally {
+      loading.value = false
+    }
+  }
+
   const deleteTransaction = async (id: string) => {
     loading.value = true
     error.value = null
@@ -46,6 +66,7 @@ export function useTransactions() {
     loading,
     error,
     getTransactions,
+    updateTransactionStatus,
     deleteTransaction
   }
 }

@@ -1,5 +1,6 @@
 
 import { useRuntimeConfig } from '#imports'
+import { createApiError, getApiErrorMessage, validateApiResponse } from '@/utils/apiHelpers'
 
 const { refreshAuth, logout } = useAuth()
 
@@ -20,34 +21,40 @@ export const authFetch = async <T>(
 
   const accessToken = getAccessToken()
 
-  
   if (!accessToken) {
-    logout() 
-    throw new Error('No access token')
+    logout()
+    throw createApiError({ message: 'No access token available.', status: 401 })
+  }
+
+  const request = async (token: string | null) => {
+    try {
+      const response = await $fetch<T>(url, {
+        ...options,
+        baseURL: config.public.apiBase,
+        headers: getHeaders(token)
+      })
+
+      return validateApiResponse(response)
+    } catch (error: any) {
+      if (error?.status === 401) {
+        throw error
+      }
+      throw createApiError({ message: getApiErrorMessage(error), status: error?.status, data: error?.data ?? error })
+    }
   }
 
   try {
-    return await $fetch<T>(url, {
-      ...options,
-      baseURL: config.public.apiBase,
-      headers: getHeaders(accessToken)
-    })
+    return await request(accessToken)
   } catch (error: any) {
     if (error?.status === 401) {
       const refreshed = await refreshAuth()
       if (refreshed) {
         const newAccessToken = getAccessToken()
-        return await $fetch<T>(url, {
-          ...options,
-          baseURL: config.public.apiBase,
-          headers: getHeaders(newAccessToken)
-        })
-      } else {
-        logout()
-        throw new Error('Unauthorized - token refresh failed')
+        return await request(newAccessToken)
       }
-    } else {
-      throw error
+      logout()
+      throw createApiError({ message: 'Unauthorized - token refresh failed.', status: 401 })
     }
+    throw error
   }
 }

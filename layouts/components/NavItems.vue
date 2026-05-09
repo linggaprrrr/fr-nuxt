@@ -78,11 +78,19 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
   />
   <VerticalNavLink
     :item="{
+      title: 'Promo Codes',
+      icon: 'bx bxs-discount',
+      to: '/admin/promo-codes',
+    }"
+  />
+  <VerticalNavLink
+    :item="{
       title: 'History Transaction',
       icon: 'bx bxs-receipt',      
       to: '/admin/transactions',
     }"
   />
+  
 
   <!-- 👉 User Interface -->
   <VerticalNavSectionTitle

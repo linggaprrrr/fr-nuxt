@@ -58,12 +58,13 @@ export const useAuth = () => {
         const refreshToken = data.refresh_token
         const user = data.user        
         if (process.client && accessToken && user) {
-        
           return navigateTo('/login')
         }
       }
+
+      throw new Error('Registration failed. Please check your input and try again.')
     } catch (error) {
-      
+      throw error
     }
   }
 
@@ -96,10 +97,11 @@ export const useAuth = () => {
           }
           
         }
-
       }
+
+      throw new Error('Google login failed. Please try again.')
     } catch (err) {
-      console.error('Google login error:', err)
+      throw err
     }
   }
   
