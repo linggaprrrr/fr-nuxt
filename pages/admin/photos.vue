@@ -2,6 +2,7 @@
 // Vue component script
 <script setup lang="ts">
 import { ref, onMounted, nextTick, watch, onUnmounted, computed } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
 
 import type { Photo } from '~/types/photo'
 import type { Outlet } from '~/types/outlet'
@@ -13,7 +14,12 @@ const limit = 24
 const total = ref(0)
 const isLoading = ref(false)
 const show = ref(true)
-const outlet = ref<string | null>(null) // Fixed typo from 'oultet'
+const outlet = ref<string | null>(null)
+const nameSearch = ref<string>('')
+
+const todayStr = () => new Date().toISOString().slice(0, 10)
+const dateFrom = ref<string>(todayStr())
+const dateTo = ref<string>(todayStr())
 
 // Outlet-related state
 const outlets = ref<Outlet[]>([])
@@ -35,10 +41,13 @@ const outletOptions = computed(() => [
 async function fetchPhotos() {
   isLoading.value = true
   try {
-    const res = await getPhotos({ 
-      page: page.value, 
-      limit, 
-      outlet_id: outlet.value 
+    const res = await getPhotos({
+      page: page.value,
+      limit,
+      outlet_id: outlet.value,
+      name: nameSearch.value || null,
+      date_from: dateFrom.value || null,
+      date_to: dateTo.value || null,
     })
     
     if (res?.status_code === 200) {
@@ -137,9 +146,19 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
 
+const debouncedSearch = useDebounceFn(() => {
+  page.value = 1
+  fetchPhotos()
+}, 400)
+
 watch(page, fetchPhotos)
 watch(outlet, () => {
-  page.value = 1 // Reset to first page when outlet changes
+  page.value = 1
+  fetchPhotos()
+})
+watch(nameSearch, debouncedSearch)
+watch([dateFrom, dateTo], () => {
+  page.value = 1
   fetchPhotos()
 })
 
@@ -184,7 +203,7 @@ async function handleDelete(photoId: string) {
 
 <template>
   <v-container>
-    <!-- Outlet filter -->
+    <!-- Filters -->
     <v-row class="mb-4">
       <v-col cols="12" md="4">
         <v-select
@@ -195,6 +214,31 @@ async function handleDelete(photoId: string) {
           label="Filter by Outlet"
           :loading="isLoadingOutlets"
           clearable
+        />
+      </v-col>
+      <v-col cols="12" md="4">
+        <v-text-field
+          v-model="nameSearch"
+          label="Search by filename"
+          prepend-inner-icon="bx bx-search"
+          clearable
+          hide-details
+        />
+      </v-col>
+      <v-col cols="12" md="2">
+        <v-text-field
+          v-model="dateFrom"
+          label="Date From"
+          type="date"
+          hide-details
+        />
+      </v-col>
+      <v-col cols="12" md="2">
+        <v-text-field
+          v-model="dateTo"
+          label="Date To"
+          type="date"
+          hide-details
         />
       </v-col>
     </v-row>

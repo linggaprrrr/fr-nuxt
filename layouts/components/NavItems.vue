@@ -102,8 +102,8 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
       title: 'Layout Templates',
       icon: 'bx bx-layout',
       to: '/admin/templates',
-    }" -->
-  />
+    }" 
+  />-->
   
 
   <!-- 👉 User Interface -->

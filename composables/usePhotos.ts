@@ -16,11 +16,22 @@ export const usePhotos = () => {
     page = 1,
     limit = 25,
     outlet_id = null,
-  }: { page?: number; limit?: number; outlet_id?: string | null }): Promise<GetPhotosResponse> => {
+    name = null,
+    date_from = null,
+    date_to = null,
+  }: {
+    page?: number
+    limit?: number
+    outlet_id?: string | null
+    name?: string | null
+    date_from?: string | null
+    date_to?: string | null
+  }): Promise<GetPhotosResponse> => {
     const params: any = { page, limit }
-    if (outlet_id) {
-      params.outlet_id = outlet_id
-    }
+    if (outlet_id) params.outlet_id = outlet_id
+    if (name) params.name = name
+    if (date_from) params.date_from = date_from
+    if (date_to) params.date_to = date_to
     
     const response = await authFetch('/photos/', {        
       method: 'GET',        
