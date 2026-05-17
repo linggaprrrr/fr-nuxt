@@ -86,8 +86,22 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
   <VerticalNavLink
     :item="{
       title: 'History Transaction',
-      icon: 'bx bxs-receipt',      
+      icon: 'bx bxs-receipt',
       to: '/admin/transactions',
+    }"
+  />
+  <VerticalNavLink
+    :item="{
+      title: 'Stickers',
+      icon: 'bx bxs-smile',
+      to: '/admin/stickers',
+    }"
+  />
+  <VerticalNavLink
+    :item="{
+      title: 'Layout Templates',
+      icon: 'bx bx-layout',
+      to: '/admin/templates',
     }"
   />
   

@@ -39,7 +39,15 @@ export const authFetch = async <T>(
       if (error?.status === 401) {
         throw error
       }
-      throw createApiError({ message: getApiErrorMessage(error), status: error?.status, data: error?.data ?? error })
+      const errData = error?.data ?? error
+      if (
+        error?.status === 404 &&
+        (errData?.message === 'User not found' || error?.data?.detail?.message === 'User not found')
+      ) {
+        logout()
+        throw createApiError({ message: 'User not found. Session ended.', status: 404 })
+      }
+      throw createApiError({ message: getApiErrorMessage(error), status: error?.status, data: errData })
     }
   }
 
