@@ -90,7 +90,7 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
       to: '/admin/transactions',
     }"
   />
-  <VerticalNavLink
+  <!-- <VerticalNavLink
     :item="{
       title: 'Stickers',
       icon: 'bx bxs-smile',
@@ -102,7 +102,7 @@ import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
       title: 'Layout Templates',
       icon: 'bx bx-layout',
       to: '/admin/templates',
-    }"
+    }" -->
   />
   
 
