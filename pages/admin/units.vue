@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import type { Unit } from '~/types/unit'
 import { getApiErrorMessage } from '@/utils/apiHelpers'
 
-const { getUnits, createUnit, updateUnitById, getUnitById, deleteUnitById } = useUnits()
+const { getUnits, createUnit, updateUnitById, deleteUnitById } = useUnits()
 
 const page = ref(1)
 const limit = 24
@@ -115,7 +115,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <VCard title="Users Table" class="mb-4">
+  <VCard title="Units Table" class="mb-4">
     <template v-slot:append>
         <v-btn
           class="text-none"
@@ -180,7 +180,6 @@ onMounted(() => {
       <VTextField
         v-model="search"
         label="Search..."
-        @input="fetchUnits"  
         prepend-inner-icon="bx bx-search"
         clearable
         class="mb-4"
@@ -196,11 +195,12 @@ onMounted(() => {
           <th>API Key</th>
           <th>Kode Folder</th>
           <th>Dibuat</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
         <tr v-if="!isLoading && units.length === 0">
-          <td colspan="6" class="text-center">Tidak ada data</td>
+          <td colspan="7" class="text-center">Tidak ada data</td>
         </tr>
         <tr v-for="(unit, index) in units" :key="unit.id">
           <td>{{ index + 1 + (page - 1) * limit }}</td>
@@ -235,7 +235,7 @@ onMounted(() => {
   <!-- Modal Edit -->
    <VDialog v-model="showEdit" max-width="766">
     <VCard>
-      <VCardTitle>Tambah Unit</VCardTitle>            
+      <VCardTitle>Edit Unit</VCardTitle>            
       <v-container fluid>
 
         <v-row>

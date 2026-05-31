@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import type { Outlet } from '~/types/outlet'
 import type { Unit } from '@/types/unit'
 import { getApiErrorMessage } from '@/utils/apiHelpers'
 
-const { getOutlets, createOutlet, updateOutletById, getOutletById, deleteOutletById } = useOutlets()
+const { getOutlets, createOutlet, updateOutletById, deleteOutletById } = useOutlets()
 const { getUnits } = useUnits()
 
 const page = ref(1)
@@ -78,7 +78,7 @@ async function fetchOutlets() {
 }
 
 // Create outlet
-async function handleCreateUnit() {
+async function handleCreateOutlet() {
   isSubmitting.value = true
   try {
     await createOutlet({
@@ -97,9 +97,16 @@ async function handleCreateUnit() {
   }
 }
 
-// Edit Unit
-function openEditModal(outlet: any) {
-  form.value = { ...outlet }
+// Edit outlet
+function openEditModal(outlet: Outlet) {
+  form.value = {
+    id: outlet.id,
+    name: outlet.name,
+    address: outlet.address,
+    phone: outlet.phone,
+    kode_folder: outlet.kode_folder,
+    unit_id: outlet.unit?.id || '',
+  }
   showEdit.value = true
 }
 
@@ -108,7 +115,10 @@ async function saveEdit() {
   try {
     await updateOutletById(form.value.id, {
       name: form.value.name,
-      location: form.value.address
+      address: form.value.address,
+      phone: form.value.phone,
+      unit_id: form.value.unit_id,
+      kode_folder: form.value.kode_folder,
     })
     showEdit.value = false
     await fetchOutlets()
@@ -136,10 +146,13 @@ onMounted(() => {
   fetchUnits()
   fetchOutlets()
 })
+
+// Handle pagination & search
+watch([page, search], fetchOutlets)
 </script>
 
 <template>
-  <VCard title="Users Table" class="mb-4">
+  <VCard title="Outlets Table" class="mb-4">
     <template v-slot:append>
         <v-btn
           class="text-none"
@@ -225,7 +238,7 @@ onMounted(() => {
           <VCardActions>
             <VSpacer />
             <VBtn text="Batal" @click="showCreate = false" :disabled="isSubmitting" />
-            <VBtn color="primary" @click="handleCreateUnit" :loading="isSubmitting" :disabled="isSubmitting">Simpan</VBtn>
+            <VBtn color="primary" @click="handleCreateOutlet" :loading="isSubmitting" :disabled="isSubmitting">Simpan</VBtn>
           </VCardActions>
         </VCard>
       </VDialog>   
@@ -234,7 +247,6 @@ onMounted(() => {
       <VTextField
         v-model="search"
         label="Search..."
-        @input="fetchOutlets"  
         prepend-inner-icon="bx bx-search"
         clearable
         class="mb-4"
@@ -255,7 +267,7 @@ onMounted(() => {
       </thead>
       <tbody>
         <tr v-if="!isLoading && outlets.length === 0">
-          <td colspan="6" class="text-center">Tidak ada data</td>
+          <td colspan="7" class="text-center">Tidak ada data</td>
         </tr>
         <tr v-for="(outlet, index) in outlets" :key="outlet.id">
           <td>{{ index + 1 + (page - 1) * limit }}</td>
@@ -290,7 +302,7 @@ onMounted(() => {
   <!-- Modal Edit -->
    <VDialog v-model="showEdit" max-width="766">
     <VCard>
-      <VCardTitle>Tambah Unit</VCardTitle>            
+      <VCardTitle>Edit Outlet</VCardTitle>            
       <v-container fluid>
 
         <v-row>
@@ -319,6 +331,18 @@ onMounted(() => {
         </v-row>
         <v-row>
           <v-col cols="3">
+            <v-list-subheader>Telp</v-list-subheader>
+          </v-col>
+
+          <v-col cols="9">
+            <v-text-field                                                                       
+              v-model="form.phone"
+              persistent-hint
+            ></v-text-field>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="3">
             <v-list-subheader>Kode Folder</v-list-subheader>
           </v-col>
 
@@ -327,6 +351,24 @@ onMounted(() => {
               v-model="form.kode_folder"
               persistent-hint
             ></v-text-field>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="3">
+            <v-list-subheader>Unit</v-list-subheader>
+          </v-col>
+
+          <v-col cols="9">
+            <v-select
+              v-model="form.unit_id"
+              density="comfortable"
+              :items="units"
+              item-value="id"
+              item-title="name"
+              persistent-hint
+              class="mb-4"
+              variant="outlined"
+            />
           </v-col>
         </v-row>
       </v-container>            

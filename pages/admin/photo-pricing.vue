@@ -78,6 +78,7 @@ async function fetchPhotoPrices() {
 
 const units = ref<Unit[]>([])
 const outletList = ref<OutletList[]>([])
+const editOutletList = ref<OutletList[]>([])
 const outlets = ref<Outlet[]>([])
 
 async function fetchUnitsAndOutlets() {
@@ -107,6 +108,7 @@ async function fetchOutlets() {
 }
 
 const selectedUnit = computed(() => units.value.find(u => u.id === formPhotoPricing.value.unit_id) || null)
+const selectedEditUnit = computed(() => units.value.find(u => u.id === formEditPhotoPricing.value.unit_id) || null)
 
 const snackbar = ref(false)
 const text = ref('')
@@ -127,8 +129,24 @@ async function openEditPriceModal(id: string) {
   const data = await getPhotoPriceById(id)
   if (data?.photo_price) {
     formEditPhotoPricing.value = data.photo_price
+    if (formEditPhotoPricing.value.unit_id) {
+      await fetchEditOutletsByUnit(formEditPhotoPricing.value.unit_id)
+    }
   }
   showEditPhotoPricing.value = true
+}
+
+async function fetchEditOutletsByUnit(unitId: string) {
+  const outletRes = await getOutletsByUnit(unitId) as GetOutletsByUnitResponse
+  if (outletRes?.status_code === 200 && Array.isArray(outletRes.outlets)) {
+    editOutletList.value = outletRes.outlets
+    if (!editOutletList.value.some(outlet => outlet.id === formEditPhotoPricing.value.outlet_id)) {
+      formEditPhotoPricing.value.outlet_id = outletRes.outlets[0]?.id || ''
+    }
+  } else {
+    editOutletList.value = []
+    formEditPhotoPricing.value.outlet_id = ''
+  }
 }
 
 async function handleEditPhotoPricing() {
@@ -144,7 +162,7 @@ async function handleEditPhotoPricing() {
       photo_type_id: formEditPhotoPricing.value.photo_type_id,
       price: Number(formEditPhotoPricing.value.price),
     }
-    const response = await updatePhotoPricing(formEditPhotoPricing.value.id, payload)
+    const response = await updatePhotoPrice(formEditPhotoPricing.value.id, payload)
     if (response.status_code === 200) {
       showEditPhotoPricing.value = false
       await fetchPhotoPrices()
@@ -212,6 +230,18 @@ watch(
     }
   },
   { immediate: true }
+)
+
+watch(
+  () => formEditPhotoPricing.value.unit_id,
+  async (newUnitId) => {
+    if (newUnitId) {
+      await fetchEditOutletsByUnit(newUnitId)
+    } else {
+      editOutletList.value = []
+      formEditPhotoPricing.value.outlet_id = ''
+    }
+  }
 )
 
 onMounted(() => {
@@ -299,7 +329,6 @@ onMounted(() => {
       <VTextField
         v-model="searchPhotoTypes"
         label="Search..."
-        @input="fetchPhotoPrices"  
         prepend-inner-icon="bx bx-search"
         clearable
         class="mb-4"
@@ -318,7 +347,7 @@ onMounted(() => {
       </thead>
       <tbody>
         <tr v-if="!isLoading && photoTypes.length === 0">
-          <td colspan="6" class="text-center">Tidak ada data</td>
+          <td colspan="5" class="text-center">Tidak ada data</td>
         </tr>
         <tr v-for="(photoType, index) in photoTypes" :key="photoType.id">
           <td>{{ index + 1 + (pagePhotoTypes - 1) * limit }}</td>
@@ -491,7 +520,6 @@ onMounted(() => {
       <VTextField
         v-model="searchPhotoPrices"
         label="Search..."
-        @input="fetchPhotoPrices"  
         prepend-inner-icon="bx bx-search"
         clearable
         class="mb-4"
@@ -533,7 +561,43 @@ onMounted(() => {
     <VDialog v-model="showEditPhotoPricing" max-width="766">
       <VCard>
         <VCardTitle>Edit Pricing</VCardTitle>            
-        <v-container fluid>        
+        <v-container fluid>
+          <v-row>
+            <v-col cols="2">
+              <v-list-subheader>Lokasi Unit</v-list-subheader>
+            </v-col>
+            <v-col cols="10">
+              <v-select
+                v-model="formEditPhotoPricing.unit_id"
+                :items="units"
+                item-value="id"
+                item-title="name"
+                :hint="selectedEditUnit?.location"
+                persistent-hint
+                density="comfortable"
+                class="mb-4"
+                variant="outlined"
+              />
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="2">
+              <v-list-subheader>Outlet</v-list-subheader>
+            </v-col>
+            <v-col cols="10">
+              <v-select
+                v-model="formEditPhotoPricing.outlet_id"
+                :items="editOutletList"
+                item-value="id"
+                item-title="name"
+                density="comfortable"
+                class="mb-4"
+                variant="outlined"
+              />
+            </v-col>
+          </v-row>
+
           <v-row>
             <v-col cols="2">
               <v-list-subheader>Tipe Foto</v-list-subheader>

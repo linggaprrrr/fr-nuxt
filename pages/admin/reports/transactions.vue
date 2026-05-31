@@ -375,7 +375,7 @@ definePageMeta({
       <VCard>
         <VCardText>
           <div class="text-subtitle-1 text-grey">Total Pendapatan</div>
-          <div class="text-h5 font-weight-bold text-primary">Rp {{ totalPendapatan.toLocaleString() }}</div>
+          <div class="text-h5 font-weight-bold text-primary">Rp {{ totalRevenue.toLocaleString() }}</div>
         </VCardText>
       </VCard>
     </VCol>
