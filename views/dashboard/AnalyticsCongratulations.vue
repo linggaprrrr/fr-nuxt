@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTheme } from 'vuetify'
-import illustrationJohnDark from '@images/cards/illustration-john-dark.png'
-import illustrationJohnLight from '@images/cards/illustration-john-light.png'
+import illustrationJohnDark from '../../assets/images/cards/illustration-john-dark.png'
+import illustrationJohnLight from '../../assets/images/cards/illustration-john-light.png'
 
 const { global } = useTheme()
 const illustrationJohn = computed(() => global.name.value === 'dark' ? illustrationJohnDark : illustrationJohnLight)

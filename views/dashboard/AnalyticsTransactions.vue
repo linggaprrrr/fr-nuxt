@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import chartInfo from '@images/cards/chart-info.png'
-import creditCardSuccess from '@images/cards/credit-card-success.png'
-import creditCardWarning from '@images/cards/credit-card-warning.png'
-import paypalError from '@images/cards/paypal-error.png'
-import walletPrimary from '@images/cards/wallet-primary.png'
+import chartInfo from '../../assets/images/cards/chart-info.png'
+import creditCardSuccess from '../../assets/images/cards/credit-card-success.png'
+import creditCardWarning from '../../assets/images/cards/credit-card-warning.png'
+import paypalError from '../../assets/images/cards/paypal-error.png'
+import walletPrimary from '../../assets/images/cards/wallet-primary.png'
 
 const transactions = [
   {

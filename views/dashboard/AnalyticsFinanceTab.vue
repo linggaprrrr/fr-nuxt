@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useTheme } from 'vuetify'
-import statsVerticalChart from '@images/cards/chart-success.png'
-import statsVerticalPaypal from '@images/cards/paypal-error.png'
-import statsVerticalWallet from '@images/cards/wallet-primary.png'
+import statsVerticalChart from '../../assets/images/cards/chart-success.png'
+import statsVerticalPaypal from '../../assets/images/cards/paypal-error.png'
+import statsVerticalWallet from '../../assets/images/cards/wallet-primary.png'
 
 import { hexToRgb } from '@layouts/utils'
 

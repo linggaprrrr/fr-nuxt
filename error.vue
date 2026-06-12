@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { NuxtError } from 'nuxt/app'
-import misc404 from '@images/pages/404.png'
+import misc404 from './assets/images/pages/404.png'
 
 defineOptions({
   inheritAttrs: false,
