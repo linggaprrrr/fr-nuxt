@@ -40,7 +40,7 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
         class="app-logo app-title-wrapper"
       >
 
-        <nuxt-img
+        <img
           src="/images/ownize_logo.png"
           alt=""
           class="float-left margin-fleche"              

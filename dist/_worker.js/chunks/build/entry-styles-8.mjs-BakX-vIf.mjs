@@ -1,0 +1,1 @@
+const e=".layout-blank .misc-wrapper{align-items:center;display:flex;flex-direction:column;justify-content:center;min-block-size:calc(var(--vh, 1vh)*100);padding:1.25rem}.layout-blank .misc-avatar{z-index:1}";export{e};

@@ -1,0 +1,1 @@
+import{a as t}from"./authFetch-5wQjlWwJ.mjs";const usePhotos=()=>({getPhotos:async({page:o=1,limit:e=25,outlet_id:a=null,name:l=null,date_from:s=null,date_to:n=null})=>{const u=await t("/photos/",{});return console.log("getPhotos response:",u),u},deletePhotoById:async o=>await t(`photos/${o}`,{})});export{usePhotos as u};

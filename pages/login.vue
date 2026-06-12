@@ -80,12 +80,12 @@ const handleLoginError = () => {
             to="/"
             class="app-logo"
           >
-            <nuxt-img
+            <img
               src="/images/ownize_logo.png"
               alt=""
               class="float-left margin-fleche"              
               style="max-width: 120px; height: auto;"
-               />
+            />
          
           </NuxtLink>
         </VCardItem>

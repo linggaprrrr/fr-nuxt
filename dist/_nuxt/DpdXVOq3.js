@@ -1,0 +1,1 @@
+import{d as s,a as n,b as a,m as t,A as o}from"./DDya6Ko7.js";const i={class:"nav-section-title"},c={class:"title-wrapper"},l=["textContent"],m=s({__name:"VerticalNavSectionTitle",props:{item:{}},setup(r){return(e,_)=>(a(),n("li",i,[t("div",c,[t("span",{class:"title-text",textContent:o(e.item.heading)},null,8,l)])]))}});export{m as _};
