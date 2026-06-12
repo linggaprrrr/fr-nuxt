@@ -1,1 +1,0 @@
-const o=".bounding-box[data-v-59ddae3b]{border:2px solid red;pointer-events:none;position:absolute}.relative[data-v-59ddae3b]{position:relative}.photo-img[data-v-59ddae3b]{display:block;height:auto;width:100%}";export{o as p};

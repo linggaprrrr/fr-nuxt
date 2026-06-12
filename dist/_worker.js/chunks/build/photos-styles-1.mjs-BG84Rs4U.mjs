@@ -1,1 +1,0 @@
-const a=".bounding-box[data-v-a293eaae]{border:2px solid red;pointer-events:none;position:absolute}.relative[data-v-a293eaae]{position:relative}.photo-img[data-v-a293eaae]{display:block;height:auto;width:100%}";export{a as p};
