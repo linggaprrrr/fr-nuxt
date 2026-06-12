@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import VerticalNavSectionTitle from '@/@layouts/components/VerticalNavSectionTitle.vue'
-import VerticalNavGroup from '@layouts/components/VerticalNavGroup.vue'
-import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
+import VerticalNavGroup from '../../@layouts/components/VerticalNavGroup.vue'
+import VerticalNavLink from '../../@layouts/components/VerticalNavLink.vue'
 
 const dashboardLink = Object.freeze({ title: 'Dashboard', icon: 'bx bx-home-smile', to: '/units/dashboard' })
 const managementSection = Object.freeze({ heading: 'Managements' })

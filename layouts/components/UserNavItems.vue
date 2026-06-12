@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import VerticalNavGroup from '@layouts/components/VerticalNavGroup.vue'
-import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
+import VerticalNavGroup from '../../@layouts/components/VerticalNavGroup.vue'
+import VerticalNavLink from '../../@layouts/components/VerticalNavLink.vue'
 
 const photosGroup = Object.freeze({
   title: 'Photos',

@@ -1,0 +1,1 @@
+import{_ as e,a as t,b as o,cl as s}from"./BIKfh86x.js";const c={},l={class:"layout-wrapper layout-blank","data-allow-mismatch":""};function r(a,n){return o(),t("div",l,[s(a.$slots,"default")])}const d=e(c,[["render",r]]);export{d as default};

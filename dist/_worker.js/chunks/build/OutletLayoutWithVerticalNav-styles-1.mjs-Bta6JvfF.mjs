@@ -1,0 +1,1 @@
+const e=".app-logo[data-v-1b733b0e]{align-items:center;-moz-column-gap:.75rem;column-gap:.75rem;display:flex}.app-logo .app-logo-title[data-v-1b733b0e]{font-size:1.25rem;font-weight:500;line-height:1.75rem;text-transform:uppercase}";export{e as O};

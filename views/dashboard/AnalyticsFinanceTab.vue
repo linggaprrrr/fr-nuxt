@@ -4,7 +4,7 @@ import statsVerticalChart from '../../assets/images/cards/chart-success.png'
 import statsVerticalPaypal from '../../assets/images/cards/paypal-error.png'
 import statsVerticalWallet from '../../assets/images/cards/wallet-primary.png'
 
-import { hexToRgb } from '@layouts/utils'
+import { hexToRgb } from '../../@layouts/utils'
 
 const vuetifyTheme = useTheme()
 

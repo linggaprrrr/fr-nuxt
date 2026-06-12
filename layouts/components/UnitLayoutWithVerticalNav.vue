@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import UnitNavItems from '@/layouts/components/UnitNavItems.vue'
-import VerticalNavLayout from '@layouts/components/VerticalNavLayout.vue'
+import VerticalNavLayout from '../../@layouts/components/VerticalNavLayout.vue'
 
 // Components
 import Footer from '@/layouts/components/Footer.vue'

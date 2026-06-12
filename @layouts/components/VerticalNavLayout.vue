@@ -1,6 +1,6 @@
 <script lang="ts">
 import { useDisplay } from 'vuetify'
-import VerticalNav from '@layouts/components/VerticalNav.vue'
+import VerticalNav from './VerticalNav.vue'
 
 export default defineComponent({
   setup(props, { slots }) {
@@ -101,8 +101,8 @@ export default defineComponent({
 
 <style lang="scss">
 @use "@configured-variables" as variables;
-@use "@layouts/styles/placeholders";
-@use "@layouts/styles/mixins";
+@use "../styles/placeholders";
+@use "../styles/mixins";
 
 .layout-wrapper.layout-nav-type-vertical {
   // TODO(v2): Check why we need height in vertical nav & min-height in horizontal nav
