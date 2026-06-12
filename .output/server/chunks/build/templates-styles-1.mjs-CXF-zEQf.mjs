@@ -1,0 +1,3 @@
+const templates_vue_vue_type_style_index_0_scoped_36b0852d_lang = ".templates-grid[data-v-36b0852d]{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}.template-card[data-v-36b0852d]{transition:box-shadow .2s}.template-card[data-v-36b0852d]:hover{box-shadow:0 4px 16px rgba(0,0,0,.12)}.template-thumb[data-v-36b0852d]{background:#f5f5f5;height:160px;overflow:hidden;position:relative}";
+
+export { templates_vue_vue_type_style_index_0_scoped_36b0852d_lang as t };

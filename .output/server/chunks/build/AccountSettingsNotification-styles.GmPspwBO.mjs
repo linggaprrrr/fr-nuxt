@@ -1,0 +1,5 @@
+import { A as AccountSettingsNotification_vue_vue_type_style_index_0_scoped_5bf444da_lang } from './AccountSettingsNotification-styles-1.mjs-COfCEDLT.mjs';
+
+const AccountSettingsNotificationStyles_GmPspwBO = [AccountSettingsNotification_vue_vue_type_style_index_0_scoped_5bf444da_lang, AccountSettingsNotification_vue_vue_type_style_index_0_scoped_5bf444da_lang];
+
+export { AccountSettingsNotificationStyles_GmPspwBO as default };

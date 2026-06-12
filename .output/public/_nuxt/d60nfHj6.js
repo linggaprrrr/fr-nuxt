@@ -1,0 +1,1 @@
+import{d as t,a as s,b as n,m as a,A as r,u as c}from"./C_h0KXVs.js";const o={class:"h-100 d-flex align-center justify-md-space-between justify-center"},i={class:"d-flex align-center"},u=t({__name:"Footer",setup(_){const e=new Date().getFullYear();return(l,p)=>(n(),s("div",o,[a("span",i," © "+r(c(e))+" Ownize ",1)]))}});export{u as _};
