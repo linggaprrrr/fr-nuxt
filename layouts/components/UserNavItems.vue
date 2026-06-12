@@ -1,39 +1,34 @@
 <script lang="ts" setup>
-import VerticalNavGroup from "@layouts/components/VerticalNavGroup.vue";
-import VerticalNavLink from "@layouts/components/VerticalNavLink.vue";
+import VerticalNavGroup from '@layouts/components/VerticalNavGroup.vue'
+import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
+
+const photosGroup = Object.freeze({
+  title: 'Photos',
+  icon: 'bx bx-images',
+})
+
+const findPhotosLink = Object.freeze({
+  title: 'Find Yours',
+  to: '/photos',
+})
+
+const purchasedPhotosLink = Object.freeze({
+  title: 'Purchased Photo',
+  to: '/photos',
+})
+
+const transactionsLink = Object.freeze({
+  title: 'Transactions',
+  icon: 'bx bxs-receipt',
+  to: '/login',
+})
 </script>
 
 <template>
-
-  <VerticalNavGroup
-    :item="{
-      title: 'Photos',
-      icon: 'bx bx-images',
-    }"
-  >
-    <VerticalNavLink
-      :item="{
-        title: 'Find Yours',
-        to: '/photos',
-      }"
-    />
-    
-    <VerticalNavLink
-      :item="{
-        title: 'Purchased Photo',
-        to: '/photos',
-      }"
-    />
+  <VerticalNavGroup :item="photosGroup">
+    <VerticalNavLink :item="findPhotosLink" />
+    <VerticalNavLink :item="purchasedPhotosLink" />
   </VerticalNavGroup>
-  
-  <VerticalNavLink
-    :item="{
-      title: 'Transactions',
-      icon: 'bx bxs-receipt',      
-      to: '/login',
-    }"
-  />
 
-  
-
+  <VerticalNavLink :item="transactionsLink" />
 </template>

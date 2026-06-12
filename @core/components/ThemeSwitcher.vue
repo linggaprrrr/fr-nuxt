@@ -7,7 +7,9 @@ const props = defineProps<{
 }>()
 
 const { name: themeName, global: globalTheme } = useTheme()
-const { state: currentThemeName, next: getNextThemeName, index: currentThemeIndex } = useCycleList(props.themes.map(t => t.name), { initialValue: themeName })
+const themeNames = computed(() => props.themes.map(theme => theme.name))
+const { state: currentThemeName, next: getNextThemeName, index: currentThemeIndex } = useCycleList(themeNames, { initialValue: themeName })
+const currentThemeIcon = computed(() => props.themes[currentThemeIndex.value]?.icon)
 
 const changeTheme = () => {
   globalTheme.name.value = getNextThemeName()
@@ -21,7 +23,7 @@ watch(() => globalTheme.name.value, val => {
 
 <template>
   <IconBtn @click="changeTheme">
-    <VIcon :icon="props.themes[currentThemeIndex].icon" />
+    <VIcon :icon="currentThemeIcon" />
     <VTooltip
       activator="parent"
       open-delay="1000"

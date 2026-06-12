@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import avatar1 from '@images/avatars/avatar-1.png'
+interface UserProfile {
+  name?: string
+  picture?: string
+  role?: string
+}
 
-const router = useRouter()
 const { logout } = useAuth()
 
-const handleLogout = async () => {
+const handleLogout = () => {
   logout()
 }
 
-// Ambil data user dari localStorage
-const user = ref<{ name: string; role: string } | null>(null)
+const user = shallowRef<UserProfile | null>(null)
 
 if (import.meta.client) {
   const userData = localStorage.getItem('user')

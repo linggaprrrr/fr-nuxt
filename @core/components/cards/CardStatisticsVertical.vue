@@ -1,20 +1,20 @@
 <script setup lang="ts">
 interface Props {
   title: string
-  image: string    // class icon, contoh: "bx bxs-user-account"
+  image: string
   stats: string
   change?: number
 }
 
 const props = defineProps<Props>()
 
-const isPositive = controlledComputed(() => props.change, () => Math.sign(props.change ?? 0) === 1)
+const isPositive = computed(() => Math.sign(props.change ?? 0) === 1)
 
-const moreList = [
+const moreList = Object.freeze([
   { title: 'Yesterday', value: 'Yesterday' },
   { title: 'Last Week', value: 'Last Week' },
   { title: 'Last Month', value: 'Last Month' },
-]
+])
 </script>
 
 <template>

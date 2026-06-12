@@ -10,20 +10,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
-
-
 const props = defineProps<{
   data: { tanggal: string; total: number }[]
 }>()
 
-const categories = computed(() => props.data.map(d => d.tanggal))
-const values = computed(() => props.data.map(d => d.total))
-
 const series = computed(() => [
   {
     name: 'Pendapatan',
-    data: values.value,
+    data: props.data.map(d => d.total),
   }
 ])
 
@@ -32,7 +26,7 @@ const chartOptions = computed(() => ({
     id: 'pendapatan-harian'
   },
   xaxis: {
-    categories: categories.value,
+    categories: props.data.map(d => d.tanggal),
   },
   yaxis: {
     labels: {

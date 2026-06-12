@@ -5,29 +5,29 @@ interface Props {
   description?: string
 }
 
-const props = defineProps<Props>()
+const { description, statusCode, title } = defineProps<Props>()
 </script>
 
 <template>
   <div class="text-center">
     <!-- 👉 Title and subtitle -->
     <h1
-      v-if="props.statusCode"
+      v-if="statusCode"
       class="header-title font-weight-medium mb-2"
     >
-      {{ props.statusCode }}
+      {{ statusCode }}
     </h1>
     <h4
-      v-if="props.title"
+      v-if="title"
       class="text-h4 font-weight-medium mb-2"
     >
-      {{ props.title }}
+      {{ title }}
     </h4>
     <p
-      v-if="props.description"
+      v-if="description"
       class="text-body-1 mb-6"
     >
-      {{ props.description }}
+      {{ description }}
     </p>
   </div>
 </template>

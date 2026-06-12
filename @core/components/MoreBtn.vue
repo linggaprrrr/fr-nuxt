@@ -5,23 +5,23 @@ interface Props {
   iconSize?: string
 }
 
-const props = defineProps<Props>()
+const { iconSize, itemProps, menuList } = defineProps<Props>()
 </script>
 
 <template>
   <IconBtn>
     <VIcon
-      :size="props.iconSize"
+      :size="iconSize"
       icon="bx-dots-vertical-rounded"
     />
 
     <VMenu
-      v-if="props.menuList"
+      v-if="menuList"
       activator="parent"
     >
       <VList
-        :items="props.menuList"
-        :item-props="props.itemProps"
+        :items="menuList"
+        :item-props="itemProps"
       />
     </VMenu>
   </IconBtn>

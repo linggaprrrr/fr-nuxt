@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import NavItems from '@/layouts/components/NavItems.vue'
-import logo from '@images/logo.svg?raw'
 import VerticalNavLayout from '@layouts/components/VerticalNavLayout.vue'
 
 // Components
@@ -40,16 +39,12 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
         to="/"
         class="app-logo app-title-wrapper"
       >
-        <!-- eslint-disable vue/no-v-html -->
-         <nuxt-img
+        <nuxt-img
           src="/images/ownize_logo.png"
           alt=""
           class="float-left margin-fleche"              
           style="max-width: 120px; height: auto;"
-          />
-        <!-- eslint-enable -->
-
-       
+        />
       </NuxtLink>
 
       <IconBtn
@@ -75,15 +70,6 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
 </template>
 
 <style lang="scss" scoped>
-.meta-key {
-  border: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 6px;
-  block-size: 1.5625rem;
-  line-height: 1.3125rem;
-  padding-block: 0.125rem;
-  padding-inline: 0.25rem;
-}
-
 .app-logo {
   display: flex;
   align-items: center;
