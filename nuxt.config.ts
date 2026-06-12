@@ -149,6 +149,6 @@ export default defineNuxtConfig({
     transpile: ['vuetify'],
   },
 
-  modules: ['@vueuse/nuxt', '@nuxtjs/device', '@pinia/nuxt', 'nuxt-vue3-google-signin', '@nuxt/image'],
+  modules: ['@vueuse/nuxt', '@nuxtjs/device', '@pinia/nuxt', 'nuxt-vue3-google-signin', '@nuxt/image', '@nuxt/eslint'],
   compatibilityDate: '2025-05-05',
 })

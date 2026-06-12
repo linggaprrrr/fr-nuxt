@@ -5,3 +5,4 @@ ecosystem.js
 ecosystem.config.js
 ecosystem.cjs
 ecosystem.config.cjs
+dist/

@@ -1,1 +1,0 @@
-import{ap as e,f as t,c as s,e as n}from"./BIKfh86x.js";function i(){const o=e(!1);return t(()=>{window.requestAnimationFrame(()=>{o.value=!0})}),{ssrBootStyles:s(()=>o.value?void 0:{transition:"none !important"}),isBooted:n(o)}}export{i as u};
