@@ -1,5 +1,0 @@
-import { U as UserLayoutWithVerticalNav_vue_vue_type_style_index_0_scoped_809bea0b_lang } from './UserLayoutWithVerticalNav-styles-1.mjs-D4uagR2v.mjs';
-
-const UserLayoutWithVerticalNavStyles_NI2sW7W2 = [UserLayoutWithVerticalNav_vue_vue_type_style_index_0_scoped_809bea0b_lang, UserLayoutWithVerticalNav_vue_vue_type_style_index_0_scoped_809bea0b_lang];
-
-export { UserLayoutWithVerticalNavStyles_NI2sW7W2 as default };
