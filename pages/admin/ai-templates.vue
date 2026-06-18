@@ -208,17 +208,10 @@ onMounted(() => { fetchOutlets(); fetchAll() })
             <!-- Drag handle -->
             <VIcon size="18" color="grey" class="drag-handle" style="cursor:grab">bx bx-menu</VIcon>
 
-            <!-- Before / after thumbnails -->
-            <div class="tpl-thumbs">
-              <div class="tpl-thumb">
-                <img v-if="tpl.before_url" :src="tpl.before_url" alt="before" />
-                <div v-else class="tpl-thumb-empty" />
-              </div>
-              <VIcon size="12" color="grey-lighten-1">bx bx-right-arrow-alt</VIcon>
-              <div class="tpl-thumb">
-                <img v-if="tpl.after_url" :src="tpl.after_url" alt="after" />
-                <div v-else class="tpl-thumb-empty" />
-              </div>
+            <!-- Result (after) thumbnail -->
+            <div class="tpl-thumb">
+              <img v-if="tpl.after_url" :src="tpl.after_url" alt="result" />
+              <div v-else class="tpl-thumb-empty" />
             </div>
 
             <!-- Label + chips -->
@@ -418,14 +411,7 @@ onMounted(() => { fetchOutlets(); fetchAll() })
 .drag-handle { cursor: grab; flex-shrink: 0; }
 .drag-handle:active { cursor: grabbing; }
 
-/* ── Thumbnails ────────────────────────────────────────────────────────────── */
-.tpl-thumbs {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
+/* ── Thumbnail ─────────────────────────────────────────────────────────────── */
 .tpl-thumb {
   width: 48px;
   height: 48px;
