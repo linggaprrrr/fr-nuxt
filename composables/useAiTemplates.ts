@@ -6,9 +6,6 @@ export interface AiTemplate {
   prompt?: string
   before_url: string | null
   after_url: string | null
-  tag: string | null
-  tag_color: { bg: string; color: string } | null
-  emoji: string | null
   sort_order: number
   outlet_id: string | null
   is_active: boolean
@@ -75,5 +72,18 @@ export function useAiTemplates() {
     }
   }
 
-  return { templates, loading, error, getAiTemplates, createAiTemplate, updateAiTemplate, deleteAiTemplate }
+  const reorderAiTemplates = async (ordered: AiTemplate[]) => {
+    error.value = null
+    try {
+      await authFetch('/ai-templates/reorder', {
+        method: 'POST',
+        body: JSON.stringify(ordered.map((t, i) => ({ id: t.id, sort_order: i }))),
+        headers: { 'Content-Type': 'application/json' },
+      })
+    } catch (err: any) {
+      error.value = err.data?.detail || err.message || 'Gagal menyimpan urutan.'
+    }
+  }
+
+  return { templates, loading, error, getAiTemplates, createAiTemplate, updateAiTemplate, deleteAiTemplate, reorderAiTemplates }
 }

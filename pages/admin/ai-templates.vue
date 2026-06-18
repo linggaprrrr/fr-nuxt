@@ -3,39 +3,57 @@ import { ref, computed, onMounted } from 'vue'
 import { useAiTemplates } from '@/composables/useAiTemplates'
 import { useOutlets } from '@/composables/useOutlets'
 
-const { templates, loading, error, getAiTemplates, createAiTemplate, updateAiTemplate, deleteAiTemplate } = useAiTemplates()
+const { templates, loading, error, getAiTemplates, createAiTemplate, updateAiTemplate, deleteAiTemplate, reorderAiTemplates } = useAiTemplates()
 
 const outlets      = ref<any[]>([])
 const outletFilter = ref<string>('')
 const isSubmitting = ref(false)
 
 // ── Create dialog ──────────────────────────────────────────────────────────
-const showCreate       = ref(false)
-const createLabel      = ref('')
-const createPrompt     = ref('')
-const createTag        = ref('')
-const createTagBg      = ref('#eff6ff')
-const createTagColor   = ref('#2563eb')
-const createEmoji      = ref('')
-const createSortOrder  = ref(0)
-const createOutlet     = ref('')
-const beforeFile       = ref<File | null>(null)
-const afterFile        = ref<File | null>(null)
-const beforeFileInput  = ref<HTMLInputElement | null>(null)
-const afterFileInput   = ref<HTMLInputElement | null>(null)
+const showCreate      = ref(false)
+const createLabel     = ref('')
+const createPrompt    = ref('')
+const createOutlet    = ref('')
+const beforeFile      = ref<File | null>(null)
+const afterFile       = ref<File | null>(null)
+const beforeFileInput = ref<HTMLInputElement | null>(null)
+const afterFileInput  = ref<HTMLInputElement | null>(null)
 const beforePreviewUrl = computed(() => beforeFile.value ? URL.createObjectURL(beforeFile.value) : null)
 const afterPreviewUrl  = computed(() => afterFile.value  ? URL.createObjectURL(afterFile.value)  : null)
 
 // ── Edit dialog ────────────────────────────────────────────────────────────
 const showEdit  = ref(false)
-const editForm  = ref({
-  id: '', label: '', prompt: '', tag: '', tag_color_bg: '', tag_color_text: '',
-  emoji: '', sort_order: 0, outlet_id: '', is_active: true,
-})
+const editForm  = ref({ id: '', label: '', prompt: '', outlet_id: '', is_active: true })
 const editBeforeFile      = ref<File | null>(null)
 const editAfterFile       = ref<File | null>(null)
 const editBeforeFileInput = ref<HTMLInputElement | null>(null)
 const editAfterFileInput  = ref<HTMLInputElement | null>(null)
+
+// ── Drag-to-reorder ────────────────────────────────────────────────────────
+const dragIndex  = ref<number | null>(null)
+const overIndex  = ref<number | null>(null)
+const isSavingOrder = ref(false)
+
+function onDragStart(i: number) { dragIndex.value = i }
+function onDragOver(i: number)  { overIndex.value = i }
+
+async function onDrop(targetIndex: number) {
+  if (dragIndex.value === null || dragIndex.value === targetIndex) {
+    dragIndex.value = null; overIndex.value = null; return
+  }
+  const reordered = [...templates.value]
+  const [moved] = reordered.splice(dragIndex.value, 1)
+  reordered.splice(targetIndex, 0, moved)
+  templates.value = reordered
+  dragIndex.value = null; overIndex.value = null
+
+  isSavingOrder.value = true
+  await reorderAiTemplates(reordered)
+  isSavingOrder.value = false
+  if (error.value) alert(error.value)
+}
+
+function onDragEnd() { dragIndex.value = null; overIndex.value = null }
 
 // ── Fetch ──────────────────────────────────────────────────────────────────
 async function fetchAll() {
@@ -59,16 +77,12 @@ async function handleCreate() {
   isSubmitting.value = true
   error.value = null
   const form = new FormData()
-  form.append('label',        createLabel.value)
-  form.append('prompt',       createPrompt.value)
-  form.append('sort_order',   String(createSortOrder.value))
-  if (createTag.value)        form.append('tag',           createTag.value)
-  if (createTagBg.value)      form.append('tag_color_bg',  createTagBg.value)
-  if (createTagColor.value)   form.append('tag_color_text',createTagColor.value)
-  if (createEmoji.value)      form.append('emoji',         createEmoji.value)
-  if (createOutlet.value)     form.append('outlet_id',     createOutlet.value)
-  if (beforeFile.value)       form.append('before_file',   beforeFile.value)
-  if (afterFile.value)        form.append('after_file',    afterFile.value)
+  form.append('label',      createLabel.value)
+  form.append('prompt',     createPrompt.value)
+  form.append('sort_order', String(templates.value.length)) // append to end
+  if (createOutlet.value)   form.append('outlet_id', createOutlet.value)
+  if (beforeFile.value)     form.append('before_file', beforeFile.value)
+  if (afterFile.value)      form.append('after_file',  afterFile.value)
   await createAiTemplate(form)
   isSubmitting.value = false
   if (error.value) { alert(error.value); return }
@@ -78,9 +92,7 @@ async function handleCreate() {
 }
 
 function resetCreateForm() {
-  createLabel.value = ''; createPrompt.value = ''
-  createTag.value = ''; createTagBg.value = '#eff6ff'; createTagColor.value = '#2563eb'
-  createEmoji.value = ''; createSortOrder.value = 0; createOutlet.value = ''
+  createLabel.value = ''; createPrompt.value = ''; createOutlet.value = ''
   beforeFile.value = null; afterFile.value = null
   if (beforeFileInput.value) beforeFileInput.value.value = ''
   if (afterFileInput.value)  afterFileInput.value.value  = ''
@@ -88,20 +100,8 @@ function resetCreateForm() {
 
 // ── Edit ───────────────────────────────────────────────────────────────────
 function openEdit(tpl: any) {
-  editForm.value = {
-    id: tpl.id,
-    label: tpl.label,
-    prompt: tpl.prompt ?? '',
-    tag: tpl.tag ?? '',
-    tag_color_bg: tpl.tag_color?.bg ?? '',
-    tag_color_text: tpl.tag_color?.color ?? '',
-    emoji: tpl.emoji ?? '',
-    sort_order: tpl.sort_order ?? 0,
-    outlet_id: tpl.outlet_id ?? '',
-    is_active: tpl.is_active,
-  }
-  editBeforeFile.value = null
-  editAfterFile.value = null
+  editForm.value = { id: tpl.id, label: tpl.label, prompt: tpl.prompt ?? '', outlet_id: tpl.outlet_id ?? '', is_active: tpl.is_active }
+  editBeforeFile.value = null; editAfterFile.value = null
   showEdit.value = true
 }
 
@@ -109,15 +109,10 @@ async function handleUpdate() {
   isSubmitting.value = true
   error.value = null
   const form = new FormData()
-  form.append('label',         editForm.value.label)
-  form.append('prompt',        editForm.value.prompt)
-  form.append('tag',           editForm.value.tag)
-  form.append('tag_color_bg',  editForm.value.tag_color_bg)
-  form.append('tag_color_text',editForm.value.tag_color_text)
-  form.append('emoji',         editForm.value.emoji)
-  form.append('sort_order',    String(editForm.value.sort_order))
-  form.append('outlet_id',     editForm.value.outlet_id)
-  form.append('is_active',     String(editForm.value.is_active))
+  form.append('label',     editForm.value.label)
+  form.append('prompt',    editForm.value.prompt)
+  form.append('outlet_id', editForm.value.outlet_id)
+  form.append('is_active', String(editForm.value.is_active))
   if (editBeforeFile.value) form.append('before_file', editBeforeFile.value)
   if (editAfterFile.value)  form.append('after_file',  editAfterFile.value)
   await updateAiTemplate(editForm.value.id, form)
@@ -149,12 +144,17 @@ onMounted(() => { fetchOutlets(); fetchAll() })
       <div>
         <h5 class="text-h5 font-weight-bold">AI Templates</h5>
         <p class="text-caption text-medium-emphasis mt-1">
-          Kelola template AI Transform yang muncul di kiosk editor foto.
+          Kelola template AI Transform. Drag untuk mengatur urutan tampilan di kiosk.
         </p>
       </div>
-      <VBtn color="primary" prepend-icon="bx bx-plus" @click="showCreate = true">
-        Tambah Template
-      </VBtn>
+      <div class="d-flex align-center gap-2">
+        <VChip v-if="isSavingOrder" color="primary" size="small" variant="tonal" prepend-icon="bx bx-loader-alt">
+          Menyimpan urutan…
+        </VChip>
+        <VBtn color="primary" prepend-icon="bx bx-plus" @click="showCreate = true">
+          Tambah Template
+        </VBtn>
+      </div>
     </div>
 
     <!-- ── Filter ─────────────────────────────────────────────────────── -->
@@ -178,7 +178,7 @@ onMounted(() => { fetchOutlets(); fetchAll() })
       </VCardText>
     </VCard>
 
-    <!-- ── Template grid ──────────────────────────────────────────────── -->
+    <!-- ── Template list (drag-to-reorder) ────────────────────────────── -->
     <VCard flat border>
       <VCardText>
         <VProgressLinear v-if="loading" indeterminate color="primary" class="mb-4" />
@@ -189,39 +189,42 @@ onMounted(() => { fetchOutlets(); fetchAll() })
           <p class="text-caption">Klik "Tambah Template" untuk membuat template pertama.</p>
         </div>
 
-        <div class="tpl-grid">
+        <div class="tpl-list">
           <div
-            v-for="tpl in templates"
+            v-for="(tpl, i) in templates"
             :key="tpl.id"
-            class="tpl-card"
-            :class="{ 'tpl-card-inactive': !tpl.is_active }"
+            class="tpl-row"
+            :class="{
+              'tpl-row-inactive': !tpl.is_active,
+              'tpl-row-dragging': dragIndex === i,
+              'tpl-row-over': overIndex === i && dragIndex !== i,
+            }"
+            draggable="true"
+            @dragstart="onDragStart(i)"
+            @dragover.prevent="onDragOver(i)"
+            @drop.prevent="onDrop(i)"
+            @dragend="onDragEnd"
           >
+            <!-- Drag handle -->
+            <VIcon size="18" color="grey" class="drag-handle" style="cursor:grab">bx bx-menu</VIcon>
+
             <!-- Before / after thumbnails -->
-            <div class="tpl-images">
-              <div class="tpl-img-wrap">
-                <img v-if="tpl.before_url" :src="tpl.before_url" alt="before" class="tpl-img" />
-                <div v-else class="tpl-img-placeholder">Before</div>
-                <span class="tpl-img-label">Before</span>
+            <div class="tpl-thumbs">
+              <div class="tpl-thumb">
+                <img v-if="tpl.before_url" :src="tpl.before_url" alt="before" />
+                <div v-else class="tpl-thumb-empty" />
               </div>
-              <div class="tpl-img-wrap">
-                <img v-if="tpl.after_url" :src="tpl.after_url" alt="after" class="tpl-img" />
-                <div v-else class="tpl-img-placeholder">After</div>
-                <span class="tpl-img-label">After</span>
+              <VIcon size="12" color="grey-lighten-1">bx bx-right-arrow-alt</VIcon>
+              <div class="tpl-thumb">
+                <img v-if="tpl.after_url" :src="tpl.after_url" alt="after" />
+                <div v-else class="tpl-thumb-empty" />
               </div>
             </div>
 
-            <!-- Info -->
-            <div class="tpl-info">
-              <div class="d-flex align-center gap-1 mb-1">
-                <span v-if="tpl.emoji" style="font-size:16px; line-height:1">{{ tpl.emoji }}</span>
-                <span class="tpl-label" :title="tpl.label">{{ tpl.label }}</span>
-              </div>
-              <div class="d-flex align-center gap-1 flex-wrap">
-                <VChip
-                  v-if="tpl.tag"
-                  size="x-small"
-                  :style="tpl.tag_color ? `background:${tpl.tag_color.bg};color:${tpl.tag_color.color}` : ''"
-                >{{ tpl.tag }}</VChip>
+            <!-- Label + chips -->
+            <div class="tpl-meta flex-1 min-width-0">
+              <p class="tpl-label">{{ tpl.label }}</p>
+              <div class="d-flex gap-1 mt-1 flex-wrap">
                 <VChip size="x-small" :color="tpl.is_active ? 'success' : 'default'">
                   {{ tpl.is_active ? 'Aktif' : 'Off' }}
                 </VChip>
@@ -230,12 +233,12 @@ onMounted(() => { fetchOutlets(); fetchAll() })
             </div>
 
             <!-- Actions -->
-            <div class="tpl-actions">
+            <div class="d-flex gap-1 flex-shrink-0">
               <VBtn icon variant="text" size="x-small" @click="openEdit(tpl)">
-                <VIcon size="15" color="warning">bx bx-edit-alt</VIcon>
+                <VIcon size="16" color="warning">bx bx-edit-alt</VIcon>
               </VBtn>
               <VBtn icon variant="text" size="x-small" @click="handleDelete(tpl.id)">
-                <VIcon size="15" color="error">bx bx-trash-alt</VIcon>
+                <VIcon size="16" color="error">bx bx-trash-alt</VIcon>
               </VBtn>
             </div>
           </div>
@@ -244,7 +247,7 @@ onMounted(() => { fetchOutlets(); fetchAll() })
     </VCard>
 
     <!-- ── Create dialog ──────────────────────────────────────────────── -->
-    <VDialog v-model="showCreate" max-width="620" persistent>
+    <VDialog v-model="showCreate" max-width="580" persistent>
       <VCard>
         <VCardTitle class="d-flex align-center gap-2 pa-4 pb-2">
           <VIcon color="primary">bx bx-bot</VIcon>
@@ -257,35 +260,14 @@ onMounted(() => { fetchOutlets(); fetchAll() })
         <VDivider />
 
         <VCardText class="pa-4 d-flex flex-column gap-4">
-          <!-- Label + Emoji + Sort -->
-          <div class="d-flex gap-3">
-            <VTextField
-              v-model="createLabel"
-              label="Label *"
-              density="compact"
-              variant="outlined"
-              style="flex:1"
-              placeholder="cth: 3D Toy"
-            />
-            <VTextField
-              v-model="createEmoji"
-              label="Emoji"
-              density="compact"
-              variant="outlined"
-              style="width:80px; font-size:20px"
-              placeholder="🧸"
-            />
-            <VTextField
-              v-model.number="createSortOrder"
-              label="Urutan"
-              density="compact"
-              variant="outlined"
-              type="number"
-              style="width:90px"
-            />
-          </div>
+          <VTextField
+            v-model="createLabel"
+            label="Label *"
+            density="compact"
+            variant="outlined"
+            placeholder="cth: 3D Toy"
+          />
 
-          <!-- Prompt -->
           <VTextarea
             v-model="createPrompt"
             label="Prompt AI *"
@@ -297,35 +279,8 @@ onMounted(() => { fetchOutlets(); fetchAll() })
             placeholder="Q-version modern style, 3D toy, original character rendering…"
           />
 
-          <!-- Tag + colors -->
-          <div class="d-flex gap-3 align-center flex-wrap">
-            <VTextField
-              v-model="createTag"
-              label="Tag"
-              density="compact"
-              variant="outlined"
-              style="flex:1; min-width:100px"
-              placeholder="cth: 3D, Anime, Fun"
-            />
-            <div class="d-flex align-center gap-2">
-              <label class="text-caption text-medium-emphasis">BG</label>
-              <input type="color" v-model="createTagBg" style="width:36px; height:36px; border:none; cursor:pointer; border-radius:6px" />
-            </div>
-            <div class="d-flex align-center gap-2">
-              <label class="text-caption text-medium-emphasis">Teks</label>
-              <input type="color" v-model="createTagColor" style="width:36px; height:36px; border:none; cursor:pointer; border-radius:6px" />
-            </div>
-            <!-- Live preview -->
-            <span
-              v-if="createTag"
-              class="text-xs font-weight-bold px-2 py-1 rounded-pill"
-              :style="`background:${createTagBg};color:${createTagColor}`"
-            >{{ createTag }}</span>
-          </div>
-
           <!-- Before / After images -->
           <div class="d-flex gap-3">
-            <!-- Before -->
             <div class="flex-1">
               <p class="text-caption font-weight-bold mb-1">Gambar Before (contoh)</p>
               <div class="drop-zone" @click="beforeFileInput?.click()">
@@ -335,10 +290,9 @@ onMounted(() => { fetchOutlets(); fetchAll() })
                   <p class="text-caption mt-1">Klik upload</p>
                 </template>
               </div>
-              <input ref="beforeFileInput" type="file" accept="image/*" style="display:none" @change="e => beforeFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
+              <input ref="beforeFileInput" type="file" accept="image/*" style="display:none"
+                @change="e => beforeFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
             </div>
-
-            <!-- After -->
             <div class="flex-1">
               <p class="text-caption font-weight-bold mb-1">Gambar After (contoh)</p>
               <div class="drop-zone" @click="afterFileInput?.click()">
@@ -348,11 +302,11 @@ onMounted(() => { fetchOutlets(); fetchAll() })
                   <p class="text-caption mt-1">Klik upload</p>
                 </template>
               </div>
-              <input ref="afterFileInput" type="file" accept="image/*" style="display:none" @change="e => afterFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
+              <input ref="afterFileInput" type="file" accept="image/*" style="display:none"
+                @change="e => afterFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
             </div>
           </div>
 
-          <!-- Outlet -->
           <VSelect
             v-model="createOutlet"
             :items="outletItems"
@@ -368,13 +322,7 @@ onMounted(() => { fetchOutlets(); fetchAll() })
         <VCardActions class="pa-4">
           <VSpacer />
           <VBtn variant="text" :disabled="isSubmitting" @click="showCreate = false; resetCreateForm()">Batal</VBtn>
-          <VBtn
-            color="primary"
-            variant="elevated"
-            :loading="isSubmitting"
-            :disabled="!createLabel || !createPrompt"
-            @click="handleCreate"
-          >
+          <VBtn color="primary" variant="elevated" :loading="isSubmitting" :disabled="!createLabel || !createPrompt" @click="handleCreate">
             Simpan
           </VBtn>
         </VCardActions>
@@ -382,7 +330,7 @@ onMounted(() => { fetchOutlets(); fetchAll() })
     </VDialog>
 
     <!-- ── Edit dialog ─────────────────────────────────────────────────── -->
-    <VDialog v-model="showEdit" max-width="620">
+    <VDialog v-model="showEdit" max-width="580">
       <VCard>
         <VCardTitle class="d-flex align-center gap-2 pa-4 pb-2">
           <VIcon color="warning">bx bx-edit-alt</VIcon>
@@ -393,26 +341,9 @@ onMounted(() => { fetchOutlets(); fetchAll() })
         <VDivider />
 
         <VCardText class="pa-4 d-flex flex-column gap-4">
-          <div class="d-flex gap-3">
-            <VTextField v-model="editForm.label" label="Label *" density="compact" variant="outlined" style="flex:1" />
-            <VTextField v-model="editForm.emoji" label="Emoji" density="compact" variant="outlined" style="width:80px; font-size:20px" />
-            <VTextField v-model.number="editForm.sort_order" label="Urutan" density="compact" variant="outlined" type="number" style="width:90px" />
-          </div>
+          <VTextField v-model="editForm.label" label="Label *" density="compact" variant="outlined" />
 
           <VTextarea v-model="editForm.prompt" label="Prompt AI *" density="compact" variant="outlined" rows="4" />
-
-          <div class="d-flex gap-3 align-center flex-wrap">
-            <VTextField v-model="editForm.tag" label="Tag" density="compact" variant="outlined" style="flex:1; min-width:100px" />
-            <div class="d-flex align-center gap-2">
-              <label class="text-caption text-medium-emphasis">BG</label>
-              <input type="color" v-model="editForm.tag_color_bg" style="width:36px; height:36px; border:none; cursor:pointer; border-radius:6px" />
-            </div>
-            <div class="d-flex align-center gap-2">
-              <label class="text-caption text-medium-emphasis">Teks</label>
-              <input type="color" v-model="editForm.tag_color_text" style="width:36px; height:36px; border:none; cursor:pointer; border-radius:6px" />
-            </div>
-            <span v-if="editForm.tag" class="text-xs font-weight-bold px-2 py-1 rounded-pill" :style="`background:${editForm.tag_color_bg};color:${editForm.tag_color_text}`">{{ editForm.tag }}</span>
-          </div>
 
           <!-- Replace images (optional) -->
           <div class="d-flex gap-3">
@@ -425,7 +356,8 @@ onMounted(() => { fetchOutlets(); fetchAll() })
                   <p class="text-caption">Ganti</p>
                 </template>
               </div>
-              <input ref="editBeforeFileInput" type="file" accept="image/*" style="display:none" @change="e => editBeforeFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
+              <input ref="editBeforeFileInput" type="file" accept="image/*" style="display:none"
+                @change="e => editBeforeFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
             </div>
             <div class="flex-1">
               <p class="text-caption font-weight-bold mb-1">Ganti Gambar After (opsional)</p>
@@ -436,7 +368,8 @@ onMounted(() => { fetchOutlets(); fetchAll() })
                   <p class="text-caption">Ganti</p>
                 </template>
               </div>
-              <input ref="editAfterFileInput" type="file" accept="image/*" style="display:none" @change="e => editAfterFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
+              <input ref="editAfterFileInput" type="file" accept="image/*" style="display:none"
+                @change="e => editAfterFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
             </div>
           </div>
 
@@ -463,82 +396,55 @@ onMounted(() => { fetchOutlets(); fetchAll() })
 </template>
 
 <style scoped>
-/* ── Template grid ─────────────────────────────────────────────────────────── */
-.tpl-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-}
+/* ── Template list ─────────────────────────────────────────────────────────── */
+.tpl-list { display: flex; flex-direction: column; gap: 6px; }
 
-.tpl-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #fff;
-  transition: box-shadow 0.2s, transform 0.15s;
-}
-.tpl-card:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-  transform: translateY(-2px);
-}
-.tpl-card-inactive { opacity: 0.5; }
-
-.tpl-images {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  height: 90px;
-  background: #000;
-}
-
-.tpl-img-wrap {
-  position: relative;
-  overflow: hidden;
+.tpl-row {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  user-select: none;
 }
-.tpl-img-wrap:first-child { border-right: 1px solid #333; }
+.tpl-row:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.tpl-row-inactive { opacity: 0.5; }
+.tpl-row-dragging { opacity: 0.4; border-style: dashed; }
+.tpl-row-over { border-color: #4f46e5; box-shadow: 0 0 0 2px #c7d2fe; }
 
-.tpl-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+.drag-handle { cursor: grab; flex-shrink: 0; }
+.drag-handle:active { cursor: grabbing; }
 
-.tpl-img-placeholder {
-  color: #666;
-  font-size: 11px;
-}
-
-.tpl-img-label {
-  position: absolute;
-  bottom: 4px;
-  left: 4px;
-  font-size: 9px;
-  font-weight: 700;
-  color: #fff;
-  background: rgba(0,0,0,0.55);
-  padding: 1px 5px;
-  border-radius: 4px;
+/* ── Thumbnails ────────────────────────────────────────────────────────────── */
+.tpl-thumbs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
-.tpl-info {
-  padding: 8px 10px 4px;
+.tpl-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #000;
+  flex-shrink: 0;
 }
+.tpl-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tpl-thumb-empty { width: 100%; height: 100%; background: #e5e7eb; }
 
+/* ── Meta ──────────────────────────────────────────────────────────────────── */
+.tpl-meta { min-width: 0; }
 .tpl-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: block;
-}
-
-.tpl-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding: 2px 4px 4px;
 }
 
 /* ── Drop zone ─────────────────────────────────────────────────────────────── */
@@ -557,16 +463,7 @@ onMounted(() => { fetchOutlets(); fetchAll() })
   text-align: center;
   overflow: hidden;
 }
-.drop-zone:hover {
-  background: #ede9fe;
-  border-color: #818cf8;
-}
+.drop-zone:hover { background: #ede9fe; border-color: #818cf8; }
 .drop-zone-sm { min-height: 72px; }
-
-.drop-preview {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 6px;
-}
+.drop-preview { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
 </style>
