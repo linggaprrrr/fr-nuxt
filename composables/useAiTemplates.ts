@@ -72,13 +72,15 @@ export function useAiTemplates() {
     }
   }
 
-  const tryAiTemplate = async (id: string, imageFile: File): Promise<string | null> => {
+  const tryAiTemplate = async (imageFile: File, opts: { templateId?: string; prompt?: string }): Promise<string | null> => {
     loading.value = true
     error.value = null
     try {
       const form = new FormData()
       form.append('image', imageFile)
-      const res = await authFetch<{ image_url: string }>(`/ai-templates/${id}/preview`, { method: 'POST', body: form })
+      if (opts.templateId) form.append('template_id', opts.templateId)
+      if (opts.prompt)     form.append('prompt', opts.prompt)
+      const res = await authFetch<{ image_url: string }>('/ai-templates/preview', { method: 'POST', body: form })
       return res.image_url ?? null
     } catch (err: any) {
       error.value = err.data?.detail || err.message || 'Gagal menjalankan prompt.'

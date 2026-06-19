@@ -38,7 +38,9 @@ const overIndex     = ref<number | null>(null)
 const isSavingOrder = ref(false)
 
 // ── Try Prompt ─────────────────────────────────────────────────────────────
+const tryMode        = ref<'template' | 'custom'>('template')
 const tryTemplateId  = ref<string>('')
+const tryCustomPrompt = ref<string>('')
 const tryImageFile   = ref<File | null>(null)
 const tryImageInput  = ref<HTMLInputElement | null>(null)
 const tryResultUrl   = ref<string | null>(null)
@@ -48,12 +50,22 @@ const tryImagePreview = computed(() => tryImageFile.value ? URL.createObjectURL(
 const templateItems = computed(() => templates.value.map(t => ({ title: t.label, value: t.id })))
 const selectedTemplate = computed(() => templates.value.find(t => t.id === tryTemplateId.value) ?? null)
 
+const tryReady = computed(() => {
+  if (!tryImageFile.value) return false
+  if (tryMode.value === 'template') return !!tryTemplateId.value
+  return !!tryCustomPrompt.value.trim()
+})
+
 async function handleTry() {
-  if (!tryTemplateId.value) { toast.error('Pilih template terlebih dahulu.'); return }
-  if (!tryImageFile.value)  { toast.error('Upload gambar terlebih dahulu.'); return }
+  if (!tryImageFile.value) { toast.error('Upload gambar terlebih dahulu.'); return }
+  if (tryMode.value === 'template' && !tryTemplateId.value) { toast.error('Pilih template terlebih dahulu.'); return }
+  if (tryMode.value === 'custom' && !tryCustomPrompt.value.trim()) { toast.error('Tulis prompt terlebih dahulu.'); return }
   isTrying.value = true
   tryResultUrl.value = null
-  const url = await tryAiTemplate(tryTemplateId.value, tryImageFile.value)
+  const opts = tryMode.value === 'template'
+    ? { templateId: tryTemplateId.value }
+    : { prompt: tryCustomPrompt.value.trim() }
+  const url = await tryAiTemplate(tryImageFile.value, opts)
   isTrying.value = false
   if (!url) { toast.error(error.value || 'Gagal menjalankan prompt.'); return }
   tryResultUrl.value = url
@@ -275,26 +287,50 @@ onMounted(() => { fetchOutlets(); fetchAll() })
           <VCol cols="12" md="5">
             <VCard flat border rounded="lg">
               <VCardText class="d-flex flex-column gap-4">
-                <div>
-                  <p class="text-subtitle-2 font-weight-bold mb-2">1. Pilih Template</p>
-                  <VSelect
-                    v-model="tryTemplateId"
-                    :items="templateItems"
-                    label="Template"
-                    variant="outlined"
-                    density="comfortable"
-                    hide-details
-                  />
-                </div>
 
-                <!-- Selected template info -->
-                <VCard v-if="selectedTemplate" flat color="grey-lighten-5" rounded="lg">
-                  <VCardText class="pa-3">
-                    <p class="text-caption text-medium-emphasis mb-1">Prompt yang akan dijalankan:</p>
-                    <p class="text-body-2" style="white-space:pre-wrap;font-family:monospace;font-size:12px;">{{ selectedTemplate.prompt }}</p>
-                  </VCardText>
-                </VCard>
+                <!-- Mode toggle -->
+                <VBtnToggle v-model="tryMode" mandatory color="primary" variant="outlined" density="compact" rounded="lg" divided class="w-100">
+                  <VBtn value="template" prepend-icon="bx-list-ul" class="flex-1">Gunakan Template</VBtn>
+                  <VBtn value="custom" prepend-icon="bx-edit" class="flex-1">Prompt Sendiri</VBtn>
+                </VBtnToggle>
 
+                <!-- Template mode -->
+                <template v-if="tryMode === 'template'">
+                  <div>
+                    <p class="text-subtitle-2 font-weight-bold mb-2">1. Pilih Template</p>
+                    <VSelect
+                      v-model="tryTemplateId"
+                      :items="templateItems"
+                      label="Template"
+                      variant="outlined"
+                      density="comfortable"
+                      hide-details
+                    />
+                  </div>
+                  <VCard v-if="selectedTemplate" flat color="grey-lighten-5" rounded="lg">
+                    <VCardText class="pa-3">
+                      <p class="text-caption text-medium-emphasis mb-1">Prompt yang akan dijalankan:</p>
+                      <p class="text-body-2" style="white-space:pre-wrap;font-family:monospace;font-size:12px;">{{ selectedTemplate.prompt }}</p>
+                    </VCardText>
+                  </VCard>
+                </template>
+
+                <!-- Custom prompt mode -->
+                <template v-else>
+                  <div>
+                    <p class="text-subtitle-2 font-weight-bold mb-2">1. Tulis Prompt</p>
+                    <VTextarea
+                      v-model="tryCustomPrompt"
+                      label="Prompt AI"
+                      variant="outlined"
+                      rows="5"
+                      hint="Prompt ini dikirim langsung ke Gemini tanpa disimpan"
+                      persistent-hint
+                    />
+                  </div>
+                </template>
+
+                <!-- Image upload -->
                 <div>
                   <p class="text-subtitle-2 font-weight-bold mb-2">2. Upload Gambar</p>
                   <div class="try-drop-zone" :class="{ 'has-image': !!tryImagePreview }" @click="tryImageInput?.click()">
@@ -313,7 +349,7 @@ onMounted(() => { fetchOutlets(); fetchAll() })
                     color="primary"
                     prepend-icon="bx-play"
                     :loading="isTrying"
-                    :disabled="!tryTemplateId || !tryImageFile"
+                    :disabled="!tryReady"
                     class="flex-1"
                     @click="handleTry"
                   >
@@ -344,17 +380,25 @@ onMounted(() => { fetchOutlets(); fetchAll() })
                 <!-- Result -->
                 <div v-else-if="tryResultUrl" class="result-wrap">
                   <img :src="tryResultUrl" class="result-img" alt="AI result" />
-                  <div class="d-flex justify-end mt-3">
+                  <div class="d-flex gap-2 mt-3">
                     <VBtn
                       color="success"
                       prepend-icon="bx-download"
                       :href="tryResultUrl"
                       download="ai-result.jpg"
                       target="_blank"
-                      size="small"
-                      variant="tonal"
+                      class="flex-1"
                     >
-                      Download
+                      Download Hasil
+                    </VBtn>
+                    <VBtn
+                      v-if="tryMode === 'custom' && tryCustomPrompt"
+                      color="primary"
+                      prepend-icon="bx-plus"
+                      variant="tonal"
+                      @click="showCreate = true; createPrompt = tryCustomPrompt; activeTab = 'templates'"
+                    >
+                      Simpan sebagai Template
                     </VBtn>
                   </div>
                 </div>
