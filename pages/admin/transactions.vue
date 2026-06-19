@@ -1,151 +1,138 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
 import { useTransactions } from '@/composables/useTransactions'
 import dayjs from 'dayjs'
+import type { DataTableHeader } from '@/components/AppDataTable.vue'
 
-const {
-  transactions,
-  loading,
-  error,
-  getTransactions,
-  updateTransactionStatus,
-  deleteTransaction
-} = useTransactions()
-
+const { transactions, loading, error, getTransactions, updateTransactionStatus, deleteTransaction } = useTransactions()
+const toast = useToast()
+const { confirm } = useConfirm()
 
 const page = ref(1)
 const limit = 24
 const total = ref(0)
 const search = ref('')
 
-onMounted(() => {
-  fetchTransactions()
-})
-
-const fetchTransactions = async () => {
-  await getTransactions({ page: page.value, limit, search: search.value })
-  if (transactions.value) {
-    total.value = transactions.value.total
-  }
-}
-
-watch([page, search], fetchTransactions)
-
-const handleDelete = async (id: string) => {
-  if (confirm('Hapus transaksi ini?')) {
-    await deleteTransaction(id)
-    fetchTransactions()
-  }
-}
-
-// Edit status modal
-const editDialog = ref(false)
-const editingTrxId = ref<string>('')
-const editingStatus = ref<string>('')
 const statusOptions = [
   { title: 'Pending', value: 'pending' },
   { title: 'Lunas', value: 'paid' },
   { title: 'Dibatalkan', value: 'cancelled' },
   { title: 'Kadaluarsa', value: 'expired' },
 ]
+const statusLabel: Record<string, string> = { paid: 'Lunas', cancelled: 'Dibatalkan', expired: 'Kadaluarsa', pending: 'Pending' }
 
-const openEditDialog = (trx: any) => {
+const editDialog = ref(false)
+const editingTrxId = ref('')
+const editingStatus = ref('')
+
+const headers: DataTableHeader[] = [
+  { key: 'trx_code', title: 'Kode Transaksi', nowrap: true },
+  { key: 'email', title: 'Email' },
+  { key: 'photos', title: 'Foto', align: 'center', width: '80px' },
+  { key: 'final_price', title: 'Harga', nowrap: true },
+  { key: 'status', title: 'Status' },
+  { key: 'paid_at', title: 'Waktu Bayar', nowrap: true },
+  { key: 'created_at', title: 'Dibuat', nowrap: true },
+  { key: 'actions', title: '', align: 'end', width: '80px' },
+]
+
+onMounted(fetchTransactions)
+
+async function fetchTransactions() {
+  await getTransactions({ page: page.value, limit, search: search.value })
+  if (transactions.value) total.value = transactions.value.total
+}
+
+watch([page, search], fetchTransactions)
+
+function openEditDialog(trx: any) {
   editingTrxId.value = trx.id
   editingStatus.value = trx.status
   editDialog.value = true
 }
 
-const handleUpdateStatus = async () => {
+async function handleUpdateStatus() {
   await updateTransactionStatus(editingTrxId.value, editingStatus.value)
-  if (!error.value) editDialog.value = false
+  if (!error.value) {
+    editDialog.value = false
+    toast.success('Status transaksi diperbarui')
+    fetchTransactions()
+  } else {
+    toast.error(error.value)
+  }
+}
+
+async function handleDelete(trx: any) {
+  if (!await confirm({ title: 'Hapus Transaksi', message: `Hapus transaksi ${trx.trx_code}?`, tone: 'danger', confirmText: 'Hapus' })) return
+  await deleteTransaction(trx.id)
+  toast.success('Transaksi dihapus')
+  fetchTransactions()
 }
 </script>
+
 <template>
-  <VCard title="Daftar Transaksi" class="mb-4">
-    <VCardText>
-      <VTextField
-        v-model="search"
-        label="Search..."
-        prepend-inner-icon="bx bx-search"
-        clearable
-        class="mb-4"
-      />
-    </VCardText>
+  <div>
+    <PageHeader title="Transaksi" subtitle="Daftar semua transaksi." />
 
-    <VTable density="compact">
-      <thead>
-        <tr>
-          <th>#</th>          
-          <th>Kode Transaksi</th>                    
-          <th>Email</th>                    
-          <th>Jumlah Foto</th>    
-          <th>Final Price</th>          
-          <th>Status</th>
-          <th>Waktu Bayar</th>          
-          <th>Dibuat</th>
-          <th>Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-if="!loading && transactions?.data?.length === 0">
-          <td colspan="13" class="text-center">Tidak ada data</td>
-        </tr>
-        <tr v-for="(trx, index) in transactions?.data" :key="trx.id">
-          <td>{{ index + 1 + (page - 1) * limit }}</td>          
-          <td>{{ trx.trx_code ?? '-' }}</td>                    
-          <td>{{ trx.user?.email ?? '-' }}</td>                    
-          <td class="text-center">{{ trx.photos.length }}</td>   
-          <td>Rp {{ trx.final_price.toLocaleString('id-ID') }}</td>          
-          <td>
-            <VChip :color="trx.status === 'paid' ? 'success' : trx.status === 'cancelled' ? 'error' : trx.status === 'expired' ? 'grey' : 'warning'" size="small">
-              {{ trx.status === 'paid' ? 'Lunas' : trx.status === 'cancelled' ? 'Dibatalkan' : trx.status === 'expired' ? 'Kadaluarsa' : 'Pending' }}
-            </VChip>
-          </td>          
-          <td>{{ trx.paid_at ? new Date(trx.paid_at).toLocaleString('id-ID') : '-' }}</td>
-          
-          {{ dayjs(trx.created_at).format('DD/MM/YYYY HH:mm') }}
-          <td>
-            <VBtn icon variant="text" size="small" @click="openEditDialog(trx)">
-              <VIcon color="primary">bx bx-edit-alt</VIcon>
+    <VCard rounded="lg">
+      <AppDataTable
+        :headers="headers"
+        :items="transactions?.data ?? []"
+        :loading="loading"
+        show-index
+        :page="page"
+        :items-per-page="limit"
+        :total="total"
+        empty-title="Belum ada transaksi"
+        @update:page="p => { page = p; fetchTransactions() }"
+      >
+        <template #toolbar>
+          <VTextField v-model="search" placeholder="Cari email atau kode..." prepend-inner-icon="bx-search" clearable style="max-width:320px" />
+        </template>
+
+        <template #item.trx_code="{ item }">{{ item.trx_code ?? '-' }}</template>
+        <template #item.email="{ item }">{{ item.user?.email ?? '-' }}</template>
+        <template #item.photos="{ item }">{{ item.photos.length }}</template>
+        <template #item.final_price="{ item }">Rp {{ item.final_price.toLocaleString('id-ID') }}</template>
+
+        <template #item.status="{ item }">
+          <StatusChip
+            :status="item.status"
+            :map="{ paid: 'success', cancelled: 'error', expired: 'secondary', pending: 'warning' }"
+          >{{ statusLabel[item.status] ?? item.status }}</StatusChip>
+        </template>
+
+        <template #item.paid_at="{ item }">
+          {{ item.paid_at ? dayjs(item.paid_at).format('DD/MM/YY HH:mm') : '-' }}
+        </template>
+
+        <template #item.created_at="{ item }">
+          {{ dayjs(item.created_at).format('DD/MM/YY HH:mm') }}
+        </template>
+
+        <template #item.actions="{ item }">
+          <div class="d-flex justify-end" style="gap:4px">
+            <VBtn icon variant="text" size="small" @click="openEditDialog(item)">
+              <VIcon color="primary" icon="bx-edit-alt" />
             </VBtn>
-            <VBtn icon variant="text" size="small" @click="handleDelete(trx.id)">
-              <VIcon color="error">bx bx-trash-alt</VIcon>
+            <VBtn icon variant="text" size="small" color="error" @click="handleDelete(item)">
+              <VIcon icon="bx-trash-alt" />
             </VBtn>
-          </td>
-        </tr>
-      </tbody>
-    </VTable>
-
-
-    <VCardActions class="justify-center">
-      <VPagination
-        v-model="page"
-        :length="Math.ceil(total / limit)"
-        total-visible="5"
-        prev-icon="bx bx-chevron-left"
-        next-icon="bx bx-chevron-right"
-      />
-    </VCardActions>
-  </VCard>
-
-  <!-- Edit Status Dialog -->
-  <VDialog v-model="editDialog" max-width="400">
-    <VCard title="Edit Status Transaksi">
-      <VCardText>
-        <VAlert v-if="error" type="error" class="mb-4" density="compact">{{ error }}</VAlert>
-        <VSelect
-          v-model="editingStatus"
-          :items="statusOptions"
-          item-title="title"
-          item-value="value"
-          label="Status"
-          variant="outlined"
-        />
-      </VCardText>
-      <VCardActions class="justify-end">
-        <VBtn variant="text" @click="editDialog = false">Batal</VBtn>
-        <VBtn color="primary" :loading="loading" @click="handleUpdateStatus">Simpan</VBtn>
-      </VCardActions>
+          </div>
+        </template>
+      </AppDataTable>
     </VCard>
-  </VDialog>
+
+    <AppModal
+      v-model="editDialog"
+      title="Edit Status Transaksi"
+      icon="bx-transfer"
+      :loading="loading"
+      confirm-text="Simpan"
+      cancel-text="Batal"
+      :max-width="400"
+      @confirm="handleUpdateStatus"
+    >
+      <VSelect v-model="editingStatus" :items="statusOptions" item-title="title" item-value="value" label="Status" />
+    </AppModal>
+  </div>
 </template>

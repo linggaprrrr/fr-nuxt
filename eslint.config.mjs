@@ -20,7 +20,8 @@ export default withNuxt(
       '@typescript-eslint/no-empty-object-type': 'warn',
       'vue/no-unused-vars': 'warn',
       'vue/no-use-v-if-with-v-for': 'warn',
-      'vue/valid-v-slot': 'warn',
+      // Allow Vuetify's dynamic slot syntax (e.g. #item.name) used by AppDataTable.
+      'vue/valid-v-slot': ['error', { allowModifiers: true }],
       'no-useless-catch': 'warn',
       'no-empty': 'warn',
       'no-empty-pattern': 'warn',

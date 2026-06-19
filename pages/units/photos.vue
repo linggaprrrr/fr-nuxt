@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue'
-
 import type { Photo } from '~/types/photo'
+
 const { getPhotos, deletePhotoById } = usePhotos()
+const toast = useToast()
+const { confirm } = useConfirm()
 
 const page = ref(1)
 const limit = 24
@@ -24,34 +25,22 @@ async function fetchPhotos() {
 
       const stored = localStorage.getItem('boundingBoxes')
       const boxesFromStorage = stored ? JSON.parse(stored) : []
-
       photos.value.forEach(photo => {
-        const matched = boxesFromStorage.find(item => item.id === photo.id)
-        if (matched) {
-          photo.bounding_boxes = matched.boundingBoxes
-        }
+        const matched = boxesFromStorage.find((item: any) => item.id === photo.id)
+        if (matched) photo.bounding_boxes = matched.boundingBoxes
       })
-      
-      nextTick(() => {
-        photos.value.forEach(photo => updateImageSize(photo.id))
-      })
+
+      nextTick(() => { photos.value.forEach(photo => updateImageSize(photo.id)) })
     } else {
       photos.value = []
     }
-  } catch (e) {
-    console.error(e)
-    photos.value = []
-  } finally {
-    isLoading.value = false
-  }
+  } catch { photos.value = [] }
+  finally { isLoading.value = false }
 }
 
 function onImageLoad(e: Event, photoId: string) {
   const img = e.target as HTMLImageElement
-  if (img) {
-    imageRefs.set(photoId, img)
-    updateImageSize(photoId)
-  }
+  if (img) { imageRefs.set(photoId, img); updateImageSize(photoId) }
 }
 
 function updateImageSize(photoId: string) {
@@ -61,37 +50,44 @@ function updateImageSize(photoId: string) {
       displayWidth: img.clientWidth,
       displayHeight: img.clientHeight,
       naturalWidth: img.naturalWidth,
-      naturalHeight: img.naturalHeight
+      naturalHeight: img.naturalHeight,
     }
   }
 }
 
 function handleResize() {
-  nextTick(() => {
-    photos.value.forEach(photo => updateImageSize(photo.id))
-  })
+  nextTick(() => { photos.value.forEach(photo => updateImageSize(photo.id)) })
 }
 
-function getBoxStyle(box, size) {
+function getBoxStyle(box: any, size: any) {
   const scaleX = size.displayWidth / size.naturalWidth
   const scaleY = size.displayHeight / size.naturalHeight
-  return {
-    left: box.x * scaleX + 'px',
-    top: box.y * scaleY + 'px',
-    width: box.w * scaleX + 'px',
-    height: box.h * scaleY + 'px'
-  }
+  return { left: box.x * scaleX + 'px', top: box.y * scaleY + 'px', width: box.w * scaleX + 'px', height: box.h * scaleY + 'px' }
 }
 
-function nextPage() {
-  if (page.value < Math.ceil(total.value / limit)) {
-    page.value++
-  }
+const formatDate = (dateStr: string) => new Date(dateStr).toLocaleString()
+
+async function downloadPhoto(url: string) {
+  try {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    const blobUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = ''
+    link.click()
+    window.URL.revokeObjectURL(blobUrl)
+  } catch { toast.error('Gagal mengunduh foto') }
 }
 
-function prevPage() {
-  if (page.value > 1) {
-    page.value--
+async function handleDelete(photoId: string) {
+  if (!await confirm({ title: 'Hapus Foto', message: 'Hapus foto ini?', tone: 'danger', confirmText: 'Hapus' })) return
+  const success = await deletePhotoById(photoId)
+  if (success) {
+    photos.value = photos.value.filter(p => p.id !== photoId)
+    toast.success('Foto dihapus')
+  } else {
+    toast.error('Gagal menghapus foto')
   }
 }
 
@@ -101,163 +97,93 @@ onMounted(() => {
   fetchPhotos()
 })
 
+onUnmounted(() => { window.removeEventListener('resize', handleResize) })
+
 watch(page, fetchPhotos)
 
-const formatDate = (dateStr) => {
-  const date = new Date(dateStr)
-  return date.toLocaleString()
-}
-
-async function downloadPhoto(url: string) {
-  try {
-    const response = await fetch(url)
-    const blob = await response.blob()
-    const blobUrl = window.URL.createObjectURL(blob)
-
-    const link = document.createElement('a')
-    link.href = blobUrl
-    link.download = '' // Let the browser decide the filename
-    link.click()
-    window.URL.revokeObjectURL(blobUrl)
-  } catch (error) {
-    console.error('Download failed:', error)
-  }
-}
-
-async function handleDelete(photoId: string) {
-  if (confirm('Are you sure you want to delete this photo?')) {
-    const success = await deletePhotoById(photoId)
-    if (success) {
-      photos.value = photos.value.filter(p => p.id !== photoId)
-    } else {
-      alert('Failed to delete the photo.')
-    }
-  }
-}
-
-definePageMeta({
-  layout: 'unit'
-})
+definePageMeta({ layout: 'unit' })
 </script>
 
 <template>
-  <v-container>
-    <v-row>
-      <v-col cols="12" class="text-center my-4" v-if="isLoading">
-        <v-progress-circular indeterminate color="primary" />
-      </v-col>
+  <div>
+    <PageHeader title="Foto" subtitle="Kelola foto unit." />
 
-      <template v-else>
-        <v-col
-          v-for="photo in photos"
-          :key="photo.id"
-          cols="12"
-          sm="6"
-          md="3"
-        >
-          <v-card elevation="16">
-            <div class="relative">
-              <img
-                :src="photo.thumbnail_path"
-                alt="photo"
-                class="w-full h-auto photo-img"
-                :data-id="photo.id"
-                @load="e => onImageLoad(e, photo.id)"
-              />
-              <div
-                v-for="(box, index) in photo.bounding_boxes || []"
-                :key="index"
-                class="bounding-box"
-                v-if="imageSizes[photo.id]"
-                :style="getBoxStyle(box, imageSizes[photo.id])"
-              ></div>
-            </div>
+    <VRow v-if="isLoading">
+      <VCol cols="12" class="text-center py-12">
+        <VProgressCircular indeterminate color="primary" size="48" />
+      </VCol>
+    </VRow>
 
-            <v-card-title>              
-              {{ photo.filename }}
-            </v-card-title>
-            <v-card-subtitle>
-              <small><code>Uploaded at: {{ formatDate(photo.uploaded_at) }}</code></small>
-            </v-card-subtitle>
-          
-            <div>              
-              <v-card-actions>
-                <v-btn
-                  color="primary"                  
-                  :icon="'bx bxs-download'"
-                  @click="downloadPhoto(photo.original_path)">
-                </v-btn>
-         
-                <v-btn
-                  color="error"                  
-                  :icon="'bx bxs-trash-alt'"
-                  @click="handleDelete(photo.id)">
-                </v-btn>
+    <VRow v-else-if="photos.length === 0">
+      <VCol cols="12" class="text-center py-12 text-medium-emphasis">
+        <VIcon size="56" class="mb-3" color="grey-lighten-1">bx-image</VIcon>
+        <p class="text-subtitle-1">Belum ada foto</p>
+      </VCol>
+    </VRow>
 
-          
-                <v-spacer></v-spacer>                
-              <v-btn
-                :icon="show ? 'bx bx-chevron-up' : 'bx bx-chevron-down'"
-                @click="show = !show"
-              ></v-btn>
-              </v-card-actions>
-            </div>
-            <v-expand-transition>
-                <div v-show="show">
-                  <v-divider></v-divider>
+    <VRow v-else>
+      <VCol v-for="photo in photos" :key="photo.id" cols="12" sm="6" md="3">
+        <VCard rounded="lg" border flat>
+          <div class="photo-wrap">
+            <img
+              :src="photo.thumbnail_path"
+              alt="photo"
+              class="photo-img"
+              @load="e => onImageLoad(e, photo.id)"
+            />
+            <div
+              v-for="(box, index) in photo.bounding_boxes || []"
+              v-if="imageSizes[photo.id]"
+              :key="index"
+              class="bounding-box"
+              :style="getBoxStyle(box, imageSizes[photo.id])"
+            />
+          </div>
 
-                  <v-card-text>
-                    <p class="d-flex align-center">
-                      <i class='bx bxs-wallet-alt mr-2' ></i>
-                      Rp {{ photo.unit_price.toLocaleString() }}
-                    </p>
+          <VCardText class="pa-2">
+            <div class="text-body-2 font-weight-medium text-truncate">{{ photo.filename }}</div>
+            <code class="text-caption text-medium-emphasis">{{ formatDate(photo.uploaded_at) }}</code>
+          </VCardText>
 
-                    <div class="d-flex align-center text-medium-emphasis">
-                      <i class="bx bxs-map mr-2"></i>
-                      {{ photo.unit_name }}
-                    </div>
-                  </v-card-text>
+          <VCardActions class="pa-2 pt-0">
+            <VBtn icon variant="text" size="small" color="primary" @click="downloadPhoto(photo.original_path)">
+              <VIcon icon="bx-download" />
+            </VBtn>
+            <VBtn icon variant="text" size="small" color="error" @click="handleDelete(photo.id)">
+              <VIcon icon="bx-trash-alt" />
+            </VBtn>
+            <VSpacer />
+            <VBtn icon variant="text" size="small" @click="show = !show">
+              <VIcon :icon="show ? 'bx-chevron-up' : 'bx-chevron-down'" />
+            </VBtn>
+          </VCardActions>
 
-                  
+          <VExpandTransition>
+            <div v-show="show">
+              <VDivider />
+              <VCardText class="pa-2">
+                <div class="d-flex align-center gap-2 text-body-2 mb-1">
+                  <VIcon size="14" icon="bx-money" />
+                  Rp {{ photo.unit_price?.toLocaleString() }}
                 </div>
-              </v-expand-transition>
-          </v-card>
-        </v-col>
-      </template>
-    </v-row>
+                <div class="d-flex align-center gap-2 text-caption text-medium-emphasis">
+                  <VIcon size="12" icon="bx-map" />{{ photo.unit_name }}
+                </div>
+              </VCardText>
+            </div>
+          </VExpandTransition>
+        </VCard>
+      </VCol>
+    </VRow>
 
-    <!-- Pagination Controls -->
-    <v-row justify="center" class="mt-6">
-      <v-btn :disabled="page === 1" @click="prevPage" class="mr-2">
-        Prev
-      </v-btn>
-
-      <v-pagination
-        v-model="page"
-        :length="Math.ceil(total / limit)"
-        :total-visible="5"
-      ></v-pagination>
-
-      <v-btn :disabled="page >= Math.ceil(total / limit)" @click="nextPage" class="ml-2">
-        Next
-      </v-btn>
-    </v-row>
-  </v-container>
+    <div v-if="total > limit" class="d-flex justify-center mt-6">
+      <VPagination v-model="page" :length="Math.ceil(total / limit)" :total-visible="5" />
+    </div>
+  </div>
 </template>
 
-
 <style scoped>
-.bounding-box {
-  position: absolute;
-  border: 2px solid red;
-  pointer-events: none;
-}
-.relative {
-  position: relative;
-}
-.photo-img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
+.photo-wrap { position: relative; }
+.photo-img { width: 100%; height: auto; display: block; }
+.bounding-box { position: absolute; border: 2px solid red; pointer-events: none; }
 </style>

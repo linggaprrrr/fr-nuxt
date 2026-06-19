@@ -1,59 +1,79 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import type { Discount } from '~/types/promo_code'
 import type { Unit } from '~/types/unit'
+import type { DataTableHeader } from '@/components/AppDataTable.vue'
 import { getApiErrorMessage } from '@/utils/apiHelpers'
 
 const { getPromoCodes, createPromoCode, updatePromoCodeById, deletePromoCodeById } = usePromoCodes()
 const { getUnits } = useUnits()
+const toast = useToast()
+const { confirm } = useConfirm()
 
 const page = ref(1)
 const limit = 24
 const total = ref(0)
 const isLoading = ref(false)
+const isSubmitting = ref(false)
 const discounts = ref<Discount[]>([])
 const units = ref<Unit[]>([])
 const search = ref('')
 const discountTypeFilter = ref('')
 
-// Modal
-const showCreate = ref(false)
-const showEdit = ref(false)
-const showDelete = ref(false)
-const deleteId = ref('')
-const isSubmitting = ref(false)
-
-const defaultCreateForm = () => ({
-  name: '',
-  description: '',
-  discount_type: 'percentage' as 'percentage' | 'fixed',
-  promo_code: '',
-  value: 0,
-  start_date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16),
-  end_date: new Date(Date.now() + 24 * 31 * 60 * 60 * 1000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16),
-  is_active: true,
-  unit_id: '',
-})
-
-const createForm = ref(defaultCreateForm())
-
-const editForm = ref({
-  id: '',
-  name: '',
-  description: '',
-  discount_type: 'percentage' as 'percentage' | 'fixed',
-  promo_code: '',
-  value: 0,
-  start_date: '',
-  end_date: '',
-  is_active: true,
-  unit_id: '',
-})
+const dialog = ref(false)
+const editingId = ref<string | null>(null)
+const isEditing = computed(() => editingId.value !== null)
 
 const discountTypeItems = [
   { title: 'Percentage', value: 'percentage' },
   { title: 'Fixed', value: 'fixed' },
 ]
+
+function localDatetime(addDays: number) {
+  const ms = Date.now() + addDays * 24 * 60 * 60 * 1000 - new Date().getTimezoneOffset() * 60000
+  return new Date(ms).toISOString().slice(0, 16)
+}
+
+function toLocalDatetimeInput(iso: string) {
+  if (!iso) return ''
+  return new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+}
+
+const blankForm = () => ({
+  name: '',
+  description: '',
+  discount_type: 'percentage' as 'percentage' | 'fixed',
+  promo_code: '',
+  value: 0,
+  start_date: localDatetime(0),
+  end_date: localDatetime(31),
+  is_active: true,
+  unit_id: '',
+})
+const form = ref(blankForm())
+
+const headers: DataTableHeader[] = [
+  { key: 'name', title: 'Name' },
+  { key: 'promo_code', title: 'Promo Code' },
+  { key: 'discount_type', title: 'Type' },
+  { key: 'value', title: 'Value' },
+  { key: 'start_date', title: 'Start', nowrap: true },
+  { key: 'end_date', title: 'End', nowrap: true },
+  { key: 'status', title: 'Status' },
+  { key: 'unit_name', title: 'Unit' },
+  { key: 'actions', title: '', align: 'end' },
+]
+
+function getStatus(discount: Discount) {
+  const ended = new Date(discount.end_date) < new Date()
+  if (ended) return 'expired'
+  return discount.is_active ? 'active' : 'inactive'
+}
+
+function formatDate(iso: string) {
+  if (!iso) return '-'
+  return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 async function fetchDiscounts() {
   isLoading.value = true
@@ -84,59 +104,15 @@ async function fetchUnits() {
   }
 }
 
-function getStatus(discount: Discount) {
-  const now = new Date()
-  const ended = new Date(discount.end_date) < now
-  if (ended) return 'expired'
-  return discount.is_active ? 'active' : 'inactive'
+function openCreate() {
+  editingId.value = null
+  form.value = blankForm()
+  dialog.value = true
 }
 
-function getStatusColor(status: string) {
-  switch (status) {
-    case 'active': return 'success'
-    case 'inactive': return 'grey'
-    case 'expired': return 'error'
-    default: return 'grey'
-  }
-}
-
-function toLocalDatetimeInput(iso: string) {
-  if (!iso) return ''
-  return new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)
-}
-
-function validateForm(form: typeof createForm.value | typeof editForm.value) {
-  if (!form.name) { alert('Name is required'); return false }
-  if (!form.promo_code) { alert('Promo code is required'); return false }
-  if (!form.unit_id) { alert('Unit is required'); return false }
-  if (form.value <= 0) { alert('Discount value must be greater than 0'); return false }
-  if (form.discount_type === 'percentage' && form.value > 100) { alert('Percentage discount cannot exceed 100'); return false }
-  return true
-}
-
-async function handleCreate() {
-  if (!validateForm(createForm.value)) return
-  isSubmitting.value = true
-  try {
-    await createPromoCode({
-      ...createForm.value,
-      start_date: new Date(createForm.value.start_date).toISOString(),
-      end_date: new Date(createForm.value.end_date).toISOString(),
-    })
-    showCreate.value = false
-    createForm.value = defaultCreateForm()
-    await fetchDiscounts()
-  } catch (error: any) {
-    console.error('Failed to create discount:', error)
-    alert(getApiErrorMessage(error))
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-function openEditModal(discount: Discount) {
-  editForm.value = {
-    id: discount.id,
+function openEdit(discount: Discount) {
+  editingId.value = discount.id
+  form.value = {
     name: discount.name,
     description: discount.description,
     discount_type: discount.discount_type,
@@ -147,56 +123,70 @@ function openEditModal(discount: Discount) {
     is_active: discount.is_active,
     unit_id: discount.unit_id,
   }
-  showEdit.value = true
+  dialog.value = true
 }
 
-async function handleEdit() {
-  if (!validateForm(editForm.value)) return
+function validate(): string | null {
+  const f = form.value
+  if (!f.name) return 'Name is required'
+  if (!f.promo_code) return 'Promo code is required'
+  if (!f.unit_id) return 'Unit is required'
+  if (f.value <= 0) return 'Discount value must be greater than 0'
+  if (f.discount_type === 'percentage' && f.value > 100) return 'Percentage discount cannot exceed 100'
+  return null
+}
+
+async function submit() {
+  const error = validate()
+  if (error) {
+    toast.warning(error)
+    return
+  }
   isSubmitting.value = true
   try {
-    await updatePromoCodeById(editForm.value.id, {
-      name: editForm.value.name,
-      description: editForm.value.description,
-      discount_type: editForm.value.discount_type,
-      promo_code: editForm.value.promo_code,
-      value: editForm.value.value,
-      start_date: new Date(editForm.value.start_date).toISOString(),
-      end_date: new Date(editForm.value.end_date).toISOString(),
-      is_active: editForm.value.is_active,
-      unit_id: editForm.value.unit_id,
-    })
-    showEdit.value = false
+    const payload = {
+      ...form.value,
+      start_date: new Date(form.value.start_date).toISOString(),
+      end_date: new Date(form.value.end_date).toISOString(),
+    }
+    if (isEditing.value)
+      await updatePromoCodeById(editingId.value!, payload)
+    else
+      await createPromoCode(payload)
+
+    toast.success(isEditing.value ? 'Discount updated' : 'Discount created')
+    dialog.value = false
     await fetchDiscounts()
   } catch (error: any) {
-    console.error('Failed to update discount:', error)
-    alert(getApiErrorMessage(error))
+    toast.error(getApiErrorMessage(error))
   } finally {
     isSubmitting.value = false
   }
 }
 
-function openDeleteModal(id: string) {
-  deleteId.value = id
-  showDelete.value = true
-}
-
-async function handleDelete() {
-  isSubmitting.value = true
+async function removeDiscount(discount: Discount) {
+  const ok = await confirm({
+    title: 'Delete discount',
+    message: `Delete "${discount.name}"? This action cannot be undone.`,
+    tone: 'danger',
+    confirmText: 'Delete',
+  })
+  if (!ok) return
   try {
-    await deletePromoCodeById(deleteId.value)
-    showDelete.value = false
+    await deletePromoCodeById(discount.id)
+    toast.success('Discount deleted')
     await fetchDiscounts()
   } catch (error: any) {
-    console.error('Failed to delete discount:', error)
-    alert(getApiErrorMessage(error))
-  } finally {
-    isSubmitting.value = false
+    toast.error(getApiErrorMessage(error))
   }
 }
 
-watch([page, search, discountTypeFilter], () => {
-  fetchDiscounts()
-})
+function copyCode(code: string) {
+  navigator.clipboard?.writeText(code)
+  toast.success('Promo code copied')
+}
+
+watch([page, search, discountTypeFilter], fetchDiscounts)
 
 onMounted(() => {
   fetchDiscounts()
@@ -205,334 +195,174 @@ onMounted(() => {
 </script>
 
 <template>
-  <VCard title="Discounts" class="mb-4">
-    <template v-slot:append>
-      <VBtn
-        class="text-none"
-        color="primary"
-        text="Add Discount"
-        variant="tonal"
-        slim
-        @click="showCreate = true"
-      />
-    </template>
+  <div>
+    <PageHeader title="Discounts" subtitle="Create and manage promo codes per unit.">
+      <template #actions>
+        <VBtn color="primary" prepend-icon="bx-plus" @click="openCreate">
+          Add Discount
+        </VBtn>
+      </template>
+    </PageHeader>
 
-    <VCardText>
-      <VRow>
+    <VCard rounded="lg">
+      <AppDataTable
+        :headers="headers"
+        :items="discounts"
+        :loading="isLoading"
+        show-index
+        :page="page"
+        :items-per-page="limit"
+        :total="total"
+        empty-title="No discounts yet"
+        empty-text="Create your first promo code to get started."
+        @update:page="p => (page = p)"
+      >
+        <template #toolbar>
+          <VRow dense>
+            <VCol cols="12" md="6">
+              <VTextField
+                v-model="search"
+                placeholder="Search by name or promo code..."
+                prepend-inner-icon="bx-search"
+                clearable
+              />
+            </VCol>
+            <VCol cols="12" md="6">
+              <VSelect
+                v-model="discountTypeFilter"
+                :items="discountTypeItems"
+                item-title="title"
+                item-value="value"
+                placeholder="Filter by type"
+                clearable
+              />
+            </VCol>
+          </VRow>
+        </template>
+
+        <template #item.promo_code="{ item }">
+          <div class="d-flex align-center" style="gap: 4px;">
+            <span class="font-weight-medium">{{ item.promo_code }}</span>
+            <VBtn icon variant="text" size="x-small" color="default" @click="copyCode(item.promo_code)">
+              <VIcon icon="bx-copy" size="16" />
+              <VTooltip activator="parent">Copy</VTooltip>
+            </VBtn>
+          </div>
+        </template>
+
+        <template #item.discount_type="{ item }">
+          <span class="text-capitalize">{{ item.discount_type }}</span>
+        </template>
+
+        <template #item.value="{ item }">
+          {{ item.value }}{{ item.discount_type === 'percentage' ? '%' : '' }}
+        </template>
+
+        <template #item.start_date="{ item }">
+          {{ formatDate(item.start_date) }}
+        </template>
+
+        <template #item.end_date="{ item }">
+          {{ formatDate(item.end_date) }}
+        </template>
+
+        <template #item.status="{ item }">
+          <StatusChip :status="getStatus(item)" />
+        </template>
+
+        <template #item.unit_name="{ item }">
+          {{ item.unit_name || '-' }}
+        </template>
+
+        <template #item.actions="{ item }">
+          <div class="d-flex justify-end" style="gap: 4px;">
+            <VBtn
+              icon
+              variant="text"
+              size="small"
+              color="default"
+              :disabled="getStatus(item) === 'expired'"
+              @click="openEdit(item)"
+            >
+              <VIcon icon="bx-edit-alt" />
+              <VTooltip activator="parent">Edit</VTooltip>
+            </VBtn>
+            <VBtn icon variant="text" size="small" color="error" @click="removeDiscount(item)">
+              <VIcon icon="bx-trash-alt" />
+              <VTooltip activator="parent">Delete</VTooltip>
+            </VBtn>
+          </div>
+        </template>
+      </AppDataTable>
+    </VCard>
+
+    <AppModal
+      v-model="dialog"
+      :title="isEditing ? 'Edit Discount' : 'Add Discount'"
+      icon="bx-purchase-tag"
+      max-width="760"
+      :loading="isSubmitting"
+      :confirm-text="isEditing ? 'Update' : 'Save'"
+      @confirm="submit"
+    >
+      <FormSection title="Details">
+        <VCol cols="12" md="6">
+          <VTextField v-model="form.name" label="Name" />
+        </VCol>
+        <VCol cols="12" md="6">
+          <VTextField v-model="form.description" label="Description (optional)" />
+        </VCol>
         <VCol cols="12" md="6">
           <VTextField
-            v-model="search"
-            label="Search by name or promo code..."
-            prepend-inner-icon="bx bx-search"
-            clearable
-            class="mb-4"
+            :model-value="form.promo_code"
+            label="Promo Code"
+            @update:model-value="val => (form.promo_code = val.toUpperCase())"
           />
         </VCol>
         <VCol cols="12" md="6">
           <VSelect
-            v-model="discountTypeFilter"
+            v-model="form.unit_id"
+            :items="units"
+            item-title="name"
+            item-value="id"
+            label="Unit"
+          />
+        </VCol>
+      </FormSection>
+
+      <FormSection title="Discount">
+        <VCol cols="12" md="6">
+          <VSelect
+            v-model="form.discount_type"
             :items="discountTypeItems"
             item-title="title"
             item-value="value"
-            label="Filter by discount type"
-            clearable
-            class="mb-4"
+            label="Discount Type"
           />
         </VCol>
-      </VRow>
-    </VCardText>
+        <VCol cols="12" md="6">
+          <VTextField
+            v-model.number="form.value"
+            label="Discount Value"
+            type="number"
+            :max="form.discount_type === 'percentage' ? 100 : undefined"
+            :hint="form.discount_type === 'percentage' ? 'Maximum 100%' : ''"
+            persistent-hint
+          />
+        </VCol>
+      </FormSection>
 
-    <VTable density="compact">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Name</th>
-          <th>Promo Code</th>
-          <th>Type</th>
-          <th>Value</th>
-          <th>Start Date</th>
-          <th>End Date</th>
-          <th>Status</th>
-          <th>Unit</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-if="isLoading">
-          <td colspan="10" class="text-center">Loading...</td>
-        </tr>
-        <tr v-else-if="discounts.length === 0">
-          <td colspan="10" class="text-center">No data</td>
-        </tr>
-        <tr v-for="(discount, index) in discounts" :key="discount.id">
-          <td>{{ index + 1 + (page - 1) * limit }}</td>
-          <td>{{ discount.name }}</td>
-          <td>
-            {{ discount.promo_code }}
-            <VBtn icon variant="text" size="small" @click="navigator.clipboard.writeText(discount.promo_code)">
-              <VIcon>bx bx-copy</VIcon>
-            </VBtn>
-          </td>
-          <td>{{ discount.discount_type }}</td>
-          <td>{{ discount.value }}{{ discount.discount_type === 'percentage' ? '%' : '' }}</td>
-          <td>
-            {{ new Date(discount.start_date).toLocaleDateString('id-ID', {
-              day: '2-digit', month: 'long', year: 'numeric'
-            }) }}
-          </td>
-          <td>
-            {{ new Date(discount.end_date).toLocaleDateString('id-ID', {
-              day: '2-digit', month: 'long', year: 'numeric'
-            }) }}
-          </td>
-          <td>
-            <VChip :color="getStatusColor(getStatus(discount))" size="small">
-              {{ getStatus(discount) }}
-            </VChip>
-          </td>
-          <td>{{ discount.unit_name }}</td>
-          <td>
-            <VBtn icon variant="text" size="small" @click="openEditModal(discount)" :disabled="getStatus(discount) === 'expired'">
-              <VIcon color="warning">bx bx-edit-alt</VIcon>
-            </VBtn>
-            <VBtn icon variant="text" size="small" @click="openDeleteModal(discount.id)">
-              <VIcon color="error">bx bx-trash-alt</VIcon>
-            </VBtn>
-          </td>
-        </tr>
-      </tbody>
-    </VTable>
-
-    <VCardActions class="justify-center">
-      <VPagination
-        v-model="page"
-        :length="Math.ceil(total / limit)"
-        total-visible="5"
-        prev-icon="bx bx-chevron-left"
-        next-icon="bx bx-chevron-right"
-      />
-    </VCardActions>
-  </VCard>
-
-  <!-- Create Modal -->
-  <VDialog v-model="showCreate" max-width="800">
-    <VCard>
-      <VCardTitle>Add Discount</VCardTitle>
-      <VCardText>
-        <VContainer fluid>
-          <VRow>
-            <VCol cols="12" md="6">
-              <VTextField
-                v-model="createForm.name"
-                label="Name"
-                placeholder="e.g. Diskon Akhir Tahun"
-                required
-              />
-            </VCol>
-            <VCol cols="12" md="6">
-              <VTextField
-                v-model="createForm.description"
-                label="Description (optional)"
-              />
-            </VCol>
-          </VRow>
-          <VRow>
-            <VCol cols="12" md="6">
-              <VTextField
-                :model-value="createForm.promo_code"
-                label="Promo Code"
-                required
-                @update:model-value="val => createForm.promo_code = val.toUpperCase()"
-              />
-            </VCol>
-            <VCol cols="12" md="6">
-              <VSelect
-                v-model="createForm.unit_id"
-                :items="units"
-                item-title="name"
-                item-value="id"
-                label="Unit"
-                required
-              />
-            </VCol>
-          </VRow>
-          <VRow>
-            <VCol cols="12" md="6">
-              <VSelect
-                v-model="createForm.discount_type"
-                :items="discountTypeItems"
-                item-title="title"
-                item-value="value"
-                label="Discount Type"
-                required
-              />
-            </VCol>
-            <VCol cols="12" md="6">
-              <VTextField
-                v-model.number="createForm.value"
-                label="Discount Value"
-                type="number"
-                :max="createForm.discount_type === 'percentage' ? 100 : undefined"
-                :hint="createForm.discount_type === 'percentage' ? 'Maximum 100%' : ''"
-                persistent-hint
-                :rules="[
-                  v => v > 0 || 'Must be greater than 0',
-                  v => createForm.discount_type !== 'percentage' || v <= 100 || 'Percentage cannot exceed 100%'
-                ]"
-                required
-              />
-            </VCol>
-          </VRow>
-          <VRow>
-            <VCol cols="12" md="6">
-              <VTextField
-                v-model="createForm.start_date"
-                label="Start Date"
-                type="datetime-local"
-                required
-              />
-            </VCol>
-            <VCol cols="12" md="6">
-              <VTextField
-                v-model="createForm.end_date"
-                label="End Date"
-                type="datetime-local"
-                required
-              />
-            </VCol>
-          </VRow>
-          <VRow>
-            <VCol cols="12" md="6">
-              <VSwitch
-                v-model="createForm.is_active"
-                label="Active"
-              />
-            </VCol>
-          </VRow>
-        </VContainer>
-      </VCardText>
-      <VCardActions>
-        <VSpacer />
-        <VBtn text="Cancel" @click="showCreate = false" :disabled="isSubmitting" />
-        <VBtn color="primary" @click="handleCreate" :loading="isSubmitting" :disabled="isSubmitting">Save</VBtn>
-      </VCardActions>
-    </VCard>
-  </VDialog>
-
-  <!-- Edit Modal -->
-  <VDialog v-model="showEdit" max-width="800">
-    <VCard>
-      <VCardTitle>Edit Discount</VCardTitle>
-      <VCardText>
-        <VContainer fluid>
-          <VRow>
-            <VCol cols="12" md="6">
-              <VTextField
-                v-model="editForm.name"
-                label="Name"
-                required
-              />
-            </VCol>
-            <VCol cols="12" md="6">
-              <VTextField
-                v-model="editForm.description"
-                label="Description (optional)"
-              />
-            </VCol>
-          </VRow>
-          <VRow>
-            <VCol cols="12" md="6">
-              <VTextField
-                :model-value="editForm.promo_code"
-                label="Promo Code"
-                required
-                @update:model-value="val => editForm.promo_code = val.toUpperCase()"
-              />
-            </VCol>
-            <VCol cols="12" md="6">
-              <VSelect
-                v-model="editForm.unit_id"
-                :items="units"
-                item-title="name"
-                item-value="id"
-                label="Unit"
-                required
-              />
-            </VCol>
-          </VRow>
-          <VRow>
-            <VCol cols="12" md="6">
-              <VSelect
-                v-model="editForm.discount_type"
-                :items="discountTypeItems"
-                item-title="title"
-                item-value="value"
-                label="Discount Type"
-                required
-              />
-            </VCol>
-            <VCol cols="12" md="6">
-              <VTextField
-                v-model.number="editForm.value"
-                label="Discount Value"
-                type="number"
-                :max="editForm.discount_type === 'percentage' ? 100 : undefined"
-                :hint="editForm.discount_type === 'percentage' ? 'Maximum 100%' : ''"
-                persistent-hint
-                :rules="[
-                  v => v > 0 || 'Must be greater than 0',
-                  v => editForm.discount_type !== 'percentage' || v <= 100 || 'Percentage cannot exceed 100%'
-                ]"
-                required
-              />
-            </VCol>
-          </VRow>
-          <VRow>
-            <VCol cols="12" md="6">
-              <VTextField
-                v-model="editForm.start_date"
-                label="Start Date"
-                type="datetime-local"
-                required
-              />
-            </VCol>
-            <VCol cols="12" md="6">
-              <VTextField
-                v-model="editForm.end_date"
-                label="End Date"
-                type="datetime-local"
-                required
-              />
-            </VCol>
-          </VRow>
-          <VRow>
-            <VCol cols="12" md="6">
-              <VSwitch
-                v-model="editForm.is_active"
-                label="Active"
-              />
-            </VCol>
-          </VRow>
-        </VContainer>
-      </VCardText>
-      <VCardActions>
-        <VSpacer />
-        <VBtn text="Cancel" @click="showEdit = false" :disabled="isSubmitting" />
-        <VBtn color="primary" @click="handleEdit" :loading="isSubmitting" :disabled="isSubmitting">Update</VBtn>
-      </VCardActions>
-    </VCard>
-  </VDialog>
-
-  <!-- Delete Modal -->
-  <VDialog v-model="showDelete" max-width="400">
-    <VCard>
-      <VCardTitle>Delete Discount</VCardTitle>
-      <VCardText>Are you sure you want to delete this discount?</VCardText>
-      <VCardActions>
-        <VSpacer />
-        <VBtn text="Cancel" @click="showDelete = false" :disabled="isSubmitting" />
-        <VBtn color="error" @click="handleDelete" :loading="isSubmitting" :disabled="isSubmitting">Delete</VBtn>
-      </VCardActions>
-    </VCard>
-  </VDialog>
+      <FormSection title="Schedule">
+        <VCol cols="12" md="6">
+          <VTextField v-model="form.start_date" label="Start Date" type="datetime-local" />
+        </VCol>
+        <VCol cols="12" md="6">
+          <VTextField v-model="form.end_date" label="End Date" type="datetime-local" />
+        </VCol>
+        <VCol cols="12">
+          <VSwitch v-model="form.is_active" label="Active" color="primary" />
+        </VCol>
+      </FormSection>
+    </AppModal>
+  </div>
 </template>

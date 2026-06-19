@@ -5,6 +5,10 @@
   <VApp>
     <NuxtLayout>
       <NuxtPage />
-    </NuxtLayout>    
+    </NuxtLayout>
+
+    <!-- Global UI hosts (toasts + confirm dialog) -->
+    <AppToaster />
+    <ConfirmDialog />
   </VApp>
 </template>

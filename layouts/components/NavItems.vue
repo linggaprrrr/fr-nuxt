@@ -20,6 +20,10 @@ const reportsGroup = Object.freeze({ title: 'Reports', icon: 'bx bxs-report' })
 const reportsTransactionsLink = Object.freeze({ title: 'Transactions', to: '/admin/reports/transactions' })
 const reportsUnitTransactionsLink = Object.freeze({ title: 'Unit Transactions', to: '/admin/reports/unit-transactions' })
 const reportsOutletTransactionsLink = Object.freeze({ title: 'Outlet Transactions', to: '/admin/reports/outlet-transactions' })
+
+const stickersLink     = Object.freeze({ title: 'Stickers',     icon: 'bx bxs-sticker',  to: '/admin/stickers' })
+const templatesLink    = Object.freeze({ title: 'Templates',    icon: 'bx bxs-palette',  to: '/admin/templates' })
+const aiTemplatesLink  = Object.freeze({ title: 'AI Templates', icon: 'bx bx-bot',       to: '/admin/ai-templates' })
 </script>
 
 <template>
@@ -37,7 +41,11 @@ const reportsOutletTransactionsLink = Object.freeze({ title: 'Outlet Transaction
   <VerticalNavLink :item="timeOperationLink" />
   <VerticalNavLink :item="promoCodesLink" />
   <VerticalNavLink :item="transactionsLink" />
+  <VerticalNavLink :item="stickersLink" />
+  <VerticalNavLink :item="templatesLink" />
+  <VerticalNavLink :item="aiTemplatesLink" />
 
+  
   <VerticalNavSectionTitle :item="reportsSection" />
   <VerticalNavGroup :item="reportsGroup">
     <VerticalNavLink :item="reportsTransactionsLink" />

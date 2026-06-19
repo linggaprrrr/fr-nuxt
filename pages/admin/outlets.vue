@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import type { Outlet } from '~/types/outlet'
 import type { Unit } from '@/types/unit'
+import type { DataTableHeader } from '@/components/AppDataTable.vue'
 import { getApiErrorMessage } from '@/utils/apiHelpers'
 
 const { getOutlets, createOutlet, updateOutletById, deleteOutletById } = useOutlets()
 const { getUnits } = useUnits()
+const toast = useToast()
+const { confirm } = useConfirm()
 
 const page = ref(1)
 const limit = 24
@@ -16,57 +19,44 @@ const outlets = ref<Outlet[]>([])
 const units = ref<Unit[]>([])
 const search = ref('')
 
-// Modal
-const showCreate = ref(false)
-const showEdit = ref(false)
-const form = ref({  
-  id: '',
-  name: '',
-  address: '',
-  phone: '',
-  kode_folder: '',
-  unit_id: '',  
-})
+// Single modal handles both create & edit
+const dialog = ref(false)
+const editingId = ref<string | null>(null)
+const isEditing = computed(() => editingId.value !== null)
 
+const blankForm = () => ({ name: '', address: '', phone: '', kode_folder: '', unit_id: '' })
+const form = ref(blankForm())
 
-const createForm = ref({    
-  name: '',
-  address: '',
-  phone: '',
-  kode_folder: '',
-  unit_id: '',
-})
+const headers: DataTableHeader[] = [
+  { key: 'name', title: 'Name' },
+  { key: 'phone', title: 'Telp' },
+  { key: 'unit', title: 'Unit' },
+  { key: 'kode_folder', title: 'Kode Folder' },
+  { key: 'created_at', title: 'Dibuat', nowrap: true },
+  { key: 'actions', title: '', align: 'end' },
+]
+
+function formatDate(iso: string) {
+  if (!iso) return '-'
+  return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 async function fetchUnits() {
-  isLoading.value = true
   try {
-    const res = await getUnits({
-      page: 1,
-      limit: 9999,
-      
-    })
-    units.value = res?.data || []    
-    
+    const res = await getUnits({ page: 1, limit: 9999 })
+    units.value = res?.data || []
   } catch (error) {
     console.error('Failed to fetch units:', error)
-    units.value = []    
-  } finally {
-    isLoading.value = false
+    units.value = []
   }
-  
 }
 
 async function fetchOutlets() {
   isLoading.value = true
   try {
-    const res = await getOutlets({
-      page: page.value,
-      limit,
-      search: search.value
-    })
+    const res = await getOutlets({ page: page.value, limit, search: search.value })
     outlets.value = res?.data || []
     total.value = res?.total || 0
-
   } catch (error) {
     console.error('Failed to fetch outlets:', error)
     outlets.value = []
@@ -74,309 +64,169 @@ async function fetchOutlets() {
   } finally {
     isLoading.value = false
   }
-  
 }
 
-// Create outlet
-async function handleCreateOutlet() {
-  isSubmitting.value = true
-  try {
-    await createOutlet({
-      name: createForm.value.name,
-      address: createForm.value.address,
-      phone: createForm.value.phone,
-      unit_id: createForm.value.unit_id,
-      kode_folder: createForm.value.kode_folder
-    })
-    showCreate.value = false
-    await fetchOutlets()
-  } catch (error: any) {
-    alert(getApiErrorMessage(error))
-  } finally {
-    isSubmitting.value = false
-  }
+function openCreate() {
+  editingId.value = null
+  form.value = blankForm()
+  dialog.value = true
 }
 
-// Edit outlet
-function openEditModal(outlet: Outlet) {
+function openEdit(outlet: Outlet) {
+  editingId.value = outlet.id
   form.value = {
-    id: outlet.id,
     name: outlet.name,
     address: outlet.address,
     phone: outlet.phone,
     kode_folder: outlet.kode_folder,
     unit_id: outlet.unit?.id || '',
   }
-  showEdit.value = true
+  dialog.value = true
 }
 
-async function saveEdit() {
+async function submit() {
+  if (!form.value.name.trim()) {
+    toast.warning('Nama outlet wajib diisi')
+    return
+  }
   isSubmitting.value = true
   try {
-    await updateOutletById(form.value.id, {
-      name: form.value.name,
-      address: form.value.address,
-      phone: form.value.phone,
-      unit_id: form.value.unit_id,
-      kode_folder: form.value.kode_folder,
-    })
-    showEdit.value = false
+    if (isEditing.value)
+      await updateOutletById(editingId.value!, { ...form.value })
+    else
+      await createOutlet({ ...form.value })
+
+    toast.success(isEditing.value ? 'Outlet berhasil diperbarui' : 'Outlet berhasil ditambahkan')
+    dialog.value = false
     await fetchOutlets()
   } catch (error: any) {
-    alert(getApiErrorMessage(error))
+    toast.error(getApiErrorMessage(error))
   } finally {
     isSubmitting.value = false
   }
 }
 
-// Delete outlet
-async function confirmDelete(id: string) {
-  if (confirm('Yakin ingin menghapus outlet ini?')) {
-    try {
-      await deleteOutletById(id)
-      await fetchOutlets()
-    } catch (error: any) {
-      alert(getApiErrorMessage(error))
-    }
+async function removeOutlet(outlet: Outlet) {
+  const ok = await confirm({
+    title: 'Hapus outlet',
+    message: `Yakin ingin menghapus "${outlet.name}"? Tindakan ini tidak bisa dibatalkan.`,
+    tone: 'danger',
+    confirmText: 'Hapus',
+    cancelText: 'Batal',
+  })
+  if (!ok) return
+  try {
+    await deleteOutletById(outlet.id)
+    toast.success('Outlet berhasil dihapus')
+    await fetchOutlets()
+  } catch (error: any) {
+    toast.error(getApiErrorMessage(error))
   }
 }
-
 
 onMounted(() => {
   fetchUnits()
   fetchOutlets()
 })
 
-// Handle pagination & search
 watch([page, search], fetchOutlets)
 </script>
 
 <template>
-  <VCard title="Outlets Table" class="mb-4">
-    <template v-slot:append>
-        <v-btn
-          class="text-none"
-          color="primary"
-          text="Tambah Outlet"
-          variant="tonal"
-          slim
-          @click="showCreate = true"
-        ></v-btn>
+  <div>
+    <PageHeader title="Outlets" subtitle="Kelola outlet dan unit yang terhubung.">
+      <template #actions>
+        <VBtn color="primary" prepend-icon="bx-plus" @click="openCreate">
+          Tambah Outlet
+        </VBtn>
+      </template>
+    </PageHeader>
 
-      <VDialog v-model="showCreate" max-width="766">
-        <VCard>
-          <VCardTitle>Tambah Outlet</VCardTitle>            
-          <v-container fluid>
+    <VCard rounded="lg">
+      <AppDataTable
+        :headers="headers"
+        :items="outlets"
+        :loading="isLoading"
+        show-index
+        :page="page"
+        :items-per-page="limit"
+        :total="total"
+        empty-title="Belum ada outlet"
+        empty-text="Tambahkan outlet pertama untuk mulai mengelola data."
+        @update:page="p => (page = p)"
+      >
+        <template #toolbar>
+          <VTextField
+            v-model="search"
+            placeholder="Cari outlet..."
+            prepend-inner-icon="bx-search"
+            clearable
+            style="max-width: 320px;"
+          />
+        </template>
 
-            <v-row>
-              <v-col cols="3">
-                <v-list-subheader>Nama</v-list-subheader>
-              </v-col>
+        <template #item.unit="{ item }">
+          {{ item.unit?.name || '-' }}
+        </template>
 
-              <v-col cols="9">
-                <v-text-field                                                                       
-                  v-model="createForm.name"
-                  persistent-hint
-                ></v-text-field>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col cols="3">
-                <v-list-subheader>Alamat</v-list-subheader>
-              </v-col>
+        <template #item.kode_folder="{ item }">
+          <VChip color="primary" size="small" label class="font-weight-medium">
+            {{ item.kode_folder }}
+          </VChip>
+        </template>
 
-              <v-col cols="9">
-                <v-text-field                                                                       
-                  v-model="createForm.address"
-                  persistent-hint
-                ></v-text-field>
-              </v-col>
-            </v-row>
-             <v-row>
-              <v-col cols="3">
-                <v-list-subheader>Telp</v-list-subheader>
-              </v-col>
+        <template #item.created_at="{ item }">
+          {{ formatDate(item.created_at) }}
+        </template>
 
-              <v-col cols="9">
-                <v-text-field                                                                       
-                  v-model="createForm.phone"
-                  persistent-hint
-                ></v-text-field>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col cols="3">
-                <v-list-subheader>Kode Folder</v-list-subheader>
-              </v-col>
-
-              <v-col cols="9">
-                <v-text-field                                                                       
-                  v-model="createForm.kode_folder"
-                  persistent-hint
-                ></v-text-field>
-              </v-col>
-            </v-row>
-             <v-row>
-              <v-col cols="3">
-                <v-list-subheader>Unit</v-list-subheader>
-              </v-col>
-
-              <v-col cols="9">
-                <v-select
-                    v-model="createForm.unit_id"
-                    density="comfortable"                    
-                    :items="units"
-                    item-value="id"
-                    item-title="name"                    
-                    persistent-hint
-                    class="mb-4"
-                    variant="outlined"
-                  />
-              </v-col>
-            </v-row>
-          </v-container>            
-          <VCardActions>
-            <VSpacer />
-            <VBtn text="Batal" @click="showCreate = false" :disabled="isSubmitting" />
-            <VBtn color="primary" @click="handleCreateOutlet" :loading="isSubmitting" :disabled="isSubmitting">Simpan</VBtn>
-          </VCardActions>
-        </VCard>
-      </VDialog>   
-    </template>
-    <VCardText>
-      <VTextField
-        v-model="search"
-        label="Search..."
-        prepend-inner-icon="bx bx-search"
-        clearable
-        class="mb-4"
-      />
-    </VCardText>
-
-    <VTable density="compact">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Name</th>          
-          <th>Telp</th>
-          <th>Unit</th>
-          <th>Kode Folder</th>
-          <th>Dibuat</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-if="!isLoading && outlets.length === 0">
-          <td colspan="7" class="text-center">Tidak ada data</td>
-        </tr>
-        <tr v-for="(outlet, index) in outlets" :key="outlet.id">
-          <td>{{ index + 1 + (page - 1) * limit }}</td>
-          <td>{{ outlet.name }}</td>          
-          <td>{{ outlet.phone }}</td>
-          <td>{{ outlet.unit.name }}</td>
-          <td><span class="font-weight-bold text-error ">{{ outlet.kode_folder }}</span></td>
-          <td>{{ new Date(outlet.created_at).toISOString().slice(0, 10) }}</td>
-          <td>
-            <VBtn icon variant="text" size="small" @click="openEditModal(outlet)">
-              <VIcon color="warning">bx bx-edit-alt</VIcon>
+        <template #item.actions="{ item }">
+          <div class="d-flex justify-end" style="gap: 4px;">
+            <VBtn icon variant="text" size="small" color="default" @click="openEdit(item)">
+              <VIcon icon="bx-edit-alt" />
+              <VTooltip activator="parent">Edit</VTooltip>
             </VBtn>
-            <VBtn icon variant="text"  size="small" @click="confirmDelete(outlet.id)">
-              <VIcon color="error">bx bx-trash-alt</VIcon>
+            <VBtn icon variant="text" size="small" color="error" @click="removeOutlet(item)">
+              <VIcon icon="bx-trash-alt" />
+              <VTooltip activator="parent">Hapus</VTooltip>
             </VBtn>
-          </td>
-        </tr>
-      </tbody>
-    </VTable>
-
-    <VCardActions class="justify-center">
-      <VPagination
-        v-model="page"
-        :length="Math.ceil(total / limit)"
-        total-visible="5"
-        prev-icon="bx bx-chevron-left"
-        next-icon="bx bx-chevron-right"
-      />
-    </VCardActions>
-  </VCard>
-
-  <!-- Modal Edit -->
-   <VDialog v-model="showEdit" max-width="766">
-    <VCard>
-      <VCardTitle>Edit Outlet</VCardTitle>            
-      <v-container fluid>
-
-        <v-row>
-          <v-col cols="3">
-            <v-list-subheader>Nama</v-list-subheader>
-          </v-col>
-
-          <v-col cols="9">
-            <v-text-field                                                                       
-              v-model="form.name"
-              persistent-hint
-            ></v-text-field>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col cols="3">
-            <v-list-subheader>Alamat</v-list-subheader>
-          </v-col>
-
-          <v-col cols="9">
-            <v-text-field                                                                       
-              v-model="form.address"
-              persistent-hint
-            ></v-text-field>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col cols="3">
-            <v-list-subheader>Telp</v-list-subheader>
-          </v-col>
-
-          <v-col cols="9">
-            <v-text-field                                                                       
-              v-model="form.phone"
-              persistent-hint
-            ></v-text-field>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col cols="3">
-            <v-list-subheader>Kode Folder</v-list-subheader>
-          </v-col>
-
-          <v-col cols="9">
-            <v-text-field                                                                       
-              v-model="form.kode_folder"
-              persistent-hint
-            ></v-text-field>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col cols="3">
-            <v-list-subheader>Unit</v-list-subheader>
-          </v-col>
-
-          <v-col cols="9">
-            <v-select
-              v-model="form.unit_id"
-              density="comfortable"
-              :items="units"
-              item-value="id"
-              item-title="name"
-              persistent-hint
-              class="mb-4"
-              variant="outlined"
-            />
-          </v-col>
-        </v-row>
-      </v-container>            
-      <VCardActions>
-        <VSpacer />
-        <VBtn text="Batal" @click="showEdit = false" :disabled="isSubmitting" />
-        <VBtn color="primary" @click="saveEdit" :loading="isSubmitting" :disabled="isSubmitting">Update</VBtn>
-      </VCardActions>
+          </div>
+        </template>
+      </AppDataTable>
     </VCard>
-  </VDialog>   
+
+    <AppModal
+      v-model="dialog"
+      :title="isEditing ? 'Edit Outlet' : 'Tambah Outlet'"
+      icon="bx-store"
+      max-width="640"
+      :loading="isSubmitting"
+      :confirm-text="isEditing ? 'Update' : 'Simpan'"
+      cancel-text="Batal"
+      @confirm="submit"
+    >
+      <VRow>
+        <VCol cols="12" md="6">
+          <VTextField v-model="form.name" label="Nama" />
+        </VCol>
+        <VCol cols="12" md="6">
+          <VTextField v-model="form.phone" label="Telp" />
+        </VCol>
+        <VCol cols="12">
+          <VTextField v-model="form.address" label="Alamat" />
+        </VCol>
+        <VCol cols="12" md="6">
+          <VTextField v-model="form.kode_folder" label="Kode Folder" />
+        </VCol>
+        <VCol cols="12" md="6">
+          <VSelect
+            v-model="form.unit_id"
+            :items="units"
+            item-value="id"
+            item-title="name"
+            label="Unit"
+          />
+        </VCol>
+      </VRow>
+    </AppModal>
+  </div>
 </template>
