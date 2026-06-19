@@ -72,6 +72,22 @@ export function useAiTemplates() {
     }
   }
 
+  const tryAiTemplate = async (id: string, imageFile: File): Promise<string | null> => {
+    loading.value = true
+    error.value = null
+    try {
+      const form = new FormData()
+      form.append('image', imageFile)
+      const res = await authFetch<{ image_url: string }>(`/ai-templates/${id}/preview`, { method: 'POST', body: form })
+      return res.image_url ?? null
+    } catch (err: any) {
+      error.value = err.data?.detail || err.message || 'Gagal menjalankan prompt.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   const reorderAiTemplates = async (ordered: AiTemplate[]) => {
     error.value = null
     try {
@@ -85,5 +101,5 @@ export function useAiTemplates() {
     }
   }
 
-  return { templates, loading, error, getAiTemplates, createAiTemplate, updateAiTemplate, deleteAiTemplate, reorderAiTemplates }
+  return { templates, loading, error, getAiTemplates, createAiTemplate, updateAiTemplate, deleteAiTemplate, reorderAiTemplates, tryAiTemplate }
 }

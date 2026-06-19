@@ -2,9 +2,11 @@
 import { useAiTemplates } from '@/composables/useAiTemplates'
 import { useOutlets } from '@/composables/useOutlets'
 
-const { templates, loading, error, getAiTemplates, createAiTemplate, updateAiTemplate, deleteAiTemplate, reorderAiTemplates } = useAiTemplates()
+const { templates, loading, error, getAiTemplates, createAiTemplate, updateAiTemplate, deleteAiTemplate, reorderAiTemplates, tryAiTemplate } = useAiTemplates()
 const toast = useToast()
 const { confirm } = useConfirm()
+
+const activeTab = ref<'templates' | 'try'>('templates')
 
 const outlets      = ref<any[]>([])
 const outletFilter = ref<string>('')
@@ -35,6 +37,35 @@ const dragIndex     = ref<number | null>(null)
 const overIndex     = ref<number | null>(null)
 const isSavingOrder = ref(false)
 
+// ── Try Prompt ─────────────────────────────────────────────────────────────
+const tryTemplateId  = ref<string>('')
+const tryImageFile   = ref<File | null>(null)
+const tryImageInput  = ref<HTMLInputElement | null>(null)
+const tryResultUrl   = ref<string | null>(null)
+const isTrying       = ref(false)
+const tryImagePreview = computed(() => tryImageFile.value ? URL.createObjectURL(tryImageFile.value) : null)
+
+const templateItems = computed(() => templates.value.map(t => ({ title: t.label, value: t.id })))
+const selectedTemplate = computed(() => templates.value.find(t => t.id === tryTemplateId.value) ?? null)
+
+async function handleTry() {
+  if (!tryTemplateId.value) { toast.error('Pilih template terlebih dahulu.'); return }
+  if (!tryImageFile.value)  { toast.error('Upload gambar terlebih dahulu.'); return }
+  isTrying.value = true
+  tryResultUrl.value = null
+  const url = await tryAiTemplate(tryTemplateId.value, tryImageFile.value)
+  isTrying.value = false
+  if (!url) { toast.error(error.value || 'Gagal menjalankan prompt.'); return }
+  tryResultUrl.value = url
+}
+
+function resetTry() {
+  tryImageFile.value = null
+  tryResultUrl.value = null
+  if (tryImageInput.value) tryImageInput.value.value = ''
+}
+
+// ── Drag ───────────────────────────────────────────────────────────────────
 function onDragStart(i: number) { dragIndex.value = i }
 function onDragOver(i: number)  { overIndex.value = i }
 
@@ -145,83 +176,217 @@ onMounted(() => { fetchOutlets(); fetchAll() })
         <VChip v-if="isSavingOrder" color="primary" size="small" variant="tonal" prepend-icon="bx-loader-alt">
           Menyimpan urutan…
         </VChip>
-        <VBtn color="primary" prepend-icon="bx-plus" @click="showCreate = true">Tambah Template</VBtn>
+        <VBtn v-if="activeTab === 'templates'" color="primary" prepend-icon="bx-plus" @click="showCreate = true">Tambah Template</VBtn>
       </template>
     </PageHeader>
 
-    <!-- Filter -->
-    <VCard class="mb-4" flat border rounded="lg">
-      <VCardText class="py-3">
-        <div class="d-flex align-center gap-3 flex-wrap">
-          <VSelect
-            v-model="outletFilter"
-            :items="outletItems"
-            label="Filter Outlet"
-            density="compact"
-            variant="outlined"
-            hide-details
-            style="max-width:260px"
-            @update:modelValue="fetchAll"
-          />
-          <VChip color="primary" size="small" variant="tonal">{{ templates.length }} template</VChip>
-        </div>
-      </VCardText>
-    </VCard>
+    <!-- Tabs -->
+    <VTabs v-model="activeTab" color="primary" class="mb-4">
+      <VTab value="templates" prepend-icon="bx-list-ul">Templates</VTab>
+      <VTab value="try" prepend-icon="bx-play-circle">Try Prompt</VTab>
+    </VTabs>
 
-    <!-- Template list (drag-to-reorder) -->
-    <VCard flat border rounded="lg">
-      <VCardText>
-        <VProgressLinear v-if="loading" indeterminate color="primary" class="mb-4" />
+    <!-- ── Tab: Templates ──────────────────────────────────────────────── -->
+    <VTabsWindow v-model="activeTab">
+      <VTabsWindowItem value="templates">
+        <!-- Filter -->
+        <VCard class="mb-4" flat border rounded="lg">
+          <VCardText class="py-3">
+            <div class="d-flex align-center gap-3 flex-wrap">
+              <VSelect
+                v-model="outletFilter"
+                :items="outletItems"
+                label="Filter Outlet"
+                density="compact"
+                variant="outlined"
+                hide-details
+                style="max-width:260px"
+                @update:modelValue="fetchAll"
+              />
+              <VChip color="primary" size="small" variant="tonal">{{ templates.length }} template</VChip>
+            </div>
+          </VCardText>
+        </VCard>
 
-        <div v-if="!loading && templates.length === 0" class="text-center pa-12 text-medium-emphasis">
-          <VIcon size="56" class="mb-3" color="grey-lighten-1">bx-bot</VIcon>
-          <p class="text-subtitle-1 font-weight-medium">Belum ada AI template</p>
-          <p class="text-caption">Klik "Tambah Template" untuk membuat template pertama.</p>
-        </div>
+        <!-- Template list (drag-to-reorder) -->
+        <VCard flat border rounded="lg">
+          <VCardText>
+            <VProgressLinear v-if="loading" indeterminate color="primary" class="mb-4" />
 
-        <div class="tpl-list">
-          <div
-            v-for="(tpl, i) in templates"
-            :key="tpl.id"
-            class="tpl-row"
-            :class="{
-              'tpl-row-inactive': !tpl.is_active,
-              'tpl-row-dragging': dragIndex === i,
-              'tpl-row-over': overIndex === i && dragIndex !== i,
-            }"
-            draggable="true"
-            @dragstart="onDragStart(i)"
-            @dragover.prevent="onDragOver(i)"
-            @drop.prevent="onDrop(i)"
-            @dragend="onDragEnd"
-          >
-            <VIcon size="18" color="grey" class="drag-handle">bx-menu</VIcon>
-
-            <div class="tpl-thumb">
-              <img v-if="tpl.after_url" :src="tpl.after_url" alt="result" />
-              <div v-else class="tpl-thumb-empty" />
+            <div v-if="!loading && templates.length === 0" class="text-center pa-12 text-medium-emphasis">
+              <VIcon size="56" class="mb-3" color="grey-lighten-1">bx-bot</VIcon>
+              <p class="text-subtitle-1 font-weight-medium">Belum ada AI template</p>
+              <p class="text-caption">Klik "Tambah Template" untuk membuat template pertama.</p>
             </div>
 
-            <div class="tpl-meta flex-1 min-width-0">
-              <p class="tpl-label">{{ tpl.label }}</p>
-              <div class="d-flex gap-1 mt-1 flex-wrap">
-                <VChip size="x-small" :color="tpl.is_active ? 'success' : 'default'">{{ tpl.is_active ? 'Aktif' : 'Off' }}</VChip>
-                <VChip v-if="!tpl.outlet_id" size="x-small" color="info" variant="tonal">Global</VChip>
+            <div class="tpl-list">
+              <div
+                v-for="(tpl, i) in templates"
+                :key="tpl.id"
+                class="tpl-row"
+                :class="{
+                  'tpl-row-inactive': !tpl.is_active,
+                  'tpl-row-dragging': dragIndex === i,
+                  'tpl-row-over': overIndex === i && dragIndex !== i,
+                }"
+                draggable="true"
+                @dragstart="onDragStart(i)"
+                @dragover.prevent="onDragOver(i)"
+                @drop.prevent="onDrop(i)"
+                @dragend="onDragEnd"
+              >
+                <VIcon size="18" color="grey" class="drag-handle">bx-menu</VIcon>
+
+                <div class="tpl-thumb">
+                  <img v-if="tpl.after_url" :src="tpl.after_url" alt="result" />
+                  <div v-else class="tpl-thumb-empty" />
+                </div>
+
+                <div class="tpl-meta flex-1 min-width-0">
+                  <p class="tpl-label">{{ tpl.label }}</p>
+                  <div class="d-flex gap-1 mt-1 flex-wrap">
+                    <VChip size="x-small" :color="tpl.is_active ? 'success' : 'default'">{{ tpl.is_active ? 'Aktif' : 'Off' }}</VChip>
+                    <VChip v-if="!tpl.outlet_id" size="x-small" color="info" variant="tonal">Global</VChip>
+                  </div>
+                </div>
+
+                <div class="d-flex gap-1 flex-shrink-0">
+                  <VBtn icon variant="text" size="x-small" color="info" title="Coba prompt ini"
+                    @click="tryTemplateId = tpl.id; activeTab = 'try'">
+                    <VIcon size="16">bx-play-circle</VIcon>
+                  </VBtn>
+                  <VBtn icon variant="text" size="x-small" @click="openEdit(tpl)">
+                    <VIcon size="16" color="warning">bx-edit-alt</VIcon>
+                  </VBtn>
+                  <VBtn icon variant="text" size="x-small" @click="handleDelete(tpl.id)">
+                    <VIcon size="16" color="error">bx-trash-alt</VIcon>
+                  </VBtn>
+                </div>
               </div>
             </div>
+          </VCardText>
+        </VCard>
+      </VTabsWindowItem>
 
-            <div class="d-flex gap-1 flex-shrink-0">
-              <VBtn icon variant="text" size="x-small" @click="openEdit(tpl)">
-                <VIcon size="16" color="warning">bx-edit-alt</VIcon>
-              </VBtn>
-              <VBtn icon variant="text" size="x-small" @click="handleDelete(tpl.id)">
-                <VIcon size="16" color="error">bx-trash-alt</VIcon>
-              </VBtn>
-            </div>
-          </div>
-        </div>
-      </VCardText>
-    </VCard>
+      <!-- ── Tab: Try Prompt ───────────────────────────────────────────── -->
+      <VTabsWindowItem value="try">
+        <VRow>
+          <!-- Left: input panel -->
+          <VCol cols="12" md="5">
+            <VCard flat border rounded="lg">
+              <VCardText class="d-flex flex-column gap-4">
+                <div>
+                  <p class="text-subtitle-2 font-weight-bold mb-2">1. Pilih Template</p>
+                  <VSelect
+                    v-model="tryTemplateId"
+                    :items="templateItems"
+                    label="Template"
+                    variant="outlined"
+                    density="comfortable"
+                    hide-details
+                  />
+                </div>
+
+                <!-- Selected template info -->
+                <VCard v-if="selectedTemplate" flat color="grey-lighten-5" rounded="lg">
+                  <VCardText class="pa-3">
+                    <p class="text-caption text-medium-emphasis mb-1">Prompt yang akan dijalankan:</p>
+                    <p class="text-body-2" style="white-space:pre-wrap;font-family:monospace;font-size:12px;">{{ selectedTemplate.prompt }}</p>
+                  </VCardText>
+                </VCard>
+
+                <div>
+                  <p class="text-subtitle-2 font-weight-bold mb-2">2. Upload Gambar</p>
+                  <div class="try-drop-zone" :class="{ 'has-image': !!tryImagePreview }" @click="tryImageInput?.click()">
+                    <img v-if="tryImagePreview" :src="tryImagePreview" class="try-preview" />
+                    <template v-else>
+                      <VIcon size="40" color="primary">bx-image-add</VIcon>
+                      <p class="text-body-2 mt-2 text-medium-emphasis">Klik untuk upload gambar</p>
+                    </template>
+                  </div>
+                  <input ref="tryImageInput" type="file" accept="image/*" style="display:none"
+                    @change="e => { tryImageFile = (e.target as HTMLInputElement).files?.[0] ?? null; tryResultUrl = null }" />
+                </div>
+
+                <div class="d-flex gap-2">
+                  <VBtn
+                    color="primary"
+                    prepend-icon="bx-play"
+                    :loading="isTrying"
+                    :disabled="!tryTemplateId || !tryImageFile"
+                    class="flex-1"
+                    @click="handleTry"
+                  >
+                    Jalankan Prompt
+                  </VBtn>
+                  <VBtn icon variant="outlined" color="grey" title="Reset" @click="resetTry">
+                    <VIcon>bx-reset</VIcon>
+                  </VBtn>
+                </div>
+              </VCardText>
+            </VCard>
+          </VCol>
+
+          <!-- Right: result panel -->
+          <VCol cols="12" md="7">
+            <VCard flat border rounded="lg" height="100%">
+              <VCardTitle class="pa-4 pb-2 text-subtitle-1 font-weight-bold">
+                Hasil
+              </VCardTitle>
+              <VDivider />
+              <VCardText class="d-flex align-center justify-center" style="min-height:380px">
+                <!-- Loading -->
+                <div v-if="isTrying" class="text-center text-medium-emphasis">
+                  <VProgressCircular indeterminate color="primary" size="52" class="mb-3" />
+                  <p class="text-body-2">Sedang memproses…</p>
+                </div>
+
+                <!-- Result -->
+                <div v-else-if="tryResultUrl" class="result-wrap">
+                  <img :src="tryResultUrl" class="result-img" alt="AI result" />
+                  <div class="d-flex justify-end mt-3">
+                    <VBtn
+                      color="success"
+                      prepend-icon="bx-download"
+                      :href="tryResultUrl"
+                      download="ai-result.jpg"
+                      target="_blank"
+                      size="small"
+                      variant="tonal"
+                    >
+                      Download
+                    </VBtn>
+                  </div>
+                </div>
+
+                <!-- Before/after comparison if template has sample images -->
+                <div v-else-if="selectedTemplate?.before_url || selectedTemplate?.after_url" class="text-center w-100">
+                  <p class="text-caption text-medium-emphasis mb-4">Contoh hasil template ini:</p>
+                  <div class="d-flex gap-3 justify-center">
+                    <div v-if="selectedTemplate.before_url" class="sample-wrap">
+                      <p class="text-caption text-medium-emphasis mb-1">Before</p>
+                      <img :src="selectedTemplate.before_url" class="sample-img" />
+                    </div>
+                    <VIcon size="24" color="grey" class="align-self-center">bx-right-arrow-alt</VIcon>
+                    <div v-if="selectedTemplate.after_url" class="sample-wrap">
+                      <p class="text-caption text-medium-emphasis mb-1">After</p>
+                      <img :src="selectedTemplate.after_url" class="sample-img" />
+                    </div>
+                  </div>
+                  <p class="text-caption text-medium-emphasis mt-4">Upload gambar dan klik "Jalankan Prompt" untuk melihat hasilnya.</p>
+                </div>
+
+                <!-- Empty -->
+                <div v-else class="text-center text-medium-emphasis">
+                  <VIcon size="64" color="grey-lighten-2">bx-bot</VIcon>
+                  <p class="text-body-2 mt-3">Pilih template dan upload gambar untuk mencoba prompt.</p>
+                </div>
+              </VCardText>
+            </VCard>
+          </VCol>
+        </VRow>
+      </VTabsWindowItem>
+    </VTabsWindow>
 
     <!-- Create dialog -->
     <VDialog v-model="showCreate" max-width="580" persistent>
@@ -357,4 +522,13 @@ onMounted(() => { fetchOutlets(); fetchAll() })
 .drop-zone:hover { background: #ede9fe; border-color: #818cf8; }
 .drop-zone-sm { min-height: 72px; }
 .drop-preview { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+/* Try Prompt */
+.try-drop-zone { min-height: 200px; border: 2px dashed #c7d2fe; border-radius: 12px; background: #f5f3ff; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, border-color 0.2s; overflow: hidden; }
+.try-drop-zone:hover { background: #ede9fe; border-color: #818cf8; }
+.try-drop-zone.has-image { min-height: unset; background: transparent; border-style: solid; }
+.try-preview { width: 100%; height: auto; display: block; }
+.result-wrap { width: 100%; }
+.result-img { width: 100%; max-height: 420px; object-fit: contain; border-radius: 8px; border: 1px solid #eee; display: block; }
+.sample-wrap { max-width: 160px; }
+.sample-img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid #eee; display: block; }
 </style>

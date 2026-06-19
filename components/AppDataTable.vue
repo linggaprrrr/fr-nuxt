@@ -134,7 +134,11 @@ const colspan = computed(() => props.headers.length + (props.showIndex ? 1 : 0))
 <style lang="scss" scoped>
 .app-data-table {
   &__toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     padding: 1rem 1.25rem 0.5rem;
+    flex-wrap: wrap;
   }
 
   &__table {
