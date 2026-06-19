@@ -289,10 +289,26 @@ onMounted(() => { fetchOutlets(); fetchAll() })
               <VCardText class="d-flex flex-column gap-4">
 
                 <!-- Mode toggle -->
-                <VBtnToggle v-model="tryMode" mandatory color="primary" variant="outlined" density="compact" rounded="lg" divided class="w-100">
-                  <VBtn value="template" prepend-icon="bx-list-ul" class="flex-1">Gunakan Template</VBtn>
-                  <VBtn value="custom" prepend-icon="bx-edit" class="flex-1">Prompt Sendiri</VBtn>
-                </VBtnToggle>
+                <div class="mode-toggle">
+                  <button
+                    class="mode-btn"
+                    :class="{ active: tryMode === 'template' }"
+                    type="button"
+                    @click="tryMode = 'template'"
+                  >
+                    <VIcon size="16" class="mr-1">bx-list-ul</VIcon>
+                    Gunakan Template
+                  </button>
+                  <button
+                    class="mode-btn"
+                    :class="{ active: tryMode === 'custom' }"
+                    type="button"
+                    @click="tryMode = 'custom'"
+                  >
+                    <VIcon size="16" class="mr-1">bx-edit</VIcon>
+                    Prompt Sendiri
+                  </button>
+                </div>
 
                 <!-- Template mode -->
                 <template v-if="tryMode === 'template'">
@@ -566,6 +582,12 @@ onMounted(() => { fetchOutlets(); fetchAll() })
 .drop-zone:hover { background: #ede9fe; border-color: #818cf8; }
 .drop-zone-sm { min-height: 72px; }
 .drop-preview { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+/* Mode toggle */
+.mode-toggle { display: flex; border: 1.5px solid #e0e0e0; border-radius: 10px; overflow: hidden; }
+.mode-btn { flex: 1; padding: 8px 12px; font-size: 13px; font-weight: 500; background: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(0,0,0,.6); transition: background 0.15s, color 0.15s; }
+.mode-btn + .mode-btn { border-left: 1.5px solid #e0e0e0; }
+.mode-btn.active { background: #1b5782; color: #fff; }
+.mode-btn:not(.active):hover { background: #f5f5f5; }
 /* Try Prompt */
 .try-drop-zone { min-height: 200px; border: 2px dashed #c7d2fe; border-radius: 12px; background: #f5f3ff; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, border-color 0.2s; overflow: hidden; }
 .try-drop-zone:hover { background: #ede9fe; border-color: #818cf8; }
