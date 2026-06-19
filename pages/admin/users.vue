@@ -1,27 +1,30 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import type { User } from '~/types/user'
-import type { Outlet,OutletList, GetOutletsByUnitResponse } from '~/types/outlet'
+import type { OutletList, GetOutletsByUnitResponse } from '~/types/outlet'
 import type { Unit } from '@/types/unit'
-import { create } from 'domain'
+import type { DataTableHeader } from '@/components/AppDataTable.vue'
+import { getApiErrorMessage } from '@/utils/apiHelpers'
 
 const { getUsers, updateUserById, deleteUserById, createUser } = useUsers()
 const { getUnits } = useUnits()
-const { getOutlets, getOutletsByUnit } = useOutlets()
-
+const { getOutletsByUnit } = useOutlets()
+const toast = useToast()
+const { confirm } = useConfirm()
 
 const page = ref(1)
 const limit = 24
 const total = ref(0)
 const isLoading = ref(false)
+const isSubmitting = ref(false)
 const users = ref<User[]>([])
 const search = ref('')
 
 const showCreate = ref(false)
-
-// Modal
 const showEdit = ref(false)
-const createForm = ref({  
+const showPassword = ref(false)
+
+const blankCreateForm = () => ({
   name: '',
   email: '',
   password: '',
@@ -32,79 +35,47 @@ const createForm = ref({
   unit_id: '',
   outlet_id: '',
 })
+const createForm = ref(blankCreateForm())
 
-const editForm = ref({
-  id: '',
-  name: '',
-  email: '',
-  password: '',
-  phone: '',
-  address: '',
-  picture: '',
-  role: '',
-  unit_id: '',
-  outlet_id: '',
-})
+const editForm = ref({ id: '', name: '', email: '' })
 
-const outlets = ref<Outlet[]>([])
 const units = ref<Unit[]>([])
-async function fetchUnits() {  
+const outletList = ref<OutletList[]>([])
+
+const roleColorMap = { superadmin: 'primary', unit: 'info', outlet: 'warning', customer: 'secondary' }
+
+const headers: DataTableHeader[] = [
+  { key: 'name', title: 'Name' },
+  { key: 'email', title: 'Email' },
+  { key: 'phone', title: 'No Telp' },
+  { key: 'address', title: 'Alamat' },
+  { key: 'role', title: 'Role' },
+  { key: 'actions', title: '', align: 'end' },
+]
+
+const passwordRules = [
+  (v: string) => !!v || 'Password wajib diisi',
+  (v: string) => v.length >= 6 || 'Minimal 6 karakter',
+]
+
+const selectedUnit = computed(() => units.value.find(u => u.id === createForm.value.unit_id) || null)
+
+async function fetchUnits() {
   try {
-    const res = await getUnits({
-      page: 1,
-      limit: 9999,
-      
-    })
-    units.value = res?.data || []    
-    
+    const res = await getUnits({ page: 1, limit: 9999 })
+    units.value = res?.data || []
   } catch (error) {
     console.error('Failed to fetch units:', error)
-    units.value = []    
-  } finally {
-
-  }  
-}
-
-
-
-
-const handleCreateUser = async () => {
-  showCreate.value = false
-  createForm.value.role = createForm.value.role.toLowerCase()
-  if (createForm.value.role == 'customer' || createForm.value.role == 'superadmin') {
-    createForm.value.unit_id = ''
-    createForm.value.outlet_id = ''
+    units.value = []
   }
-  await createUser(createForm.value)
-  
-  await fetchUsers()
-  createForm.value = {
-    name: '',
-    email: '',
-    password: '',
-    phone: '',
-    address: '',
-    picture: '',
-    role: '',
-    unit_id: '',
-    outlet_id: '',
-   }
-
 }
 
-// Fetch user data
 async function fetchUsers() {
   isLoading.value = true
   try {
-    const res = await getUsers({ 
-      page: page.value, 
-      limit, 
-      search: search.value 
-    })
+    const res = await getUsers({ page: page.value, limit, search: search.value })
     users.value = res?.data || []
     total.value = res?.total || 0
-
-    console.log('Users:', users.value)
   } catch (error) {
     console.error('Failed to fetch users:', error)
     users.value = []
@@ -114,289 +85,257 @@ async function fetchUsers() {
   }
 }
 
-// Edit user
-function openEditModal(user: any) {
-  editForm.value = { ...user }
+function openCreate() {
+  createForm.value = blankCreateForm()
+  showCreate.value = true
+}
+
+async function handleCreateUser() {
+  if (!createForm.value.name.trim() || !createForm.value.email.trim()) {
+    toast.warning('Nama dan email wajib diisi')
+    return
+  }
+  if (!createForm.value.password || createForm.value.password.length < 6) {
+    toast.warning('Password minimal 6 karakter')
+    return
+  }
+
+  // Build payload without mutating the form bound to the UI
+  const payload = { ...createForm.value, role: createForm.value.role.toLowerCase() }
+  if (payload.role === 'customer' || payload.role === 'superadmin') {
+    payload.unit_id = ''
+    payload.outlet_id = ''
+  }
+
+  isSubmitting.value = true
+  try {
+    await createUser(payload)
+    toast.success('User berhasil ditambahkan')
+    showCreate.value = false
+    createForm.value = blankCreateForm()
+    await fetchUsers()
+  } catch (error: any) {
+    toast.error(getApiErrorMessage(error))
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+function openEditModal(user: User) {
+  editForm.value = { id: user.id, name: user.name, email: user.email }
   showEdit.value = true
 }
 
 async function saveEdit() {
-  await updateUserById(editForm.value.id, {
-    name: editForm.value.name,
-    email: editForm.value.email
-  })
-  showEdit.value = false
-  await fetchUsers()
-}
-
-// Delete user
-async function confirmDelete(id: string) {
-  if (confirm('Yakin ingin menghapus user ini?')) {
-    await deleteUserById(id)
+  isSubmitting.value = true
+  try {
+    await updateUserById(editForm.value.id, { name: editForm.value.name, email: editForm.value.email })
+    toast.success('User berhasil diperbarui')
+    showEdit.value = false
     await fetchUsers()
+  } catch (error: any) {
+    toast.error(getApiErrorMessage(error))
+  } finally {
+    isSubmitting.value = false
   }
 }
 
-// Handle pagination & search
-watch([page, search], fetchUsers)
+async function removeUser(user: User) {
+  const ok = await confirm({
+    title: 'Hapus user',
+    message: `Yakin ingin menghapus "${user.name}"?`,
+    tone: 'danger',
+    confirmText: 'Hapus',
+    cancelText: 'Batal',
+  })
+  if (!ok) return
+  try {
+    await deleteUserById(user.id)
+    toast.success('User berhasil dihapus')
+    await fetchUsers()
+  } catch (error: any) {
+    toast.error(getApiErrorMessage(error))
+  }
+}
 
-// Handle unit & outlet
-
-
-
-const outletList = ref<OutletList[]>([])
-const selectedUnit = computed(() => {
-  return units.value.find(u => u.id === createForm.value.unit_id) || null
-})
-
+// Load outlets when the selected unit changes (create form only)
 watch(
   () => createForm.value.unit_id,
   async (newUnitId) => {
-    if (newUnitId) {
-      const outletRes = await getOutletsByUnit(newUnitId) as GetOutletsByUnitResponse
-      if (outletRes?.status_code === 200 && Array.isArray(outletRes.outlets)) {
-        outletList.value = outletRes.outlets
-        createForm.value.outlet_id = outletRes.outlets[0]?.id || ''        
-        
-      } else {
-        outletList.value = []
-        createForm.value.outlet_id
-      }
+    if (!newUnitId) {
+      outletList.value = []
+      return
+    }
+    const res = await getOutletsByUnit(newUnitId) as GetOutletsByUnitResponse
+    if (res?.status_code === 200 && Array.isArray(res.outlets)) {
+      outletList.value = res.outlets
+      createForm.value.outlet_id = res.outlets[0]?.id || ''
+    } else {
+      outletList.value = []
+      createForm.value.outlet_id = ''
     }
   },
-  { immediate: true }
 )
 
-const rules = {
-  required: (value: string) => !!value || 'Required.',
-  min: (v: string) => v.length >= 6 || 'Min 6 characters',
-  emailMatch: () => `The email and password you entered don't match`,
-}
-
-
-const show1 = ref(false)  
-const password = ref('Password')
-
+watch([page, search], fetchUsers)
 
 onMounted(() => {
   fetchUsers()
-  fetchUnits()  
+  fetchUnits()
 })
-
 </script>
+
 <template>
-  <VCard title="Users Table" class="mb-4">
-     <template v-slot:append>
-        <v-btn
-          class="text-none"
-          color="primary"
-          text="Tambah User"
-          variant="tonal"
-          slim
-          @click="showCreate = true"
-        ></v-btn>
+  <div>
+    <PageHeader title="Users" subtitle="Kelola akun pengguna dan hak aksesnya.">
+      <template #actions>
+        <VBtn color="primary" prepend-icon="bx-plus" @click="openCreate">
+          Tambah User
+        </VBtn>
+      </template>
+    </PageHeader>
 
-      <VDialog v-model="showCreate" max-width="766">
-        <VCard>
-          <VCardTitle>Tambah User</VCardTitle>            
-          <v-container fluid>
-             <v-row>
-              <v-col cols="3">
-                <v-list-subheader>Email</v-list-subheader>
-              </v-col>
+    <VCard rounded="lg">
+      <AppDataTable
+        :headers="headers"
+        :items="users"
+        :loading="isLoading"
+        show-index
+        :page="page"
+        :items-per-page="limit"
+        :total="total"
+        empty-title="Belum ada user"
+        empty-text="Tambahkan user pertama untuk mulai."
+        @update:page="p => (page = p)"
+      >
+        <template #toolbar>
+          <VTextField
+            v-model="search"
+            placeholder="Cari user..."
+            prepend-inner-icon="bx-search"
+            clearable
+            style="max-width: 320px;"
+          />
+        </template>
 
-              <v-col cols="9">
-                <v-text-field                                                                       
-                  v-model="createForm.email"
-                  persistent-hint
-                  placeholder="johndoe@gmail.com"
-                  type="email"
-                ></v-text-field>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col cols="3">
-                <v-list-subheader>Nama</v-list-subheader>
-              </v-col>
+        <template #item.phone="{ item }">
+          {{ item.phone?.trim() ? item.phone : '-' }}
+        </template>
 
-              <v-col cols="9">
-                <v-text-field                                                                       
-                  v-model="createForm.name"
-                  placeholder="John Doe"
-                  persistent-hint
-                ></v-text-field>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col cols="3">
-                <v-list-subheader>No Telp</v-list-subheader>
-              </v-col>
+        <template #item.address="{ item }">
+          {{ item.address?.trim() ? item.address : '-' }}
+        </template>
 
-              <v-col cols="9">
-                <v-text-field                                                                       
-                  v-model="createForm.phone"
-                  persistent-hint
-                ></v-text-field>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col cols="3">
-                <v-list-subheader>Alamat</v-list-subheader>
-              </v-col>
+        <template #item.role="{ item }">
+          <StatusChip :status="item.role?.trim() || 'Customer'" :map="roleColorMap" />
+        </template>
 
-              <v-col cols="9">
-                <v-textarea 
-                  v-model="createForm.address"
-                  variant="outlined">
-                </v-textarea>                
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col cols="3">
-                <v-list-subheader>Role</v-list-subheader>
-              </v-col>
-              <v-col cols="9">
-                <v-select
-                    v-model="createForm.role"
-                    density="comfortable"                    
-                    :items="['Customer', 'Unit', 'Outlet', 'Superadmin']"                    
-                    class="mb-4"
-                  />               
-              </v-col>
-            </v-row>
-            <v-row v-if="createForm.role === 'Unit' || createForm.role === 'Outlet'">
-              <v-col cols="3">
-                <v-list-subheader>Unit</v-list-subheader>
-              </v-col>
-              <v-col cols="9">
-                <v-select
-                  v-model="createForm.unit_id"
-                  density="comfortable"
-                  label="Pilih unit"                
-                  :items="units"
-                  item-value="id"
-                  item-title="name"
-                  :hint="selectedUnit?.location"
-                  persistent-hint
-                  class="mb-4"
-                  variant="outlined"
-                />
-              </v-col>
-            </v-row>
-            <v-row v-if="createForm.role === 'Outlet' ">
-              <v-col cols="3">
-                <v-list-subheader>Outlet</v-list-subheader>
-              </v-col>
-              <v-col cols="9">
-                <v-select
-                  v-model="createForm.outlet_id"
-                  density="comfortable"
-                  label="Pilih outlet"                
-                  :items="outletList"
-                  item-value="id"
-                  item-title="name"                  
-                  persistent-hint
-                  class="mb-4"
-                  variant="outlined"
-                />
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col cols="3">
-                <v-list-subheader>Password</v-list-subheader>
-              </v-col>
-              <v-col cols="9">
-                <v-text-field
-                  v-model="createForm.password"
-                  :append-icon="show1 ? 'bx-show' : 'bx-hide'"
-                  :rules="[rules.required, rules.min]"
-                  :type="show1 ? 'text' : 'password'"
-                  hint="At least 6 characters"                  
-                  name="input-10-1"
-                  counter
-                  @click:append="show1 = !show1"
-                ></v-text-field>
-              </v-col>
-            </v-row>            
-          </v-container>            
-          <VCardActions>
-            <VSpacer />
-            <VBtn text="Batal" @click="showCreate = false" />
-            <VBtn color="primary" @click="handleCreateUser">Simpan</VBtn>
-          </VCardActions>
-        </VCard>
-      </VDialog>   
-    </template>
-    <VCardText>
-      <VTextField
-        v-model="search"
-        label="Search..."
-        @input="fetchUsers"  
-        prepend-inner-icon="bx bx-search"
-        clearable
-        class="mb-4"
-      />
-    </VCardText>
-
-    <VTable density="compact">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>No Telp</th>
-          <th>Alamat</th>
-          <th>Role</th>
-          <th>Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-if="!isLoading && users.length === 0">
-          <td colspan="6" class="text-center">Tidak ada data</td>
-        </tr>
-        <tr v-for="(user, index) in users" :key="user.id">
-          <td>{{ index + 1 + (page - 1) * limit }}</td>
-          <td>{{ user.name }}</td>
-          <td>{{ user.email }}</td>
-          <td>{{ user.phone?.trim() !== '' ? user.phone : '-' }}</td>
-          <td>{{ user.address?.trim() !== '' ? user.address : '-' }}</td>
-          <td>{{ user.role?.trim() !== '' ? user.role : 'Customer' }}</td>          
-          <td>
-            <VBtn icon variant="text" size="small" @click="openEditModal(user)">
-              <VIcon color="warning">bx bx-edit-alt</VIcon>
+        <template #item.actions="{ item }">
+          <div class="d-flex justify-end" style="gap: 4px;">
+            <VBtn icon variant="text" size="small" color="default" @click="openEditModal(item)">
+              <VIcon icon="bx-edit-alt" />
+              <VTooltip activator="parent">Edit</VTooltip>
             </VBtn>
-            <VBtn icon variant="text"  size="small" @click="confirmDelete(user.id)">
-              <VIcon color="error">bx bx-trash-alt</VIcon>
+            <VBtn icon variant="text" size="small" color="error" @click="removeUser(item)">
+              <VIcon icon="bx-trash-alt" />
+              <VTooltip activator="parent">Hapus</VTooltip>
             </VBtn>
-          </td>
-        </tr>
-      </tbody>
-    </VTable>
-
-    <VCardActions class="justify-center">
-      <VPagination
-        v-model="page"
-        :length="Math.ceil(total / limit)"
-        total-visible="5"
-        prev-icon="bx bx-chevron-left"
-        next-icon="bx bx-chevron-right"
-      />
-    </VCardActions>
-  </VCard>
-
-  <!-- Modal Edit -->
-  <VDialog v-model="showEdit" max-width="500">
-    <VCard>
-      <VCardTitle>Edit User</VCardTitle>
-      <VCardText>
-        <VTextField label="Name" v-model="editForm.name" />
-        <VTextField label="Email" v-model="editForm.email" />
-      </VCardText>
-      <VCardActions>
-        <VSpacer />
-        <VBtn text="Batal" @click="showEdit = false" />
-        <VBtn color="primary" @click="saveEdit">Simpan</VBtn>
-      </VCardActions>
+          </div>
+        </template>
+      </AppDataTable>
     </VCard>
-  </VDialog>
+
+    <!-- Create user -->
+    <AppModal
+      v-model="showCreate"
+      title="Tambah User"
+      icon="bx-user-plus"
+      max-width="720"
+      :loading="isSubmitting"
+      confirm-text="Simpan"
+      cancel-text="Batal"
+      @confirm="handleCreateUser"
+    >
+      <FormSection title="Akun">
+        <VCol cols="12" md="6">
+          <VTextField v-model="createForm.email" label="Email" type="email" />
+        </VCol>
+        <VCol cols="12" md="6">
+          <VTextField v-model="createForm.name" label="Nama" />
+        </VCol>
+        <VCol cols="12">
+          <VTextField
+            v-model="createForm.password"
+            label="Password"
+            :type="showPassword ? 'text' : 'password'"
+            :append-inner-icon="showPassword ? 'bx-show' : 'bx-hide'"
+            :rules="passwordRules"
+            hint="Minimal 6 karakter"
+            counter
+            @click:append-inner="showPassword = !showPassword"
+          />
+        </VCol>
+      </FormSection>
+
+      <FormSection title="Kontak">
+        <VCol cols="12" md="6">
+          <VTextField v-model="createForm.phone" label="No Telp" />
+        </VCol>
+        <VCol cols="12" md="6">
+          <VTextField v-model="createForm.address" label="Alamat" />
+        </VCol>
+      </FormSection>
+
+      <FormSection title="Hak Akses">
+        <VCol cols="12" md="6">
+          <VSelect
+            v-model="createForm.role"
+            :items="['Customer', 'Unit', 'Outlet', 'Superadmin']"
+            label="Role"
+          />
+        </VCol>
+        <VCol v-if="createForm.role === 'Unit' || createForm.role === 'Outlet'" cols="12" md="6">
+          <VSelect
+            v-model="createForm.unit_id"
+            label="Unit"
+            :items="units"
+            item-value="id"
+            item-title="name"
+            :hint="selectedUnit?.location"
+            persistent-hint
+          />
+        </VCol>
+        <VCol v-if="createForm.role === 'Outlet'" cols="12" md="6">
+          <VSelect
+            v-model="createForm.outlet_id"
+            label="Outlet"
+            :items="outletList"
+            item-value="id"
+            item-title="name"
+          />
+        </VCol>
+      </FormSection>
+    </AppModal>
+
+    <!-- Edit user -->
+    <AppModal
+      v-model="showEdit"
+      title="Edit User"
+      icon="bx-user"
+      max-width="480"
+      :loading="isSubmitting"
+      confirm-text="Simpan"
+      cancel-text="Batal"
+      @confirm="saveEdit"
+    >
+      <VRow>
+        <VCol cols="12">
+          <VTextField v-model="editForm.name" label="Name" />
+        </VCol>
+        <VCol cols="12">
+          <VTextField v-model="editForm.email" label="Email" type="email" />
+        </VCol>
+      </VRow>
+    </AppModal>
+  </div>
 </template>

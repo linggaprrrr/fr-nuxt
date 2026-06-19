@@ -1,44 +1,38 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
 import type { User } from '~/types/user'
-
+import type { DataTableHeader } from '@/components/AppDataTable.vue'
 
 const { getUsers, updateUserById, deleteUserById } = useUsers()
+const toast = useToast()
+const { confirm } = useConfirm()
 
 const page = ref(1)
 const limit = 24
 const total = ref(0)
 const isLoading = ref(false)
+const isSubmitting = ref(false)
 const users = ref<User[]>([])
 const search = ref('')
 
-// Modal
-const showEdit = ref(false)
-const editForm = ref({
-  id: '',
-  name: '',
-  email: '',
-  password: '',
-  phone: '',
-  address: '',
-  picture: ''
-})
+const editDialog = ref(false)
+const editForm = ref({ id: '', name: '', email: '' })
 
-// Fetch user data
+const headers: DataTableHeader[] = [
+  { key: 'name', title: 'Nama' },
+  { key: 'email', title: 'Email' },
+  { key: 'phone', title: 'No Telp' },
+  { key: 'address', title: 'Alamat' },
+  { key: 'role', title: 'Role' },
+  { key: 'actions', title: '', align: 'end', width: '80px' },
+]
+
 async function fetchUsers() {
   isLoading.value = true
   try {
-    const res = await getUsers({ 
-      page: page.value, 
-      limit, 
-      search: search.value 
-    })
+    const res = await getUsers({ page: page.value, limit, search: search.value })
     users.value = res?.data || []
     total.value = res?.total || 0
-
-    console.log('Users:', users.value)
-  } catch (error) {
-    console.error('Failed to fetch users:', error)
+  } catch {
     users.value = []
     total.value = 0
   } finally {
@@ -46,110 +40,97 @@ async function fetchUsers() {
   }
 }
 
-// Edit user
 function openEditModal(user: any) {
-  editForm.value = { ...user }
-  showEdit.value = true
+  editForm.value = { id: user.id, name: user.name, email: user.email }
+  editDialog.value = true
 }
 
 async function saveEdit() {
-  await updateUserById(editForm.value.id, {
-    name: editForm.value.name,
-    email: editForm.value.email
-  })
-  showEdit.value = false
-  await fetchUsers()
-}
-
-// Delete user
-async function confirmDelete(id: string) {
-  if (confirm('Yakin ingin menghapus user ini?')) {
-    await deleteUserById(id)
+  isSubmitting.value = true
+  try {
+    await updateUserById(editForm.value.id, { name: editForm.value.name, email: editForm.value.email })
+    toast.success('User berhasil diperbarui')
+    editDialog.value = false
     await fetchUsers()
+  } catch (error: any) {
+    toast.error(error?.message ?? 'Gagal memperbarui')
+  } finally {
+    isSubmitting.value = false
   }
 }
 
-// Handle pagination & search
+async function confirmDelete(user: any) {
+  if (!await confirm({ title: 'Hapus User', message: `Hapus user "${user.name}"?`, tone: 'danger', confirmText: 'Hapus' })) return
+  try {
+    await deleteUserById(user.id)
+    toast.success('User dihapus')
+    await fetchUsers()
+  } catch (error: any) {
+    toast.error(error?.message ?? 'Gagal menghapus')
+  }
+}
+
 watch([page, search], fetchUsers)
-
 onMounted(fetchUsers)
-definePageMeta({
-  layout: 'unit'
-})
 
+definePageMeta({ layout: 'unit' })
 </script>
+
 <template>
-  <VCard title="Users Table" class="mb-4">
-    <VCardText>
-      <VTextField
-        v-model="search"
-        label="Cari user..."
-        @input="fetchUsers"  
-        prepend-inner-icon="bx bx-search"
-        clearable
-        class="mb-4"
-      />
-    </VCardText>
+  <div>
+    <PageHeader title="Users" subtitle="Daftar user yang terdaftar di unit ini." />
 
-    <VTable density="compact">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>No Telp</th>
-          <th>Alamat</th>
-          <th>Role</th>
-          <th>Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-if="!isLoading && users.length === 0">
-          <td colspan="6" class="text-center">Tidak ada data</td>
-        </tr>
-        <tr v-for="(user, index) in users" :key="user.id">
-          <td>{{ index + 1 + (page - 1) * limit }}</td>
-          <td>{{ user.name }}</td>
-          <td>{{ user.email }}</td>
-          <td>{{ user.phone?.trim() !== '' ? user.phone : '-' }}</td>
-          <td>{{ user.address?.trim() !== '' ? user.address : '-' }}</td>
-          <td>{{ user.role?.trim() !== '' ? user.role : 'Customer' }}</td>          
-          <td>
-            <VBtn icon variant="text" size="small" @click="openEditModal(user)">
-              <VIcon color="warning">bx bx-edit-alt</VIcon>
+    <VCard rounded="lg">
+      <AppDataTable
+        :headers="headers"
+        :items="users"
+        :loading="isLoading"
+        show-index
+        :page="page"
+        :items-per-page="limit"
+        :total="total"
+        empty-title="Belum ada user"
+        @update:page="p => { page = p; fetchUsers() }"
+      >
+        <template #toolbar>
+          <VTextField v-model="search" placeholder="Cari user..." prepend-inner-icon="bx-search" clearable style="max-width:320px" />
+        </template>
+
+        <template #item.phone="{ item }">{{ item.phone?.trim() || '-' }}</template>
+        <template #item.address="{ item }">{{ item.address?.trim() || '-' }}</template>
+        <template #item.role="{ item }">{{ item.role?.trim() || 'Customer' }}</template>
+
+        <template #item.actions="{ item }">
+          <div class="d-flex justify-end" style="gap:4px">
+            <VBtn icon variant="text" size="small" @click="openEditModal(item)">
+              <VIcon color="warning" icon="bx-edit-alt" />
             </VBtn>
-            <VBtn icon variant="text"  size="small" @click="confirmDelete(user.id)">
-              <VIcon color="error">bx bx-trash-alt</VIcon>
+            <VBtn icon variant="text" size="small" color="error" @click="confirmDelete(item)">
+              <VIcon icon="bx-trash-alt" />
             </VBtn>
-          </td>
-        </tr>
-      </tbody>
-    </VTable>
-
-    <VCardActions class="justify-center">
-      <VPagination
-        v-model="page"
-        :length="Math.ceil(total / limit)"
-        total-visible="5"
-        prev-icon="bx bx-chevron-left"
-        next-icon="bx bx-chevron-right"
-      />
-    </VCardActions>
-  </VCard>
-
-  <!-- Modal Edit -->
-  <VDialog v-model="showEdit" max-width="500">
-    <VCard>
-      <VCardTitle>Edit User</VCardTitle>
-      <VCardText>
-        <VTextField label="Name" v-model="editForm.name" />
-        <VTextField label="Email" v-model="editForm.email" />
-      </VCardText>
-      <VCardActions>
-        <VSpacer />
-        <VBtn text="Batal" @click="showEdit = false" />
-        <VBtn color="primary" @click="saveEdit">Simpan</VBtn>
-      </VCardActions>
+          </div>
+        </template>
+      </AppDataTable>
     </VCard>
-  </VDialog>
+
+    <AppModal
+      v-model="editDialog"
+      title="Edit User"
+      icon="bx-user"
+      :loading="isSubmitting"
+      confirm-text="Simpan"
+      cancel-text="Batal"
+      :max-width="480"
+      @confirm="saveEdit"
+    >
+      <VRow>
+        <VCol cols="12">
+          <VTextField v-model="editForm.name" label="Nama" />
+        </VCol>
+        <VCol cols="12">
+          <VTextField v-model="editForm.email" label="Email" type="email" />
+        </VCol>
+      </VRow>
+    </AppModal>
+  </div>
 </template>

@@ -1,655 +1,334 @@
 <script setup lang="ts">
 import type { PhotoPrice, PhotoType } from '@/types/photo'
 import type { Unit } from '@/types/unit'
-import type { Outlet, OutletList, GetOutletsByUnitResponse } from '@/types/outlet'
+import type { OutletList, GetOutletsByUnitResponse } from '@/types/outlet'
+import type { DataTableHeader } from '@/components/AppDataTable.vue'
 
 const {
-  getPhotoTypes,
-  getPhotoPrices,
-  createPhotoPricing,
-  createPhotoType,
-  deletePhotoTypeById,
-  deletePhotoPriceById,
-  getPhotoPriceById,
-  getPhotoTypeById,
-  updatePhotoType,
-  updatePhotoPrice
+  getPhotoTypes, getPhotoPrices, createPhotoPricing, createPhotoType,
+  deletePhotoTypeById, deletePhotoPriceById, getPhotoPriceById, getPhotoTypeById,
+  updatePhotoType, updatePhotoPrice,
 } = usePricings()
-
 const { getUnits } = useUnits()
 const { getOutlets, getOutletsByUnit } = useOutlets()
+const toast = useToast()
+const { confirm } = useConfirm()
 
+// ── Photo Types ───────────────────────────────────────────────────────────────
 const pagePhotoTypes = ref(1)
 const totalPhotoTypes = ref(0)
 const searchPhotoTypes = ref('')
 const photoTypes = ref<PhotoType[]>([])
+const isLoadingTypes = ref(false)
+const isSubmittingType = ref(false)
 
-const formPhotoType = ref({ name: '', description: '', kode_folder: '' })
-const formEditPhotoType = ref({ id: '', name: '', description: '', kode_folder: '' })
-const showCreatePhotoType = ref(false)
-const showEditPhotoType = ref(false)
+const typeDialog = ref(false)
+const editingTypeId = ref<string | null>(null)
+const isEditingType = computed(() => editingTypeId.value !== null)
+const blankTypeForm = () => ({ name: '', description: '', kode_folder: '' })
+const typeForm = ref(blankTypeForm())
 
+const typeHeaders: DataTableHeader[] = [
+  { key: 'name', title: 'Nama' },
+  { key: 'description', title: 'Deskripsi' },
+  { key: 'kode_folder', title: 'Kode Folder', nowrap: true },
+  { key: 'actions', title: '', align: 'end', width: '80px' },
+]
+
+// ── Photo Prices ──────────────────────────────────────────────────────────────
 const pagePhotoPrices = ref(1)
 const totalPhotoPrices = ref(0)
 const searchPhotoPrices = ref('')
 const photoPrices = ref<PhotoPrice[]>([])
+const isLoadingPrices = ref(false)
+const isSubmittingPrice = ref(false)
 
-const formPhotoPricing = ref({ unit_id: '', outlet_id: '', photo_type_id: '', price: 0 })
-const formEditPhotoPricing = ref({ id: '', unit_id: '', outlet_id: '', photo_type_id: '', price: 0 })
+const priceDialog = ref(false)
+const editingPriceId = ref<string | null>(null)
+const isEditingPrice = computed(() => editingPriceId.value !== null)
+const blankPriceForm = () => ({ unit_id: '', outlet_id: '', photo_type_id: '', price: 0 })
+const priceForm = ref(blankPriceForm())
 
-const showCreatePhotoPricing = ref(false)
-const showEditPhotoPricing = ref(false)
+const units = ref<Unit[]>([])
+const outletList = ref<OutletList[]>([])
+
+const selectedUnit = computed(() => units.value.find(u => u.id === priceForm.value.unit_id) || null)
+
+const priceHeaders: DataTableHeader[] = [
+  { key: 'outlet_name', title: 'Outlet' },
+  { key: 'unit_name', title: 'Unit' },
+  { key: 'photo_type_name', title: 'Tipe Foto' },
+  { key: 'price', title: 'Harga', nowrap: true },
+  { key: 'actions', title: '', align: 'end', width: '80px' },
+]
 
 const limit = 24
-const isLoading = ref(false)
 
+// ── Fetch ─────────────────────────────────────────────────────────────────────
 async function fetchPhotoTypes() {
-  isLoading.value = true
+  isLoadingTypes.value = true
   try {
     const res = await getPhotoTypes({ page: pagePhotoTypes.value, limit, search: searchPhotoTypes.value })
     photoTypes.value = res?.data || []
     totalPhotoTypes.value = res?.total || 0
-    if (photoTypes.value.length > 0 && !formPhotoPricing.value.photo_type_id) {
-      formPhotoPricing.value.photo_type_id = photoTypes.value[0].id
-    }
-  } catch (error) {
-    console.error('Failed to fetch Photo types:', error)
-    photoTypes.value = []
-    totalPhotoTypes.value = 0
-  } finally {
-    isLoading.value = false
-  }
+    if (photoTypes.value.length > 0 && !priceForm.value.photo_type_id)
+      priceForm.value.photo_type_id = photoTypes.value[0].id
+  } catch { photoTypes.value = []; totalPhotoTypes.value = 0 }
+  finally { isLoadingTypes.value = false }
 }
 
 async function fetchPhotoPrices() {
-  isLoading.value = true
+  isLoadingPrices.value = true
   try {
     const res = await getPhotoPrices({ page: pagePhotoPrices.value, limit, search: searchPhotoPrices.value })
     photoPrices.value = res?.photo_prices || []
     totalPhotoPrices.value = res?.total || 0
-  } catch (error) {
-    console.error('Failed to fetch Photo prices:', error)
-    photoPrices.value = []
-    totalPhotoPrices.value = 0
-  } finally {
-    isLoading.value = false
-  }
+  } catch { photoPrices.value = []; totalPhotoPrices.value = 0 }
+  finally { isLoadingPrices.value = false }
 }
 
-const units = ref<Unit[]>([])
-const outletList = ref<OutletList[]>([])
-const editOutletList = ref<OutletList[]>([])
-const outlets = ref<Outlet[]>([])
-
 async function fetchUnitsAndOutlets() {
-  isLoading.value = true
   try {
     const unitRes = await getUnits({ page: 1, limit: 9999 })
     units.value = unitRes?.data || []
-  } catch (error) {
-    console.error('Error fetching units:', error)
-    units.value = []
-  } finally {
-    isLoading.value = false
-  }
+  } catch { units.value = [] }
 }
 
-async function fetchOutlets() {
-  isLoading.value = true
-  try {
-    const { data } = await getOutlets({ page: 1, limit: 9999 })
-    outlets.value = Array.isArray(data) ? data : []
-  } catch (error) {
-    console.error('Error fetching outlets:', error)
-    outlets.value = []
-  } finally {
-    isLoading.value = false
-  }
-}
+// ── Photo Type CRUD ───────────────────────────────────────────────────────────
+function openCreateType() { editingTypeId.value = null; typeForm.value = blankTypeForm(); typeDialog.value = true }
 
-const selectedUnit = computed(() => units.value.find(u => u.id === formPhotoPricing.value.unit_id) || null)
-const selectedEditUnit = computed(() => units.value.find(u => u.id === formEditPhotoPricing.value.unit_id) || null)
-
-const snackbar = ref(false)
-const text = ref('')
-const timeout = ref(3000)
-
-async function handleCreatePhotoPricing() {
-  try {
-    await createPhotoPricing(formPhotoPricing.value)
-    showCreatePhotoPricing.value = false
-    await fetchPhotoPrices()
-  } catch (error) {
-    text.value = 'Photo price for this unit and photo type already exists'
-    snackbar.value = true
-  }
-}
-
-async function openEditPriceModal(id: string) {
-  const data = await getPhotoPriceById(id)
-  if (data?.photo_price) {
-    formEditPhotoPricing.value = data.photo_price
-    if (formEditPhotoPricing.value.unit_id) {
-      await fetchEditOutletsByUnit(formEditPhotoPricing.value.unit_id)
-    }
-  }
-  showEditPhotoPricing.value = true
-}
-
-async function fetchEditOutletsByUnit(unitId: string) {
-  const outletRes = await getOutletsByUnit(unitId) as GetOutletsByUnitResponse
-  if (outletRes?.status_code === 200 && Array.isArray(outletRes.outlets)) {
-    editOutletList.value = outletRes.outlets
-    if (!editOutletList.value.some(outlet => outlet.id === formEditPhotoPricing.value.outlet_id)) {
-      formEditPhotoPricing.value.outlet_id = outletRes.outlets[0]?.id || ''
-    }
-  } else {
-    editOutletList.value = []
-    formEditPhotoPricing.value.outlet_id = ''
-  }
-}
-
-async function handleEditPhotoPricing() {
-  try {
-    isLoading.value = true
-    if (!formEditPhotoPricing.value.unit_id || !formEditPhotoPricing.value.outlet_id || !formEditPhotoPricing.value.photo_type_id) {
-      console.warn('Semua field wajib diisi')
-      return
-    }
-    const payload = {
-      unit_id: formEditPhotoPricing.value.unit_id,
-      outlet_id: formEditPhotoPricing.value.outlet_id,
-      photo_type_id: formEditPhotoPricing.value.photo_type_id,
-      price: Number(formEditPhotoPricing.value.price),
-    }
-    const response = await updatePhotoPrice(formEditPhotoPricing.value.id, payload)
-    if (response.status_code === 200) {
-      showEditPhotoPricing.value = false
-      await fetchPhotoPrices()
-    } else {
-      console.error('Gagal menyimpan perubahan:', response)
-    }
-  } catch (error) {
-    console.error('Terjadi kesalahan saat menyimpan:', error)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-async function confirmDeletePhotoPrice(id: string) {
-  if (confirm('Yakin ingin menghapus Pricing ini?')) {
-    await deletePhotoPriceById(id)
-    await fetchPhotoPrices()
-  }
-}
-
-async function handleCreatePhotoType() {
-  await createPhotoType(formPhotoType.value)
-  showCreatePhotoType.value = false
-  // clear
-  formPhotoType.value = { name: '', description: '', kode_folder: '' }
-  await fetchPhotoTypes()
-}
-
-async function openEditPhotoTypeModal(id: string) {
+async function openEditType(id: string) {
   const data = await getPhotoTypeById(id)
   if (data?.photo_type) {
-    formEditPhotoType.value = data.photo_type
+    editingTypeId.value = id
+    typeForm.value = { name: data.photo_type.name, description: data.photo_type.description, kode_folder: data.photo_type.kode_folder }
+    typeDialog.value = true
   }
-  showEditPhotoType.value = true
 }
 
-async function handleUpdatePhotoType(id: string) {
-  await updatePhotoType(id, formEditPhotoType.value)
-  showEditPhotoType.value = false
+async function submitType() {
+  isSubmittingType.value = true
+  try {
+    if (isEditingType.value) {
+      await updatePhotoType(editingTypeId.value!, typeForm.value)
+      toast.success('Tipe foto diperbarui')
+    } else {
+      await createPhotoType(typeForm.value)
+      toast.success('Tipe foto ditambahkan')
+    }
+    typeDialog.value = false
+    await fetchPhotoTypes()
+  } catch (e: any) { toast.error(e?.message ?? 'Gagal menyimpan') }
+  finally { isSubmittingType.value = false }
+}
+
+async function deleteType(id: string) {
+  if (!await confirm({ title: 'Hapus Tipe Foto', message: 'Hapus tipe foto ini?', tone: 'danger', confirmText: 'Hapus' })) return
+  await deletePhotoTypeById(id)
+  toast.success('Tipe foto dihapus')
   await fetchPhotoTypes()
 }
 
-async function confirmDeletePhotoType(id: string) {
-  if (confirm('Yakin ingin menghapus Tipe Foto ini?')) {
-    await deletePhotoTypeById(id)
-    await fetchPhotoTypes()
+// ── Photo Price CRUD ──────────────────────────────────────────────────────────
+function openCreatePrice() { editingPriceId.value = null; priceForm.value = blankPriceForm(); outletList.value = []; priceDialog.value = true }
+
+async function openEditPrice(id: string) {
+  const data = await getPhotoPriceById(id)
+  if (data?.photo_price) {
+    editingPriceId.value = id
+    priceForm.value = { ...data.photo_price }
+    if (priceForm.value.unit_id) await fetchOutletsByUnit(priceForm.value.unit_id)
+    priceDialog.value = true
   }
+}
+
+async function fetchOutletsByUnit(unitId: string) {
+  const outletRes = await getOutletsByUnit(unitId) as GetOutletsByUnitResponse
+  if (outletRes?.status_code === 200 && Array.isArray(outletRes.outlets)) {
+    outletList.value = outletRes.outlets
+    if (!outletList.value.some(o => o.id === priceForm.value.outlet_id))
+      priceForm.value.outlet_id = outletRes.outlets[0]?.id || ''
+  } else {
+    outletList.value = []
+    priceForm.value.outlet_id = ''
+  }
+}
+
+async function submitPrice() {
+  isSubmittingPrice.value = true
+  try {
+    if (isEditingPrice.value) {
+      const payload = { unit_id: priceForm.value.unit_id, outlet_id: priceForm.value.outlet_id, photo_type_id: priceForm.value.photo_type_id, price: Number(priceForm.value.price) }
+      await updatePhotoPrice(editingPriceId.value!, payload)
+      toast.success('Pricing diperbarui')
+    } else {
+      await createPhotoPricing(priceForm.value)
+      toast.success('Pricing ditambahkan')
+    }
+    priceDialog.value = false
+    await fetchPhotoPrices()
+  } catch { toast.error('Pricing untuk unit dan tipe foto ini sudah ada') }
+  finally { isSubmittingPrice.value = false }
+}
+
+async function deletePrice(id: string) {
+  if (!await confirm({ title: 'Hapus Pricing', message: 'Hapus pricing ini?', tone: 'danger', confirmText: 'Hapus' })) return
+  await deletePhotoPriceById(id)
+  toast.success('Pricing dihapus')
+  await fetchPhotoPrices()
 }
 
 watch([pagePhotoTypes, searchPhotoTypes], fetchPhotoTypes)
 watch([pagePhotoPrices, searchPhotoPrices], fetchPhotoPrices)
-
-watch(
-  () => formPhotoPricing.value.unit_id,
-  async (newUnitId) => {
-    if (newUnitId) {
-      const outletRes = await getOutletsByUnit(newUnitId) as GetOutletsByUnitResponse
-      if (outletRes?.status_code === 200 && Array.isArray(outletRes.outlets)) {
-        outletList.value = outletRes.outlets
-        formPhotoPricing.value.outlet_id = outletRes.outlets[0]?.id || ''        
-      } else {
-        outletList.value = []
-        formPhotoPricing.value.outlet_id = ''
-      }
-    }
-  },
-  { immediate: true }
-)
-
-watch(
-  () => formEditPhotoPricing.value.unit_id,
-  async (newUnitId) => {
-    if (newUnitId) {
-      await fetchEditOutletsByUnit(newUnitId)
-    } else {
-      editOutletList.value = []
-      formEditPhotoPricing.value.outlet_id = ''
-    }
-  }
-)
-
-onMounted(() => {
-  fetchPhotoTypes()
-  fetchPhotoPrices()
-  fetchUnitsAndOutlets()
-  fetchOutlets()
+watch(() => priceForm.value.unit_id, async (newUnitId) => {
+  if (newUnitId) await fetchOutletsByUnit(newUnitId)
+  else { outletList.value = []; priceForm.value.outlet_id = '' }
 })
 
+onMounted(() => { fetchPhotoTypes(); fetchPhotoPrices(); fetchUnitsAndOutlets() })
 </script>
 
 <template>
-  <div class="container">
-    <h1>Photo Pricing</h1>
-    <p>Manage your photo pricing here.</p>
+  <div>
+    <PageHeader title="Photo Pricing" subtitle="Kelola tipe foto dan harga per outlet." />
+
+    <!-- Photo Types -->
+    <VCard rounded="lg" class="mb-6">
+      <AppDataTable
+        :headers="typeHeaders"
+        :items="photoTypes"
+        :loading="isLoadingTypes"
+        show-index
+        :page="pagePhotoTypes"
+        :items-per-page="limit"
+        :total="totalPhotoTypes"
+        empty-title="Belum ada tipe foto"
+        @update:page="p => { pagePhotoTypes = p; fetchPhotoTypes() }"
+      >
+        <template #toolbar>
+          <span class="text-subtitle-2 font-weight-bold">Tipe Foto</span>
+          <VSpacer />
+          <VTextField v-model="searchPhotoTypes" placeholder="Cari tipe foto..." prepend-inner-icon="bx-search" clearable style="max-width:260px" />
+          <VBtn color="primary" prepend-icon="bx-plus" class="ml-3" @click="openCreateType">Tambah</VBtn>
+        </template>
+
+        <template #item.kode_folder="{ item }">
+          <VChip color="error" size="small" variant="tonal">{{ item.kode_folder }}</VChip>
+        </template>
+
+        <template #item.actions="{ item }">
+          <div class="d-flex justify-end" style="gap:4px">
+            <VBtn icon variant="text" size="small" @click="openEditType(item.id)"><VIcon color="warning" icon="bx-edit-alt" /></VBtn>
+            <VBtn icon variant="text" size="small" color="error" @click="deleteType(item.id)"><VIcon icon="bx-trash-alt" /></VBtn>
+          </div>
+        </template>
+      </AppDataTable>
+    </VCard>
+
+    <!-- Photo Prices -->
+    <VCard rounded="lg">
+      <AppDataTable
+        :headers="priceHeaders"
+        :items="photoPrices"
+        :loading="isLoadingPrices"
+        show-index
+        :page="pagePhotoPrices"
+        :items-per-page="limit"
+        :total="totalPhotoPrices"
+        empty-title="Belum ada pricing"
+        @update:page="p => { pagePhotoPrices = p; fetchPhotoPrices() }"
+      >
+        <template #toolbar>
+          <span class="text-subtitle-2 font-weight-bold">Pricing</span>
+          <VSpacer />
+          <VTextField v-model="searchPhotoPrices" placeholder="Cari pricing..." prepend-inner-icon="bx-search" clearable style="max-width:260px" />
+          <VBtn color="primary" prepend-icon="bx-plus" class="ml-3" @click="openCreatePrice">Tambah</VBtn>
+        </template>
+
+        <template #item.price="{ item }">Rp {{ item.price.toLocaleString() }}</template>
+
+        <template #item.actions="{ item }">
+          <div class="d-flex justify-end" style="gap:4px">
+            <VBtn icon variant="text" size="small" @click="openEditPrice(item.id)"><VIcon color="warning" icon="bx-edit-alt" /></VBtn>
+            <VBtn icon variant="text" size="small" color="error" @click="deletePrice(item.id)"><VIcon icon="bx-trash-alt" /></VBtn>
+          </div>
+        </template>
+      </AppDataTable>
+    </VCard>
+
+    <!-- Type modal -->
+    <AppModal
+      v-model="typeDialog"
+      :title="isEditingType ? 'Edit Tipe Foto' : 'Tambah Tipe Foto'"
+      icon="bx-category"
+      :loading="isSubmittingType"
+      :confirm-text="isEditingType ? 'Update' : 'Simpan'"
+      cancel-text="Batal"
+      @confirm="submitType"
+    >
+      <VRow>
+        <VCol cols="12" md="6">
+          <VTextField v-model="typeForm.name" label="Nama Tipe Foto" />
+        </VCol>
+        <VCol cols="12" md="6">
+          <VTextField v-model="typeForm.kode_folder" label="Kode Folder" />
+        </VCol>
+        <VCol cols="12">
+          <VTextField v-model="typeForm.description" label="Deskripsi" />
+        </VCol>
+      </VRow>
+    </AppModal>
+
+    <!-- Price modal -->
+    <AppModal
+      v-model="priceDialog"
+      :title="isEditingPrice ? 'Edit Pricing' : 'Tambah Pricing'"
+      icon="bx-purchase-tag"
+      :loading="isSubmittingPrice"
+      :confirm-text="isEditingPrice ? 'Update' : 'Simpan'"
+      cancel-text="Batal"
+      @confirm="submitPrice"
+    >
+      <VRow>
+        <VCol cols="12" md="6">
+          <VSelect
+            v-model="priceForm.unit_id"
+            :items="units"
+            item-value="id"
+            item-title="name"
+            label="Unit"
+            :hint="selectedUnit?.location"
+            persistent-hint
+          />
+        </VCol>
+        <VCol cols="12" md="6">
+          <VSelect
+            v-model="priceForm.outlet_id"
+            :items="outletList"
+            item-value="id"
+            item-title="name"
+            label="Outlet"
+          />
+        </VCol>
+        <VCol cols="12" md="6">
+          <VSelect
+            v-model="priceForm.photo_type_id"
+            :items="photoTypes"
+            item-value="id"
+            item-title="name"
+            label="Tipe Foto"
+          />
+        </VCol>
+        <VCol cols="12" md="6">
+          <VTextField
+            v-model="priceForm.price"
+            label="Harga"
+            prefix="Rp"
+            hint="Rp 0 jika foto gratis"
+            persistent-hint
+          />
+        </VCol>
+      </VRow>
+    </AppModal>
   </div>
-  <v-snackbar v-model="snackbar" :timeout="timeout">
-    {{ text }}
-    <template v-slot:actions>
-      <v-btn color="blue" variant="text" @click="snackbar = false">Close</v-btn>
-    </template>
-  </v-snackbar>
-  <VCard title="Photo Type Table" class="mb-4">
-    <template v-slot:append>
-        <v-btn
-          class="text-none"
-          color="primary"
-          text="Tambah Tipe Foto"
-          variant="tonal"
-          slim
-          @click="showCreatePhotoType = true"
-        ></v-btn>
-
-        <VDialog v-model="showCreatePhotoType" max-width="766">
-          <VCard>
-            <VCardTitle>Tambah Tipe Foto</VCardTitle>            
-            <v-container fluid>
-
-              <v-row>
-                <v-col cols="3">
-                  <v-list-subheader>Tipe / Jenis Foto</v-list-subheader>
-                </v-col>
-
-                <v-col cols="9">
-                  <v-text-field                                                                       
-                    v-model="formPhotoType.name"
-                    persistent-hint
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col cols="3">
-                  <v-list-subheader>Descripsi</v-list-subheader>
-                </v-col>
-
-                <v-col cols="9">
-                  <v-text-field                                                                       
-                    v-model="formPhotoType.description"
-                    persistent-hint
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col cols="3">
-                  <v-list-subheader>Kode Folder</v-list-subheader>
-                </v-col>
-
-                <v-col cols="9">
-                  <v-text-field                                                                       
-                    v-model="formPhotoType.kode_folder"
-                    persistent-hint
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-            </v-container>            
-            <VCardActions>
-              <VSpacer />
-              <VBtn text="Batal" @click="showCreatePhotoType = false" />
-              <VBtn color="primary" @click="handleCreatePhotoType">Simpan</VBtn>
-            </VCardActions>
-          </VCard>
-        </VDialog>   
-      </template>
-    <VCardText>
-      <VTextField
-        v-model="searchPhotoTypes"
-        label="Search..."
-        prepend-inner-icon="bx bx-search"
-        clearable
-        class="mb-4"
-      />
-    </VCardText>
-
-    <VTable density="compact">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Nama</th>
-          <th>Deskripsi</th>
-          <th>Kode Folder</th>
-          <th></th>        
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-if="!isLoading && photoTypes.length === 0">
-          <td colspan="5" class="text-center">Tidak ada data</td>
-        </tr>
-        <tr v-for="(photoType, index) in photoTypes" :key="photoType.id">
-          <td>{{ index + 1 + (pagePhotoTypes - 1) * limit }}</td>
-          <td>{{ photoType.name }}</td>
-          <td>{{ photoType.description }}</td> 
-          <td><span class="font-weight-bold text-error ">{{ photoType.kode_folder }}</span></td>         
-          <td>
-            <VBtn icon variant="text" size="small" @click="openEditPhotoTypeModal(photoType.id)">
-              <VIcon color="warning">bx bx-edit-alt</VIcon>
-            </VBtn>
-            <VBtn icon variant="text"  size="small" @click="confirmDeletePhotoType(photoType.id)">
-              <VIcon color="error">bx bx-trash-alt</VIcon>
-            </VBtn>
-          </td>
-        </tr>
-      </tbody>
-    </VTable>
-    <VDialog v-model="showEditPhotoType" max-width="766">
-      <VCard>
-        <VCardTitle>Edit Tipe Foto</VCardTitle>            
-        <v-container fluid>
-
-          <v-row>
-            <v-col cols="3">
-              <v-list-subheader>Tipe / Jenis Foto</v-list-subheader>
-            </v-col>
-
-            <v-col cols="9">
-              <v-text-field                                                                       
-                v-model="formEditPhotoType.name"
-                persistent-hint
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="3">
-              <v-list-subheader>Descripsi</v-list-subheader>
-            </v-col>
-
-            <v-col cols="9">
-              <v-text-field                                                                       
-                v-model="formEditPhotoType.description"
-                persistent-hint
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="3">
-              <v-list-subheader>Kode Folder</v-list-subheader>
-            </v-col>
-
-            <v-col cols="9">
-              <v-text-field                                                                       
-                v-model="formEditPhotoType.kode_folder"
-                persistent-hint
-              ></v-text-field>
-            </v-col>
-          </v-row>
-        </v-container>            
-        <VCardActions>
-          <VSpacer />
-          <VBtn text="Batal" @click="showEditPhotoType = false" />
-          <VBtn color="primary" @click="handleUpdatePhotoType(formEditPhotoType.id)">Update</VBtn>
-        </VCardActions>
-      </VCard>
-    </VDialog> 
-    <VCardActions class="justify-center">
-      <VPagination
-        v-model="pagePhotoTypes"
-        :length="Math.ceil(totalPhotoTypes / limit)"
-        total-visible="5"
-        prev-icon="bx bx-chevron-left"
-        next-icon="bx bx-chevron-right"
-      />
-    </VCardActions>
-  </VCard>
-
-  <VCard title="Pricing Table" class="mb-4">
-    <template v-slot:append>
-      <v-btn
-        class="text-none"
-        color="primary"
-        text="Tambah Pricing"
-        variant="tonal"
-        slim
-        @click="showCreatePhotoPricing = true"
-      ></v-btn>
-        <VDialog v-model="showCreatePhotoPricing" max-width="766">
-          <VCard>
-            <VCardTitle>Tambah Pricing</VCardTitle>            
-            <v-container fluid>
-              <v-row>
-                <v-col cols="2">
-                  <v-list-subheader>Lokasi Unit</v-list-subheader>
-                </v-col>
-
-                <v-col cols="10">
-                  <v-select
-                    v-model="formPhotoPricing.unit_id"
-                    density="comfortable"                    
-                    :items="units"
-                    item-value="id"
-                    item-title="name"                    
-                    :hint="selectedUnit?.location"
-                    persistent-hint
-                    class="mb-4"
-                    variant="outlined"
-                  />
-                </v-col>
-              </v-row>
-            <v-row>
-              <v-col cols="2">
-                <v-list-subheader>Outlet</v-list-subheader>
-              </v-col>
-
-              <v-col cols="10">
-                <v-select
-                  v-model="formPhotoPricing.outlet_id"
-                  density="comfortable"                  
-                  :items="outletList"
-                  item-value="id"
-                  item-title="name"
-                  class="mb-4"
-                  variant="outlined"
-                />
-              </v-col>
-            </v-row>
-              <v-row>
-                <v-col cols="2">
-                  <v-list-subheader>Tipe Foto</v-list-subheader>
-                </v-col>
-
-                <v-col cols="10">
-                   <v-select
-                    v-model="formPhotoPricing.photo_type_id"
-                    density="comfortable"                    
-                    :items="photoTypes"
-                    item-value="id"
-                    item-title="name"
-                    class="mb-4"
-                  />
-                </v-col>
-              </v-row>
-
-              <v-row>
-                <v-col cols="2">
-                  <v-list-subheader>Harga</v-list-subheader>
-                </v-col>
-
-                <v-col cols="10">
-                  <v-text-field                    
-                    hint="Rp 0 jika konten/foto gratis"                    
-                    prefix="Rp"
-                    v-model="formPhotoPricing.price"
-                    persistent-hint
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              
-            </v-container>            
-            <VCardActions>
-              <VSpacer />
-              <VBtn text="Batal" @click="showCreatePhotoPricing = false" />
-              <VBtn color="primary" @click="handleCreatePhotoPricing">Simpan</VBtn>
-            </VCardActions>
-          </VCard>
-        </VDialog>        
-      </template>
-    <VCardText>
-      <VTextField
-        v-model="searchPhotoPrices"
-        label="Search..."
-        prepend-inner-icon="bx bx-search"
-        clearable
-        class="mb-4"
-      />
-    </VCardText>
- 
-    <VTable density="compact">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Outlet</th>
-          <th>Unit</th>
-          <th>Tipe Foto</th>          
-          <th>Harga</th>
-          <th></th>        
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-if="!isLoading && photoPrices.length === 0">
-          <td colspan="6" class="text-center">Tidak ada data</td>
-        </tr>
-        <tr v-for="(photoPrice, index) in photoPrices" :key="photoPrice.id">
-          <td>{{ index + 1 + (pagePhotoPrices - 1) * limit }}</td>
-          <td>{{ photoPrice.outlet_name }}</td>
-          <td>{{ photoPrice.unit_name }}</td>
-          <td>{{ photoPrice.photo_type_name }}</td>
-          <td>Rp {{ photoPrice.price.toLocaleString() }}</td>
-          <td>
-            <VBtn icon variant="text" size="small" @click="openEditPriceModal(photoPrice.id)">
-              <VIcon color="warning">bx bx-edit-alt</VIcon>
-            </VBtn>
-            <VBtn icon variant="text"  size="small" @click="confirmDeletePhotoPrice(photoPrice.id)">
-              <VIcon color="error">bx bx-trash-alt</VIcon>
-            </VBtn>
-          </td>
-        </tr>
-      </tbody>
-    </VTable>
-    <VDialog v-model="showEditPhotoPricing" max-width="766">
-      <VCard>
-        <VCardTitle>Edit Pricing</VCardTitle>            
-        <v-container fluid>
-          <v-row>
-            <v-col cols="2">
-              <v-list-subheader>Lokasi Unit</v-list-subheader>
-            </v-col>
-            <v-col cols="10">
-              <v-select
-                v-model="formEditPhotoPricing.unit_id"
-                :items="units"
-                item-value="id"
-                item-title="name"
-                :hint="selectedEditUnit?.location"
-                persistent-hint
-                density="comfortable"
-                class="mb-4"
-                variant="outlined"
-              />
-            </v-col>
-          </v-row>
-
-          <v-row>
-            <v-col cols="2">
-              <v-list-subheader>Outlet</v-list-subheader>
-            </v-col>
-            <v-col cols="10">
-              <v-select
-                v-model="formEditPhotoPricing.outlet_id"
-                :items="editOutletList"
-                item-value="id"
-                item-title="name"
-                density="comfortable"
-                class="mb-4"
-                variant="outlined"
-              />
-            </v-col>
-          </v-row>
-
-          <v-row>
-            <v-col cols="2">
-              <v-list-subheader>Tipe Foto</v-list-subheader>
-            </v-col>
-            <v-col cols="10">
-              <v-select
-                v-model="formEditPhotoPricing.photo_type_id"
-                :items="photoTypes"
-                item-value="id"
-                item-title="name"
-                density="comfortable"
-                class="mb-4"
-                variant="outlined"
-              />
-            </v-col>
-          </v-row>
-
-          <v-row>
-            <v-col cols="2">
-              <v-list-subheader>Harga</v-list-subheader>
-            </v-col>
-            <v-col cols="10">
-              <v-text-field
-                v-model="formEditPhotoPricing.price"
-                hint="Rp 0 jika konten/foto gratis"
-                prefix="Rp"
-                persistent-hint
-              />
-            </v-col>
-          </v-row>
-          
-        </v-container>
-
-        <VCardActions>
-          <VSpacer />
-          <VBtn text="Batal" @click="showEditPhotoPricing = false" />
-          <VBtn color="primary" @click="handleEditPhotoPricing">Simpan</VBtn>
-        </VCardActions>
-      </VCard>
-    </VDialog>
-  
-    <VCardActions class="justify-center">
-      <VPagination
-        v-model="pagePhotoPrices"
-        :length="Math.ceil(totalPhotoPrices / limit)"
-        total-visible="5"
-        prev-icon="bx bx-chevron-left"
-        next-icon="bx bx-chevron-right"
-      />
-    </VCardActions>
-  </VCard>
-
-
-  
 </template>

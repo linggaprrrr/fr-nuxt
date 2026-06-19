@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
 import type { Unit } from '~/types/unit'
 import { getApiErrorMessage } from '@/utils/apiHelpers'
+import type { DataTableHeader } from '@/components/AppDataTable.vue'
 
 const { getUnits, createUnit, updateUnitById, deleteUnitById } = useUnits()
+const toast = useToast()
+const { confirm } = useConfirm()
 
 const page = ref(1)
 const limit = 24
@@ -13,273 +15,152 @@ const isSubmitting = ref(false)
 const units = ref<Unit[]>([])
 const search = ref('')
 
-// Modal
-const showCreate = ref(false)
-const showEdit = ref(false)
-const form = ref({  
-  id: '',
-  name: '',
-  location: '',
-  kode_folder: ''
-})
+const dialog = ref(false)
+const editingId = ref<string | null>(null)
+const isEditing = computed(() => editingId.value !== null)
 
+const blankForm = () => ({ name: '', location: '', kode_folder: '' })
+const form = ref(blankForm())
 
-const createForm = ref({    
-  name: '',
-  location: '',
-  kode_folder: ''
-})
-
-
+const headers: DataTableHeader[] = [
+  { key: 'name', title: 'Nama' },
+  { key: 'location', title: 'Lokasi' },
+  { key: 'api_key', title: 'API Key' },
+  { key: 'kode_folder', title: 'Kode Folder', nowrap: true },
+  { key: 'created_at', title: 'Dibuat', nowrap: true },
+  { key: 'actions', title: '', align: 'end', width: '80px' },
+]
 
 async function fetchUnits() {
   isLoading.value = true
   try {
-    const res = await getUnits({
-      page: page.value,
-      limit,
-      search: search.value
-    })
+    const res = await getUnits({ page: page.value, limit, search: search.value })
     units.value = res?.data || []
     total.value = res?.total || 0
-
-  } catch (error) {
-    console.error('Failed to fetch units:', error)
+  } catch {
     units.value = []
     total.value = 0
   } finally {
     isLoading.value = false
   }
-  
 }
 
-// Create unit
-async function handleCreateUnit() {
+function openCreate() {
+  editingId.value = null
+  form.value = blankForm()
+  dialog.value = true
+}
+
+function openEdit(unit: any) {
+  editingId.value = unit.id
+  form.value = { name: unit.name, location: unit.location, kode_folder: unit.kode_folder }
+  dialog.value = true
+}
+
+async function submit() {
   isSubmitting.value = true
   try {
-    await createUnit({
-      name: createForm.value.name,
-      location: createForm.value.location,
-      kode_folder: createForm.value.kode_folder
-    })
-    showCreate.value = false
-    await fetchUnits()
-  } catch (error: any) {
-    alert(getApiErrorMessage(error))
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-// Edit Unit
-function openEditModal(unit: any) {
-  form.value = { ...unit }
-  showEdit.value = true
-}
-
-async function saveEdit() {
-  isSubmitting.value = true
-  try {
-    await updateUnitById(form.value.id, {
-      name: form.value.name,
-      location: form.value.location,
-      kode_folder: form.value.kode_folder
-    })
-    showEdit.value = false
-    await fetchUnits()
-  } catch (error: any) {
-    alert(getApiErrorMessage(error))
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-// Delete unit
-async function confirmDelete(id: string) {
-  if (confirm('Yakin ingin menghapus unit ini?')) {
-    try {
-      await deleteUnitById(id)
-      await fetchUnits()
-    } catch (error: any) {
-      alert(getApiErrorMessage(error))
+    if (isEditing.value) {
+      await updateUnitById(editingId.value!, form.value)
+      toast.success('Unit berhasil diperbarui')
+    } else {
+      await createUnit(form.value)
+      toast.success('Unit berhasil ditambahkan')
     }
+    dialog.value = false
+    await fetchUnits()
+  } catch (error: any) {
+    toast.error(getApiErrorMessage(error))
+  } finally {
+    isSubmitting.value = false
   }
 }
 
-// Handle pagination & search
-watch([page, search], fetchUnits)
+async function removeUnit(unit: any) {
+  if (!await confirm({ title: 'Hapus Unit', message: `Hapus unit "${unit.name}"? Tindakan ini tidak bisa dibatalkan.`, tone: 'danger', confirmText: 'Hapus' })) return
+  try {
+    await deleteUnitById(unit.id)
+    toast.success('Unit dihapus')
+    await fetchUnits()
+  } catch (error: any) {
+    toast.error(getApiErrorMessage(error))
+  }
+}
 
-onMounted(() => {
-  fetchUnits()
-})
+watch([page, search], fetchUnits)
+onMounted(fetchUnits)
 </script>
 
 <template>
-  <VCard title="Units Table" class="mb-4">
-    <template v-slot:append>
-        <v-btn
-          class="text-none"
-          color="primary"
-          text="Tambah Unit"
-          variant="tonal"
-          slim
-          @click="showCreate = true"
-        ></v-btn>
+  <div>
+    <PageHeader title="Units" subtitle="Kelola data unit / lokasi.">
+      <template #actions>
+        <VBtn color="primary" prepend-icon="bx-plus" @click="openCreate">Tambah Unit</VBtn>
+      </template>
+    </PageHeader>
 
-      <VDialog v-model="showCreate" max-width="766">
-        <VCard>
-          <VCardTitle>Tambah Unit</VCardTitle>            
-          <v-container fluid>
+    <VCard rounded="lg">
+      <AppDataTable
+        :headers="headers"
+        :items="units"
+        :loading="isLoading"
+        show-index
+        :page="page"
+        :items-per-page="limit"
+        :total="total"
+        empty-title="Belum ada unit"
+        empty-text="Klik 'Tambah Unit' untuk menambahkan unit pertama."
+        @update:page="p => { page = p; fetchUnits() }"
+      >
+        <template #toolbar>
+          <VTextField v-model="search" placeholder="Cari unit..." prepend-inner-icon="bx-search" clearable style="max-width:320px" />
+        </template>
 
-            <v-row>
-              <v-col cols="3">
-                <v-list-subheader>Nama</v-list-subheader>
-              </v-col>
+        <template #item.api_key="{ item }">
+          <code class="text-caption">{{ item.api_key }}</code>
+        </template>
 
-              <v-col cols="9">
-                <v-text-field                                                                       
-                  v-model="createForm.name"
-                  persistent-hint
-                ></v-text-field>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col cols="3">
-                <v-list-subheader>Alamat</v-list-subheader>
-              </v-col>
+        <template #item.kode_folder="{ item }">
+          <VChip color="error" size="small" variant="tonal">{{ item.kode_folder }}</VChip>
+        </template>
 
-              <v-col cols="9">
-                <v-text-field                                                                       
-                  v-model="createForm.location"
-                  persistent-hint
-                ></v-text-field>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col cols="3">
-                <v-list-subheader>Kode Folder</v-list-subheader>
-              </v-col>
+        <template #item.created_at="{ item }">
+          {{ new Date(item.created_at).toISOString().slice(0, 10) }}
+        </template>
 
-              <v-col cols="9">
-                <v-text-field                                                                       
-                  v-model="createForm.kode_folder"
-                  persistent-hint
-                ></v-text-field>
-              </v-col>
-            </v-row>
-          </v-container>            
-          <VCardActions>
-            <VSpacer />
-            <VBtn text="Batal" @click="showCreate = false" :disabled="isSubmitting" />
-            <VBtn color="primary" @click="handleCreateUnit" :loading="isSubmitting" :disabled="isSubmitting">Simpan</VBtn>
-          </VCardActions>
-        </VCard>
-      </VDialog>   
-    </template>
-    <VCardText>
-      <VTextField
-        v-model="search"
-        label="Search..."
-        prepend-inner-icon="bx bx-search"
-        clearable
-        class="mb-4"
-      />
-    </VCardText>
-
-    <VTable density="compact">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Name</th>
-          <th>Alamat</th>
-          <th>API Key</th>
-          <th>Kode Folder</th>
-          <th>Dibuat</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-if="!isLoading && units.length === 0">
-          <td colspan="7" class="text-center">Tidak ada data</td>
-        </tr>
-        <tr v-for="(unit, index) in units" :key="unit.id">
-          <td>{{ index + 1 + (page - 1) * limit }}</td>
-          <td>{{ unit.name }}</td>
-          <td>{{ unit.location }}</td>
-          <td><code>{{ unit.api_key }}</code></td>
-          <td><span class="font-weight-bold text-error ">{{ unit.kode_folder }}</span></td>
-          <td>{{ new Date(unit.created_at).toISOString().slice(0, 10) }}</td>
-          <td>
-            <VBtn icon variant="text" size="small" @click="openEditModal(unit)">
-              <VIcon color="warning">bx bx-edit-alt</VIcon>
+        <template #item.actions="{ item }">
+          <div class="d-flex justify-end" style="gap:4px">
+            <VBtn icon variant="text" size="small" @click="openEdit(item)">
+              <VIcon color="warning" icon="bx-edit-alt" />
             </VBtn>
-            <VBtn icon variant="text"  size="small" @click="confirmDelete(unit.id)">
-              <VIcon color="error">bx bx-trash-alt</VIcon>
+            <VBtn icon variant="text" size="small" color="error" @click="removeUnit(item)">
+              <VIcon icon="bx-trash-alt" />
             </VBtn>
-          </td>
-        </tr>
-      </tbody>
-    </VTable>
-
-    <VCardActions class="justify-center">
-      <VPagination
-        v-model="page"
-        :length="Math.ceil(total / limit)"
-        total-visible="5"
-        prev-icon="bx bx-chevron-left"
-        next-icon="bx bx-chevron-right"
-      />
-    </VCardActions>
-  </VCard>
-
-  <!-- Modal Edit -->
-   <VDialog v-model="showEdit" max-width="766">
-    <VCard>
-      <VCardTitle>Edit Unit</VCardTitle>            
-      <v-container fluid>
-
-        <v-row>
-          <v-col cols="3">
-            <v-list-subheader>Nama</v-list-subheader>
-          </v-col>
-
-          <v-col cols="9">
-            <v-text-field                                                                       
-              v-model="form.name"
-              persistent-hint
-            ></v-text-field>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col cols="3">
-            <v-list-subheader>Alamat</v-list-subheader>
-          </v-col>
-
-          <v-col cols="9">
-            <v-text-field                                                                       
-              v-model="form.location"
-              persistent-hint
-            ></v-text-field>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col cols="3">
-            <v-list-subheader>Kode Folder</v-list-subheader>
-          </v-col>
-
-          <v-col cols="9">
-            <v-text-field                                                                       
-              v-model="form.kode_folder"
-              persistent-hint
-            ></v-text-field>
-          </v-col>
-        </v-row>
-      </v-container>            
-      <VCardActions>
-        <VSpacer />
-        <VBtn text="Batal" @click="showEdit = false" :disabled="isSubmitting" />
-        <VBtn color="primary" @click="saveEdit" :loading="isSubmitting" :disabled="isSubmitting">Update</VBtn>
-      </VCardActions>
+          </div>
+        </template>
+      </AppDataTable>
     </VCard>
-  </VDialog>   
+
+    <AppModal
+      v-model="dialog"
+      :title="isEditing ? 'Edit Unit' : 'Tambah Unit'"
+      icon="bx-map"
+      :loading="isSubmitting"
+      :confirm-text="isEditing ? 'Update' : 'Simpan'"
+      cancel-text="Batal"
+      @confirm="submit"
+    >
+      <VRow>
+        <VCol cols="12" md="6">
+          <VTextField v-model="form.name" label="Nama" />
+        </VCol>
+        <VCol cols="12" md="6">
+          <VTextField v-model="form.kode_folder" label="Kode Folder" />
+        </VCol>
+        <VCol cols="12">
+          <VTextField v-model="form.location" label="Alamat / Lokasi" />
+        </VCol>
+      </VRow>
+    </AppModal>
+  </div>
 </template>
