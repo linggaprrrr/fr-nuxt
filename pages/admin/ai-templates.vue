@@ -269,7 +269,7 @@ onMounted(() => { fetchOutlets(); fetchAll() })
                   </div>
                 </div>
 
-                <div class="d-flex gap-1 flex-shrink-0">
+                <div class="d-flex gap-1 flex-shrink-0 ms-auto">
                   <VBtn icon variant="text" size="x-small" color="info" title="Coba prompt ini"
                     @click="tryTemplateId = tpl.id; activeTab = 'try'">
                     <VIcon size="16">bx-play-circle</VIcon>
