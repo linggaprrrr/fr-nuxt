@@ -117,6 +117,11 @@ const outletItems = computed(() => [
   ...outlets.value.map(o => ({ title: o.name, value: o.id })),
 ])
 
+// ── View dialog ───────────────────────────────────────────────────────────────
+const showView  = ref(false)
+const viewSticker = ref<any>(null)
+function openView(s: any) { viewSticker.value = s; showView.value = true }
+
 onMounted(() => { fetchOutlets(); fetchAll() })
 </script>
 
@@ -177,6 +182,9 @@ onMounted(() => { fetchOutlets(); fetchAll() })
               <span class="sticker-type">{{ s.type }}</span>
             </div>
             <div class="sticker-actions">
+              <VBtn icon variant="text" size="x-small" @click="openView(s)">
+                <VIcon size="15" color="secondary">bx-show</VIcon>
+              </VBtn>
               <VBtn icon variant="text" size="x-small" @click="openEdit(s)">
                 <VIcon size="15" color="warning">bx-edit-alt</VIcon>
               </VBtn>
@@ -305,6 +313,30 @@ onMounted(() => { fetchOutlets(); fetchAll() })
           <VBtn variant="text" :disabled="isSubmitting" @click="showEdit = false">Batal</VBtn>
           <VBtn color="primary" variant="elevated" :loading="isSubmitting" @click="handleUpdate">Update</VBtn>
         </VCardActions>
+      </VCard>
+    </VDialog>
+
+    <!-- View dialog -->
+    <VDialog v-model="showView" max-width="400">
+      <VCard rounded="lg" v-if="viewSticker">
+        <VCardTitle class="d-flex align-center gap-2 pa-4 pb-2">
+          <VIcon color="primary">bx-show</VIcon>
+          {{ viewSticker.label }}
+          <VSpacer />
+          <VBtn icon variant="text" size="small" @click="showView = false"><VIcon>bx-x</VIcon></VBtn>
+        </VCardTitle>
+        <VDivider />
+        <VCardText class="pa-6 text-center">
+          <div v-if="viewSticker.type === 'emoji'" style="font-size:96px;line-height:1;">
+            {{ viewSticker.value }}
+          </div>
+          <img v-else-if="viewSticker.url" :src="viewSticker.url" :alt="viewSticker.label"
+            style="max-width:100%;max-height:280px;object-fit:contain;border-radius:8px;" />
+          <p v-else class="text-medium-emphasis">Tidak ada gambar</p>
+          <VChip size="small" :color="viewSticker.is_active ? 'success' : 'default'" class="mt-4">
+            {{ viewSticker.is_active ? 'Aktif' : 'Nonaktif' }}
+          </VChip>
+        </VCardText>
       </VCard>
     </VDialog>
   </div>
