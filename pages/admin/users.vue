@@ -103,9 +103,12 @@ async function handleCreateUser() {
   // Build payload without mutating the form bound to the UI
   const payload = { ...createForm.value, role: createForm.value.role.toLowerCase() }
   if (payload.role === 'customer' || payload.role === 'superadmin') {
-    payload.unit_id = ''
-    payload.outlet_id = ''
+    delete payload.unit_id
+    delete payload.outlet_id
   }
+  // Never send empty-string UUIDs — the API expects a valid UUID or nothing
+  if (!payload.unit_id) delete payload.unit_id
+  if (!payload.outlet_id) delete payload.outlet_id
 
   isSubmitting.value = true
   try {
