@@ -11,7 +11,6 @@ const transactionsLink = Object.freeze({ title: 'History Transaction', icon: 'bx
 const reportsSection = Object.freeze({ heading: 'Reports' })
 const reportsGroup = Object.freeze({ title: 'Reports', icon: 'bx bxs-report' })
 const reportsTransactionsLink = Object.freeze({ title: 'Transactions', to: '/units/reports/transactions' })
-const reportsUnitTransactionsLink = Object.freeze({ title: 'Unit Transactions', to: '/units/reports/unit-transactions' })
 </script>
 
 <template>
@@ -25,6 +24,5 @@ const reportsUnitTransactionsLink = Object.freeze({ title: 'Unit Transactions', 
   <VerticalNavSectionTitle :item="reportsSection" />
   <VerticalNavGroup :item="reportsGroup">
     <VerticalNavLink :item="reportsTransactionsLink" />
-    <VerticalNavLink :item="reportsUnitTransactionsLink" />
   </VerticalNavGroup>
 </template>
