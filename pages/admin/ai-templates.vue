@@ -178,6 +178,13 @@ const outletItems = computed(() => [
   ...outlets.value.map(o => ({ title: o.name, value: o.id })),
 ])
 
+// ── View (before/after preview) ──────────────────────────────────────────────
+const showView = ref(false)
+const viewTpl  = ref<any>(null)
+const viewSlider = ref(50)
+
+function openView(tpl: any) { viewTpl.value = tpl; viewSlider.value = 50; showView.value = true }
+
 onMounted(() => { fetchOutlets(); fetchAll() })
 </script>
 
@@ -262,10 +269,14 @@ onMounted(() => { fetchOutlets(); fetchAll() })
                   </div>
                 </div>
 
-                <div class="d-flex gap-1 flex-shrink-0">
+                <div class="d-flex gap-1 flex-shrink-0 ms-auto">
                   <VBtn icon variant="text" size="x-small" color="info" title="Coba prompt ini"
                     @click="tryTemplateId = tpl.id; activeTab = 'try'">
                     <VIcon size="16">bx-play-circle</VIcon>
+                  </VBtn>
+                  <VBtn icon variant="text" size="x-small" color="secondary" title="Lihat contoh before/after"
+                    @click="openView(tpl)">
+                    <VIcon size="16">bx-show</VIcon>
                   </VBtn>
                   <VBtn icon variant="text" size="x-small" @click="openEdit(tpl)">
                     <VIcon size="16" color="warning">bx-edit-alt</VIcon>
@@ -561,10 +572,49 @@ onMounted(() => { fetchOutlets(); fetchAll() })
         </VCardActions>
       </VCard>
     </VDialog>
+
+    <!-- View: before/after preview dialog -->
+    <VDialog v-model="showView" max-width="860">
+      <VCard rounded="lg" v-if="viewTpl">
+        <VCardTitle class="d-flex align-center gap-2 pa-4 pb-2">
+          <VIcon color="primary">bx-show</VIcon>
+          Contoh — {{ viewTpl.label }}
+          <VSpacer />
+          <VBtn icon variant="text" size="small" @click="showView = false"><VIcon>bx-x</VIcon></VBtn>
+        </VCardTitle>
+        <VDivider />
+        <VCardText class="pa-4">
+          <div v-if="viewTpl.before_url && viewTpl.after_url" class="before-after-wrap">
+            <!-- Before image -->
+            <div class="ba-side">
+              <p class="ba-label">Sebelum</p>
+              <img :src="viewTpl.before_url" alt="before" class="ba-img" />
+            </div>
+            <!-- After image -->
+            <div class="ba-side">
+              <p class="ba-label" style="color:rgb(var(--v-theme-primary))">Sesudah (AI)</p>
+              <img :src="viewTpl.after_url" alt="after" class="ba-img" />
+            </div>
+          </div>
+          <div v-else-if="viewTpl.after_url" class="text-center">
+            <p class="text-caption text-medium-emphasis mb-3">Hanya tersedia contoh hasil (after)</p>
+            <img :src="viewTpl.after_url" alt="after" style="max-height:360px;object-fit:contain;border-radius:8px;" />
+          </div>
+          <div v-else class="text-center pa-8 text-medium-emphasis">
+            <VIcon size="48" color="grey-lighten-1">bx-image-alt</VIcon>
+            <p class="mt-2">Belum ada gambar contoh untuk template ini.</p>
+          </div>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </div>
 </template>
 
 <style scoped>
+.before-after-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.ba-side { display: flex; flex-direction: column; gap: 6px; }
+.ba-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #888; margin: 0; }
+.ba-img { width: 100%; height: 280px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb; }
 .tpl-list { display: flex; flex-direction: column; gap: 6px; }
 .tpl-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1.5px solid #e5e7eb; border-radius: 10px; background: #fff; transition: box-shadow 0.15s, border-color 0.15s; user-select: none; }
 .tpl-row:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }

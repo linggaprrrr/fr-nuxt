@@ -70,6 +70,11 @@ async function handleDelete(id: string) {
   await fetchAll()
 }
 
+// ── View dialog ───────────────────────────────────────────────────────────────
+const showView    = ref(false)
+const viewTemplate = ref<any>(null)
+function openView(t: any) { viewTemplate.value = t; showView.value = true }
+
 onMounted(() => { fetchOutlets(); fetchAll() })
 </script>
 
@@ -134,6 +139,7 @@ onMounted(() => { fetchOutlets(); fetchAll() })
             </VCardText>
 
             <VCardActions class="pa-2 pt-0">
+              <VBtn size="small" variant="tonal" color="secondary" prepend-icon="bx-show" class="text-none" @click="openView(t)">Lihat</VBtn>
               <VBtn size="small" variant="tonal" color="warning" prepend-icon="bx-edit-alt" class="text-none" @click="openEdit(t)">Edit</VBtn>
               <VSpacer />
               <VBtn icon variant="text" size="small" @click="handleDelete(t.id)">
@@ -146,6 +152,29 @@ onMounted(() => { fetchOutlets(); fetchAll() })
     </VCard>
 
     <TemplateFrameEditor v-model="editorOpen" :editing-template="editingTemplate" @save="handleEditorSave" />
+
+    <!-- View dialog -->
+    <VDialog v-model="showView" max-width="560">
+      <VCard rounded="lg" v-if="viewTemplate">
+        <VCardTitle class="d-flex align-center gap-2 pa-4 pb-2">
+          <VIcon color="primary">bx-show</VIcon>
+          {{ viewTemplate.label }}
+          <VSpacer />
+          <VBtn icon variant="text" size="small" @click="showView = false"><VIcon>bx-x</VIcon></VBtn>
+        </VCardTitle>
+        <VDivider />
+        <VCardText class="pa-4 text-center">
+          <img :src="viewTemplate.src" :alt="viewTemplate.label"
+            style="max-width:100%;max-height:400px;object-fit:contain;border-radius:8px;border:1px solid #e5e7eb;" />
+          <div class="d-flex justify-center gap-2 mt-3">
+            <VChip size="small" color="primary">{{ viewTemplate.slot_count }} slot</VChip>
+            <VChip size="small" :color="viewTemplate.is_active ? 'success' : 'default'">
+              {{ viewTemplate.is_active ? 'Aktif' : 'Nonaktif' }}
+            </VChip>
+          </div>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </div>
 </template>
 
