@@ -6,3 +6,6 @@ ecosystem.config.js
 ecosystem.cjs
 ecosystem.config.cjs
 dist/
+
+# Local Claude Code context (not shared)
+CLAUDE.md
