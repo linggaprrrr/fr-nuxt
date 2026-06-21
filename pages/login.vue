@@ -111,6 +111,7 @@ const handleLoginError = () => {
                   label="Email"
                   type="email"
                   placeholder="johndoe@email.com"
+                  variant="outlined"
                 />
               </VCol>
 
@@ -123,6 +124,7 @@ const handleLoginError = () => {
                   placeholder="············"
                   :type="isPasswordVisible ? 'text' : 'password'"
                   autocomplete="password"
+                  variant="outlined"
                   :append-inner-icon="isPasswordVisible ? 'bx-hide' : 'bx-show'"
                   @click:append-inner="isPasswordVisible = !isPasswordVisible"
                 />
