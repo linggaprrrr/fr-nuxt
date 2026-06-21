@@ -17,6 +17,7 @@ const showCreate      = ref(false)
 const createLabel     = ref('')
 const createPrompt    = ref('')
 const createOutlet    = ref('')
+const createMaxPersons = ref<number | null>(null)
 const beforeFile      = ref<File | null>(null)
 const afterFile       = ref<File | null>(null)
 const beforeFileInput = ref<HTMLInputElement | null>(null)
@@ -26,7 +27,7 @@ const afterPreviewUrl  = computed(() => afterFile.value  ? URL.createObjectURL(a
 
 // ── Edit dialog ────────────────────────────────────────────────────────────
 const showEdit  = ref(false)
-const editForm  = ref({ id: '', label: '', prompt: '', outlet_id: '', is_active: true })
+const editForm  = ref({ id: '', label: '', prompt: '', outlet_id: '', is_active: true, max_persons: null as number | null })
 const editBeforeFile      = ref<File | null>(null)
 const editAfterFile       = ref<File | null>(null)
 const editBeforeFileInput = ref<HTMLInputElement | null>(null)
@@ -122,6 +123,7 @@ async function handleCreate() {
   form.append('label',      createLabel.value)
   form.append('prompt',     createPrompt.value)
   form.append('sort_order', String(templates.value.length))
+  if (createMaxPersons.value !== null) form.append('max_persons', String(createMaxPersons.value))
   if (createOutlet.value)   form.append('outlet_id', createOutlet.value)
   if (beforeFile.value)     form.append('before_file', beforeFile.value)
   if (afterFile.value)      form.append('after_file',  afterFile.value)
@@ -135,14 +137,14 @@ async function handleCreate() {
 }
 
 function resetCreateForm() {
-  createLabel.value = ''; createPrompt.value = ''; createOutlet.value = ''
+  createLabel.value = ''; createPrompt.value = ''; createOutlet.value = ''; createMaxPersons.value = null
   beforeFile.value = null; afterFile.value = null
   if (beforeFileInput.value) beforeFileInput.value.value = ''
   if (afterFileInput.value)  afterFileInput.value.value  = ''
 }
 
 function openEdit(tpl: any) {
-  editForm.value = { id: tpl.id, label: tpl.label, prompt: tpl.prompt ?? '', outlet_id: tpl.outlet_id ?? '', is_active: tpl.is_active }
+  editForm.value = { id: tpl.id, label: tpl.label, prompt: tpl.prompt ?? '', outlet_id: tpl.outlet_id ?? '', is_active: tpl.is_active, max_persons: tpl.max_persons ?? null }
   editBeforeFile.value = null; editAfterFile.value = null
   showEdit.value = true
 }
@@ -155,6 +157,7 @@ async function handleUpdate() {
   form.append('prompt',    editForm.value.prompt)
   form.append('outlet_id', editForm.value.outlet_id)
   form.append('is_active', String(editForm.value.is_active))
+  if (editForm.value.max_persons !== null) form.append('max_persons', String(editForm.value.max_persons))
   if (editBeforeFile.value) form.append('before_file', editBeforeFile.value)
   if (editAfterFile.value)  form.append('after_file',  editAfterFile.value)
   await updateAiTemplate(editForm.value.id, form)
@@ -266,6 +269,7 @@ onMounted(() => { fetchOutlets(); fetchAll() })
                   <div class="d-flex gap-1 mt-1 flex-wrap">
                     <VChip size="x-small" :color="tpl.is_active ? 'success' : 'default'">{{ tpl.is_active ? 'Aktif' : 'Off' }}</VChip>
                     <VChip v-if="!tpl.outlet_id" size="x-small" color="info" variant="tonal">Global</VChip>
+                    <VChip v-if="tpl.max_persons" size="x-small" color="warning" variant="tonal" prepend-icon="bx-user">{{ tpl.max_persons === 1 ? '1 orang' : `≤${tpl.max_persons} orang` }}</VChip>
                   </div>
                 </div>
 
@@ -502,6 +506,15 @@ onMounted(() => { fetchOutlets(); fetchAll() })
             </div>
           </div>
 
+          <VSelect
+            v-model="createMaxPersons"
+            :items="[{ title: 'Tidak ada batasan', value: null }, { title: '1 orang', value: 1 }, { title: '2 orang', value: 2 }, { title: '3+ orang', value: 3 }]"
+            label="Untuk berapa orang?"
+            density="compact"
+            variant="outlined"
+            hint="Kiosk akan menampilkan peringatan jika foto mengandung lebih banyak wajah dari batas ini"
+            persistent-hint
+          />
           <VSelect v-model="createOutlet" :items="outletItems" label="Outlet" density="compact" variant="outlined" hint="Kosongkan agar muncul di semua outlet (global)" persistent-hint />
         </VCardText>
         <VDivider />
@@ -554,6 +567,15 @@ onMounted(() => { fetchOutlets(); fetchAll() })
             </div>
           </div>
 
+          <VSelect
+            v-model="editForm.max_persons"
+            :items="[{ title: 'Tidak ada batasan', value: null }, { title: '1 orang', value: 1 }, { title: '2 orang', value: 2 }, { title: '3+ orang', value: 3 }]"
+            label="Untuk berapa orang?"
+            density="compact"
+            variant="outlined"
+            hint="Kiosk akan menampilkan peringatan jika foto mengandung lebih banyak wajah dari batas ini"
+            persistent-hint
+          />
           <VSelect v-model="editForm.outlet_id" :items="outletItems" label="Outlet" density="compact" variant="outlined" />
 
           <div class="d-flex align-center justify-space-between pa-3 rounded-lg" style="background:#f9f9f9;border:1px solid #eee;">
