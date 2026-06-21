@@ -49,9 +49,7 @@ export function useAiLogs() {
       if (params.image_generated != null)
         query.set('image_generated', String(params.image_generated))
 
-      const res = await authFetch(`/ai-templates/logs?${query}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data: AiLogsResponse = await res.json()
+      const data = await authFetch<AiLogsResponse>(`/ai-templates/logs?${query}`)
       logs.value = data.items
       total.value = data.total
     } catch (e: unknown) {
