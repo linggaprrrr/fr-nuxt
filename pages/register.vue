@@ -73,6 +73,7 @@ definePageMeta({ layout: 'blank' })
                   autofocus
                   label="Username"
                   placeholder="Johndoe"
+                  variant="outlined"
                 />
               </VCol>
               <!-- email -->
@@ -83,6 +84,7 @@ definePageMeta({ layout: 'blank' })
                   label="Email"
                   type="email"
                   placeholder="johndoe@email.com"
+                  variant="outlined"
                 />
               </VCol>
 
@@ -95,6 +97,7 @@ definePageMeta({ layout: 'blank' })
                   autocomplete="password"
                   placeholder="············"
                   :type="isPasswordVisible ? 'text' : 'password'"
+                  variant="outlined"
                   :append-inner-icon="isPasswordVisible ? 'bx-hide' : 'bx-show'"
                   @click:append-inner="isPasswordVisible = !isPasswordVisible"
                 />
