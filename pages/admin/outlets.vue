@@ -31,14 +31,16 @@ const isEditing = computed(() => editingId.value !== null)
 const blankForm = (isKiosk = false) => ({ name: '', address: '', phone: '', kode_folder: '', unit_id: '', is_kiosk: isKiosk })
 const form = ref(blankForm())
 
-const headers: DataTableHeader[] = [
+// Kiosk outlets don't go through the folder-upload pipeline, so Kode Folder
+// is meaningless there — hide the column entirely on the Kiosk tab.
+const headers = computed<DataTableHeader[]>(() => [
   { key: 'name', title: 'Name' },
   { key: 'phone', title: 'Telp' },
   { key: 'unit', title: 'Unit' },
-  { key: 'kode_folder', title: 'Kode Folder' },
+  ...(activeTab.value === 'kiosk' ? [] : [{ key: 'kode_folder', title: 'Kode Folder' }]),
   { key: 'created_at', title: 'Dibuat', nowrap: true },
   { key: 'actions', title: '', align: 'end' },
-]
+])
 
 function formatDate(iso: string) {
   if (!iso) return '-'
@@ -92,6 +94,10 @@ function openEdit(outlet: Outlet) {
 async function submit() {
   if (!form.value.name.trim()) {
     toast.warning('Nama outlet wajib diisi')
+    return
+  }
+  if (!form.value.is_kiosk && !form.value.kode_folder.trim()) {
+    toast.warning('Kode folder wajib diisi untuk outlet non-kiosk')
     return
   }
   isSubmitting.value = true
@@ -150,7 +156,7 @@ watch([page, search, activeTab], fetchOutlets)
 
     <VTabs v-model="activeTab" color="primary" class="mb-4">
       <VTab value="outlet" prepend-icon="bx-store">Outlet</VTab>
-      <VTab value="kiosk" prepend-icon="bx-desktop">Kiosk</VTab>
+      <VTab value="kiosk" prepend-icon="bx-desktop">Kiosk (Self-Service)</VTab>
     </VTabs>
 
     <VCard rounded="lg">
@@ -225,7 +231,7 @@ watch([page, search, activeTab], fetchOutlets)
         <VCol cols="12">
           <VTextField v-model="form.address" label="Alamat" />
         </VCol>
-        <VCol cols="12" md="6">
+        <VCol v-if="!form.is_kiosk" cols="12" md="6">
           <VTextField v-model="form.kode_folder" label="Kode Folder" />
         </VCol>
         <VCol cols="12" md="6">
@@ -240,8 +246,8 @@ watch([page, search, activeTab], fetchOutlets)
         <VCol cols="12">
           <VCheckbox
             v-model="form.is_kiosk"
-            label="Outlet Kiosk"
-            hint="Outlet swalayan (self-service) — bukan gerai berstaf."
+            label="Kiosk (Self-Service)"
+            hint="Pelanggan bertransaksi sendiri tanpa staf — bukan gerai berstaf."
             persistent-hint
           />
         </VCol>

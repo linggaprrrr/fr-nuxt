@@ -8,7 +8,7 @@ export interface Outlet {
   name: string
   phone: string
   address: string
-  kode_folder: string
+  kode_folder: string | null
   is_kiosk: boolean
   unit: Unit
   created_at: string
