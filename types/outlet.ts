@@ -9,7 +9,8 @@ export interface Outlet {
   phone: string
   address: string
   kode_folder: string
-  unit: Unit  
+  is_kiosk: boolean
+  unit: Unit
   created_at: string
 }
 

@@ -5,14 +5,17 @@ export const useOutlets = () => {
     const getOutlets = async ({
         page = 1,
         limit = 25,
-        search = null
+        search = null,
+        is_kiosk = null
     }: {
         page?: number
         limit?: number
         search?: string | null
+        is_kiosk?: boolean | null
     }): Promise<GetOutletsResponse> => {
         const params: Record<string, any> = { page, limit }
         if (search) params.search = search
+        if (is_kiosk !== null) params.is_kiosk = is_kiosk
 
         const response = await authFetch<GetOutletsResponse>('outlets/', {
             method: 'GET',

@@ -22,7 +22,7 @@ async function fetchAll() {
 }
 
 async function fetchOutlets() {
-  const res = await useOutlets().getOutlets({ page: 1, limit: 9999 })
+  const res = await useOutlets().getOutlets({ page: 1, limit: 9999, is_kiosk: true })
   outlets.value = res?.data || []
 }
 

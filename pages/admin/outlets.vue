@@ -19,12 +19,16 @@ const outlets = ref<Outlet[]>([])
 const units = ref<Unit[]>([])
 const search = ref('')
 
+// "Outlet" = staffed outlets, "Kiosk" = self-service outlets (Outlet.is_kiosk).
+// Same table/form for both — just a server-side filter on which tab is active.
+const activeTab = ref<'outlet' | 'kiosk'>('outlet')
+
 // Single modal handles both create & edit
 const dialog = ref(false)
 const editingId = ref<string | null>(null)
 const isEditing = computed(() => editingId.value !== null)
 
-const blankForm = () => ({ name: '', address: '', phone: '', kode_folder: '', unit_id: '' })
+const blankForm = (isKiosk = false) => ({ name: '', address: '', phone: '', kode_folder: '', unit_id: '', is_kiosk: isKiosk })
 const form = ref(blankForm())
 
 const headers: DataTableHeader[] = [
@@ -54,7 +58,7 @@ async function fetchUnits() {
 async function fetchOutlets() {
   isLoading.value = true
   try {
-    const res = await getOutlets({ page: page.value, limit, search: search.value })
+    const res = await getOutlets({ page: page.value, limit, search: search.value, is_kiosk: activeTab.value === 'kiosk' })
     outlets.value = res?.data || []
     total.value = res?.total || 0
   } catch (error) {
@@ -68,7 +72,7 @@ async function fetchOutlets() {
 
 function openCreate() {
   editingId.value = null
-  form.value = blankForm()
+  form.value = blankForm(activeTab.value === 'kiosk')
   dialog.value = true
 }
 
@@ -80,6 +84,7 @@ function openEdit(outlet: Outlet) {
     phone: outlet.phone,
     kode_folder: outlet.kode_folder,
     unit_id: outlet.unit?.id || '',
+    is_kiosk: outlet.is_kiosk,
   }
   dialog.value = true
 }
@@ -129,7 +134,8 @@ onMounted(() => {
   fetchOutlets()
 })
 
-watch([page, search], fetchOutlets)
+watch(activeTab, () => { page.value = 1 })
+watch([page, search, activeTab], fetchOutlets)
 </script>
 
 <template>
@@ -141,6 +147,11 @@ watch([page, search], fetchOutlets)
         </VBtn>
       </template>
     </PageHeader>
+
+    <VTabs v-model="activeTab" color="primary" class="mb-4">
+      <VTab value="outlet" prepend-icon="bx-store">Outlet</VTab>
+      <VTab value="kiosk" prepend-icon="bx-desktop">Kiosk</VTab>
+    </VTabs>
 
     <VCard rounded="lg">
       <AppDataTable
@@ -224,6 +235,14 @@ watch([page, search], fetchOutlets)
             item-value="id"
             item-title="name"
             label="Unit"
+          />
+        </VCol>
+        <VCol cols="12">
+          <VCheckbox
+            v-model="form.is_kiosk"
+            label="Outlet Kiosk"
+            hint="Outlet swalayan (self-service) — bukan gerai berstaf."
+            persistent-hint
           />
         </VCol>
       </VRow>

@@ -65,7 +65,7 @@ const margins     = ref({ top: 0, right: 0, bottom: 0, left: 0 })
 const outlets = ref<any[]>([])
 async function fetchOutlets() {
   const { getOutlets } = useOutlets()
-  const res = await getOutlets({ page: 1, limit: 9999 })
+  const res = await getOutlets({ page: 1, limit: 9999, is_kiosk: true })
   outlets.value = res?.data || []
 }
 const outletItems = computed(() => outlets.value.map(o => ({ title: o.name, value: o.id })))
