@@ -14,18 +14,23 @@ const uploadPhotoLink = Object.freeze({ title: 'Upload Photo', to: '/admin/uploa
 const listPhotoLink = Object.freeze({ title: 'List Photo', to: '/admin/photos' })
 const timeOperationLink = Object.freeze({ title: 'Time Operation', icon: 'bx bxs-time', to: '/admin/time-operation' })
 const promoCodesLink = Object.freeze({ title: 'Promo Codes', icon: 'bx bxs-discount', to: '/admin/promo-codes' })
+const eventTicketsLink = Object.freeze({ title: 'Event Tickets', icon: 'bx bx-ticket', to: '/admin/event-tickets' })
+const accessMethodsLink = Object.freeze({ title: 'Access Methods', icon: 'bx bx-log-in-circle', to: '/admin/access-methods' })
 const transactionsLink = Object.freeze({ title: 'History Transaction', icon: 'bx bxs-receipt', to: '/admin/transactions' })
 const reportsSection = Object.freeze({ heading: 'Reports' })
 const reportsGroup = Object.freeze({ title: 'Reports', icon: 'bx bxs-report' })
 const reportsTransactionsLink = Object.freeze({ title: 'Transactions', to: '/admin/reports/transactions' })
 const reportsUnitTransactionsLink = Object.freeze({ title: 'Unit Transactions', to: '/admin/reports/unit-transactions' })
 const reportsOutletTransactionsLink = Object.freeze({ title: 'Outlet Transactions', to: '/admin/reports/outlet-transactions' })
+const reportsKioskFleetLink = Object.freeze({ title: 'Kiosk Fleet', to: '/admin/kiosk-fleet' })
+const reportsPrintAnalyticsLink = Object.freeze({ title: 'Print Analytics', to: '/admin/print-analytics' })
 const contentUsageLink = Object.freeze({ title: 'Content Usage', icon: 'bx bx-bar-chart-alt-2', to: '/admin/content-usage' })
 const aiLogsLink = Object.freeze({ title: 'AI Call Logs', icon: 'bx bx-list-ul', to: '/admin/ai-logs' })
 
-const stickersLink     = Object.freeze({ title: 'Stickers',     icon: 'bx bxs-sticker',  to: '/admin/stickers' })
-const templatesLink    = Object.freeze({ title: 'Templates',    icon: 'bx bxs-palette',  to: '/admin/templates' })
-const aiTemplatesLink  = Object.freeze({ title: 'AI Templates', icon: 'bx bx-bot',       to: '/admin/ai-templates' })
+const stickersLink       = Object.freeze({ title: 'Stickers',        icon: 'bx bxs-sticker',   to: '/admin/stickers' })
+const templatesLink      = Object.freeze({ title: 'Templates',       icon: 'bx bxs-palette',   to: '/admin/templates' })
+const aiTemplatesLink    = Object.freeze({ title: 'AI Templates',    icon: 'bx bx-bot',        to: '/admin/ai-templates' })
+const printTemplatesLink = Object.freeze({ title: 'Print Templates', icon: 'bx bx-image-alt',  to: '/admin/print-templates' })
 </script>
 
 <template>
@@ -42,10 +47,13 @@ const aiTemplatesLink  = Object.freeze({ title: 'AI Templates', icon: 'bx bx-bot
   </VerticalNavGroup>
   <VerticalNavLink :item="timeOperationLink" />
   <VerticalNavLink :item="promoCodesLink" />
+  <VerticalNavLink :item="eventTicketsLink" />
+  <VerticalNavLink :item="accessMethodsLink" />
   <VerticalNavLink :item="transactionsLink" />
   <VerticalNavLink :item="stickersLink" />
   <VerticalNavLink :item="templatesLink" />
   <VerticalNavLink :item="aiTemplatesLink" />
+  <VerticalNavLink :item="printTemplatesLink" />
 
   
   <VerticalNavSectionTitle :item="reportsSection" />
@@ -55,5 +63,7 @@ const aiTemplatesLink  = Object.freeze({ title: 'AI Templates', icon: 'bx bx-bot
     <VerticalNavLink :item="reportsTransactionsLink" />
     <VerticalNavLink :item="reportsUnitTransactionsLink" />
     <VerticalNavLink :item="reportsOutletTransactionsLink" />
+    <VerticalNavLink :item="reportsKioskFleetLink" />
+    <VerticalNavLink :item="reportsPrintAnalyticsLink" />
   </VerticalNavGroup>
 </template>
