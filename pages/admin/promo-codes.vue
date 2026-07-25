@@ -49,6 +49,7 @@ const blankForm = () => ({
   end_date: localDatetime(31),
   is_active: true,
   unit_id: '',
+  max_uses: null as number | null,
 })
 const form = ref(blankForm())
 
@@ -57,6 +58,7 @@ const headers: DataTableHeader[] = [
   { key: 'promo_code', title: 'Promo Code' },
   { key: 'discount_type', title: 'Type' },
   { key: 'value', title: 'Value' },
+  { key: 'uses', title: 'Uses' },
   { key: 'start_date', title: 'Start', nowrap: true },
   { key: 'end_date', title: 'End', nowrap: true },
   { key: 'status', title: 'Status' },
@@ -122,6 +124,7 @@ function openEdit(discount: Discount) {
     end_date: toLocalDatetimeInput(discount.end_date),
     is_active: discount.is_active,
     unit_id: discount.unit_id,
+    max_uses: discount.max_uses ?? null,
   }
   dialog.value = true
 }
@@ -148,6 +151,8 @@ async function submit() {
       ...form.value,
       start_date: new Date(form.value.start_date).toISOString(),
       end_date: new Date(form.value.end_date).toISOString(),
+      // A cleared number input can come back as '' rather than null.
+      max_uses: form.value.max_uses ? Number(form.value.max_uses) : null,
     }
     if (isEditing.value)
       await updatePromoCodeById(editingId.value!, payload)
@@ -258,6 +263,11 @@ onMounted(() => {
           {{ item.value }}{{ item.discount_type === 'percentage' ? '%' : '' }}
         </template>
 
+        <template #item.uses="{ item }">
+          <span v-if="item.max_uses" class="text-body-2">{{ item.used_count ?? 0 }} / {{ item.max_uses }}</span>
+          <span v-else class="text-medium-emphasis text-body-2">Unlimited</span>
+        </template>
+
         <template #item.start_date="{ item }">
           {{ formatDate(item.start_date) }}
         </template>
@@ -347,6 +357,16 @@ onMounted(() => {
             type="number"
             :max="form.discount_type === 'percentage' ? 100 : undefined"
             :hint="form.discount_type === 'percentage' ? 'Maximum 100%' : ''"
+            persistent-hint
+          />
+        </VCol>
+        <VCol cols="12" md="6">
+          <VTextField
+            v-model.number="form.max_uses"
+            label="Max Uses (optional)"
+            type="number"
+            min="1"
+            hint="Leave empty for unlimited redemptions"
             persistent-hint
           />
         </VCol>
