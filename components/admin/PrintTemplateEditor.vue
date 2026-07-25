@@ -28,6 +28,7 @@ interface DragState {
 const PAPER_SIZES = [
   { value: '4R', title: '4R (4×6 in)' },
   { value: '5R', title: '5R (5×7 in)' },
+  { value: '6R', title: '6R (6×8 in)' },
   { value: '2x6', title: '2×6 Strip' },
   { value: 'passport', title: 'Passport' },
   { value: 'custom', title: 'Custom' },
