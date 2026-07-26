@@ -9,15 +9,14 @@ const { getOutletPrintSetting, updateOutletPrintSetting, error: settingError } =
 const toast = useToast()
 const { confirm } = useConfirm()
 
-const outlets      = ref<any[]>([])
-const outletFilter = ref<string>('')
+const outlets = ref<any[]>([])
 
 const editorOpen      = ref(false)
 const editingTemplate = ref<any | null>(null)
 
 async function fetchAll() {
   const params: any = {}
-  if (outletFilter.value) params.outlet_id = outletFilter.value
+  if (selectedOutletId.value) params.outlet_id = selectedOutletId.value
   await getPrintTemplates(params)
 }
 
@@ -68,25 +67,25 @@ async function saveAssign() {
 }
 
 // ── Outlet printing settings panel ─────────────────────────────────────────
-const settingsOutletId = ref<string>('')
+const selectedOutletId = ref<string>('')
 const currentSetting = ref<any | null>(null)
 const settingSaving = ref(false)
 
 async function loadOutletSetting() {
-  if (!settingsOutletId.value) { currentSetting.value = null; return }
-  currentSetting.value = await getOutletPrintSetting(settingsOutletId.value)
+  if (!selectedOutletId.value) { currentSetting.value = null; return }
+  currentSetting.value = await getOutletPrintSetting(selectedOutletId.value)
 }
-watch(settingsOutletId, loadOutletSetting)
+watch(selectedOutletId, () => { loadOutletSetting(); fetchAll() })
 
 const templatesForSettingsOutlet = computed(() => {
-  if (!settingsOutletId.value) return []
-  return templates.value.filter(t => t.is_active && t.current_version && (t.is_global || t.outlet_ids?.includes(settingsOutletId.value)))
+  if (!selectedOutletId.value) return []
+  return templates.value.filter(t => t.is_active && t.current_version && (t.is_global || t.outlet_ids?.includes(selectedOutletId.value)))
 })
 
 async function saveOutletSetting() {
   if (!currentSetting.value) return
   settingSaving.value = true
-  const res = await updateOutletPrintSetting(settingsOutletId.value, {
+  const res = await updateOutletPrintSetting(selectedOutletId.value, {
     printing_enabled: currentSetting.value.printing_enabled,
     default_template_id: currentSetting.value.default_template_id,
     max_copies_per_order: currentSetting.value.max_copies_per_order,
@@ -113,8 +112,8 @@ onMounted(async () => { await fetchOutlets(); await fetchAll() })
       <VCardText>
         <p class="text-subtitle-2 font-weight-bold mb-3">Pengaturan Cetak per Outlet</p>
         <VSelect
-          v-model="settingsOutletId"
-          :items="outlets.map(o => ({ title: o.name, value: o.id }))"
+          v-model="selectedOutletId"
+          :items="[{ title: 'Semua Outlet', value: '' }, ...outlets.map(o => ({ title: o.name, value: o.id }))]"
           label="Pilih Outlet"
           density="compact"
           variant="outlined"
@@ -151,23 +150,7 @@ onMounted(async () => { await fetchOutlets(); await fetchAll() })
           />
           <VBtn color="primary" :loading="settingSaving" class="align-self-start" @click="saveOutletSetting">Simpan</VBtn>
         </div>
-        <p v-else-if="settingsOutletId" class="text-caption text-medium-emphasis">Memuat…</p>
-      </VCardText>
-    </VCard>
-
-    <!-- Filter -->
-    <VCard flat border rounded="lg" class="mb-4">
-      <VCardText class="py-3">
-        <VSelect
-          v-model="outletFilter"
-          :items="[{ title: 'Semua Outlet', value: '' }, ...outlets.map(o => ({ title: o.name, value: o.id }))]"
-          label="Filter Outlet"
-          density="compact"
-          variant="outlined"
-          hide-details
-          style="max-width:300px"
-          @update:model-value="fetchAll"
-        />
+        <p v-else-if="selectedOutletId" class="text-caption text-medium-emphasis">Memuat…</p>
       </VCardText>
     </VCard>
 
@@ -189,7 +172,12 @@ onMounted(async () => { await fetchOutlets(); await fetchAll() })
               <VChip size="x-small" :color="statusOf(t).color" style="position:absolute;top:6px;right:6px;">{{ statusOf(t).text }}</VChip>
             </div>
             <VCardText class="pa-2">
-              <div class="text-body-2 font-weight-bold text-truncate">{{ t.label }}</div>
+              <div class="d-flex align-center justify-space-between gap-2">
+                <div class="text-body-2 font-weight-bold text-truncate">{{ t.label }}</div>
+                <div class="text-caption font-weight-medium flex-shrink-0" :class="t.price ? 'text-primary' : 'text-medium-emphasis'">
+                  {{ t.price ? `Rp ${t.price.toLocaleString()}` : 'Belum ada harga' }}
+                </div>
+              </div>
               <div class="text-caption text-medium-emphasis text-truncate">
                 <VIcon size="10">bx-store</VIcon> {{ outletNames(t) }}
               </div>

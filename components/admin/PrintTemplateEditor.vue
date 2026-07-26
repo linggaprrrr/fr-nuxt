@@ -34,6 +34,14 @@ const PAPER_SIZES = [
   { value: 'custom', title: 'Custom' },
 ]
 
+// Mirrors fr/app/routers/print_template.py's PAPER_SIZE_INCHES exactly — used
+// to size the canvas from paper size alone when there's no background image.
+const PAPER_SIZE_INCHES: Record<string, [number, number]> = {
+  '4R': [4.0, 6.0], '5R': [5.0, 7.0], '6R': [6.0, 8.0], '2x6': [2.0, 6.0], passport: [1.4, 1.8],
+}
+const MAX_CANVAS_W = 1100  // matches .frame-image's CSS max-width
+const MAX_CANVAS_H = 860   // matches .frame-image's CSS max-height
+
 // ─── Props / Emits ────────────────────────────────────────────────────────────
 
 const props = defineProps<{
@@ -53,6 +61,7 @@ const toast = useToast()
 
 const label       = ref('')
 const isActive    = ref(true)
+const price       = ref<number | null>(null)  // per-print price (IDR) — paper size drives cost
 const isGlobal    = ref(false)
 const outletIds   = ref<string[]>([])
 const paperSize   = ref('4R')
@@ -155,6 +164,7 @@ onMounted(fetchOutlets)
 function resetEditor() {
   label.value = ''
   isActive.value = true
+  price.value = null
   isGlobal.value = false
   outletIds.value = []
   paperSize.value = '4R'
@@ -173,13 +183,49 @@ function resetEditor() {
   currentVersion.value = null
   draftVersion.value = null
   versions.value = []
+  recomputeBaseFromPaper()
 }
 
 const pendingSlots = ref<any[]>([])
 
+// Sizes the canvas from paper size × DPI alone when there's no background
+// image — background stays optional (onBgLoad remains authoritative once one
+// is uploaded, this only fills in for the "no background" case).
+function resolvedPixelDims(): [number, number] | null {
+  if (paperSize.value === 'custom') {
+    return (customW.value && customH.value) ? [customW.value, customH.value] : null
+  }
+  const inches = PAPER_SIZE_INCHES[paperSize.value]
+  return inches ? [Math.round(inches[0] * dpi.value), Math.round(inches[1] * dpi.value)] : null
+}
+
+function recomputeBaseFromPaper() {
+  if (bgUrl.value) return  // an uploaded image is authoritative once one exists
+  const dims = resolvedPixelDims()
+  if (!dims) { baseW.value = 0; baseH.value = 0; return }
+  const scale = Math.min(MAX_CANVAS_W / dims[0], MAX_CANVAS_H / dims[1], 1)
+  const newW = Math.round(dims[0] * scale)
+  const newH = Math.round(dims[1] * scale)
+
+  if (pendingSlots.value.length > 0) {
+    baseW.value = newW; baseH.value = newH
+    nextTick(() => restoreSlots())
+    return
+  }
+  // Rescale slots already placed on the blank canvas instead of dropping
+  // them, so tweaking DPI/paper size after laying out slots isn't destructive.
+  if (baseW.value && slots.value.length > 0 && (newW !== baseW.value || newH !== baseH.value)) {
+    const rx = newW / baseW.value, ry = newH / baseH.value
+    slots.value = slots.value.map(s => ({ ...s, x: s.x * rx, y: s.y * ry, w: s.w * rx, h: s.h * ry }))
+  }
+  baseW.value = newW; baseH.value = newH
+}
+watch([paperSize, dpi, customW, customH], recomputeBaseFromPaper)
+
 function loadFromTemplate(t: any) {
   label.value = t.label ?? ''
   isActive.value = t.is_active ?? true
+  price.value = t.price ?? null
   isGlobal.value = t.is_global ?? false
   outletIds.value = t.outlet_ids ?? []
   paperSize.value = t.paper_size ?? '4R'
@@ -202,6 +248,7 @@ function loadFromTemplate(t: any) {
   baseW.value = 0; baseH.value = 0
 
   pendingSlots.value = v?.slots ?? []
+  recomputeBaseFromPaper()
   loadVersions()
 }
 
@@ -345,6 +392,7 @@ function buildForm(): FormData | null {
   }
   form.append('margins', JSON.stringify(margins.value))
   form.append('is_active', String(isActive.value))
+  if (price.value != null) form.append('price', String(price.value))
 
   const cw = baseW.value, ch = baseH.value
   if (cw && ch) {
@@ -372,7 +420,7 @@ function buildForm(): FormData | null {
 async function handleSave() {
   saveError.value = ''
   if (!label.value.trim()) { saveError.value = 'Nama template wajib diisi.'; return }
-  if (!bgUrl.value) { saveError.value = 'Upload gambar background terlebih dahulu.'; return }
+  if (!baseW.value || !baseH.value) { saveError.value = 'Pilih ukuran kertas (atau isi lebar/tinggi custom).'; return }
   if (slots.value.length === 0) { saveError.value = 'Tambahkan minimal 1 slot.'; return }
 
   const form = buildForm()
@@ -444,11 +492,10 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
       <div class="d-flex" style="flex: 1; overflow: hidden; min-height: 0;">
         <!-- Left: Canvas -->
         <div class="d-flex flex-column pa-4" style="flex: 1; overflow: hidden; min-width: 0; min-height: 0;">
-          <div v-if="!bgUrl" class="upload-zone d-flex flex-column align-center justify-center rounded-xl mb-4" @click="triggerBgInput">
+          <div v-if="!baseW || !baseH" class="upload-zone d-flex flex-column align-center justify-center rounded-xl mb-4">
             <VIcon size="48" color="primary" class="mb-3">bx bx-image-add</VIcon>
-            <p class="font-weight-bold mb-1">Upload Gambar Background</p>
-            <p class="text-caption text-medium-emphasis">Referensi posisi slot — foto pelanggan ditempatkan di sini (PNG, JPG, WebP)</p>
-            <input ref="bgFileInput" type="file" accept="image/png,image/jpeg,image/webp" style="display:none" @change="onBgChange" >
+            <p class="font-weight-bold mb-1">Pilih Ukuran Kertas</p>
+            <p class="text-caption text-medium-emphasis">Isi lebar/tinggi (px) custom di panel kanan untuk memulai kanvas</p>
           </div>
 
           <template v-else>
@@ -457,7 +504,9 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
               <VBtn :color="snapEnabled ? 'success' : 'default'" variant="tonal" size="small" @click="snapEnabled = !snapEnabled">
                 Snap {{ snapEnabled ? 'ON' : 'OFF' }}
               </VBtn>
-              <VBtn variant="tonal" size="small" color="warning" prepend-icon="bx bx-image" @click="triggerBgInput">Ganti Background</VBtn>
+              <VBtn variant="tonal" size="small" color="warning" prepend-icon="bx bx-image" @click="triggerBgInput">
+                {{ bgUrl ? 'Ganti Background' : 'Upload Background (opsional)' }}
+              </VBtn>
               <input ref="bgFileInput" type="file" accept="image/png,image/jpeg,image/webp" style="display:none" @change="onBgChange" >
               <VSpacer />
               <span v-if="bgNatW" class="text-caption text-medium-emphasis">{{ bgNatW }}×{{ bgNatH }}px · AR {{ aspectRatio }}</span>
@@ -469,7 +518,11 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
             <div class="canvas-scroll-wrapper">
               <div class="canvas-container" @pointerup="onPointerUp" @pointermove="onPointerMove" @click.self="deselectAll">
                 <div v-if="snapEnabled" class="snap-grid" />
-                <img :src="bgUrl" class="frame-image" draggable="false" @load="onBgLoad" >
+                <img v-if="bgUrl" :src="bgUrl" class="frame-image" draggable="false" @load="onBgLoad" >
+                <div v-else class="frame-placeholder" :style="{ width: baseW + 'px', height: baseH + 'px' }">
+                  <VIcon size="32" color="grey-lighten-1">bx bx-image</VIcon>
+                  <span class="text-caption text-medium-emphasis">Tanpa background — slot dicetak di atas kanvas kosong</span>
+                </div>
                 <img v-if="frameUrl" :src="frameUrl" class="frame-image frame-overlay-preview" draggable="false" >
                 <div
                   v-for="(slot, idx) in slots" :key="slot.id" class="slot-overlay" :class="{ 'slot-selected': selectedId === slot.id }"
@@ -494,6 +547,20 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
           <div>
             <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:#888;">Nama Template</p>
             <VTextField v-model="label" density="compact" variant="outlined" placeholder="cth: 4R Standard" hide-details />
+          </div>
+
+          <div>
+            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:#888;">Harga per Cetak</p>
+            <VTextField
+              v-model.number="price"
+              type="number"
+              prefix="Rp"
+              density="compact"
+              variant="outlined"
+              placeholder="cth: 50000"
+              hint="Harga dibayar pelanggan per lembar — beda ukuran kertas bisa beda harga"
+              persistent-hint
+            />
           </div>
 
           <div class="d-flex align-center justify-space-between">
@@ -635,6 +702,7 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
 .canvas-container { position: relative; display: inline-block; cursor: default; user-select: none; overflow: visible; }
 .snap-grid { position: absolute; inset: 0; background-image: linear-gradient(to right, rgba(99,102,241,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(99,102,241,0.08) 1px, transparent 1px); background-size: 2px 2px; pointer-events: none; z-index: 1; }
 .frame-image { display: block; max-width: 1100px; max-height: 860px; width: auto; height: auto; pointer-events: none; position: relative; z-index: 0; }
+.frame-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: #fafafa; border: 2px dashed #ddd; box-sizing: border-box; position: relative; z-index: 0; }
 .frame-overlay-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 15; }
 .slot-overlay { position: absolute; border: 2px dashed var(--slot-color, #4f46e5); background: rgba(79,70,229,0.12); border-radius: 4px; cursor: move; z-index: 10; touch-action: none; transition: background 0.1s; }
 .slot-overlay:hover { background: rgba(79,70,229,0.2); }
