@@ -82,12 +82,24 @@ const templatesForSettingsOutlet = computed(() => {
   return templates.value.filter(t => t.is_active && t.current_version && (t.is_global || t.outlet_ids?.includes(selectedOutletId.value)))
 })
 
+// Each slot only lists templates of its own type — the backend rejects a
+// mismatch at checkout, so offering one here would just be a trap.
+const primaryOptions = computed(() =>
+  templatesForSettingsOutlet.value.filter(t => (t.print_type ?? 'primary') === 'primary')
+    .map(t => ({ title: t.label, value: t.id })))
+const secondaryOptions = computed(() =>
+  templatesForSettingsOutlet.value.filter(t => t.print_type === 'secondary')
+    .map(t => ({ title: t.label, value: t.id })))
+
 async function saveOutletSetting() {
   if (!currentSetting.value) return
   settingSaving.value = true
   const res = await updateOutletPrintSetting(selectedOutletId.value, {
     printing_enabled: currentSetting.value.printing_enabled,
     default_template_id: currentSetting.value.default_template_id,
+    // Always sent, including as null — that's how the backend distinguishes
+    // "withdraw strip prints" from "leave it alone".
+    secondary_template_id: currentSetting.value.secondary_template_id ?? null,
     max_copies_per_order: currentSetting.value.max_copies_per_order,
   })
   settingSaving.value = false
@@ -131,13 +143,27 @@ onMounted(async () => { await fetchOutlets(); await fetchAll() })
           </div>
           <VSelect
             v-model="currentSetting.default_template_id"
-            :items="templatesForSettingsOutlet.map(t => ({ title: t.label, value: t.id }))"
-            label="Template Default"
+            :items="primaryOptions"
+            label="Cetak Utama (Primary) — foto biasa"
             density="compact"
             variant="outlined"
             clearable
             hint="Hanya template published yang di-assign (atau global) ke outlet ini yang muncul"
             persistent-hint
+            style="max-width:320px"
+          />
+          <VSelect
+            v-model="currentSetting.secondary_template_id"
+            :items="secondaryOptions"
+            label="Cetak Kedua (Secondary) — strip foto"
+            density="compact"
+            variant="outlined"
+            clearable
+            :hint="secondaryOptions.length
+              ? 'Kosongkan bila outlet ini tidak menjual strip foto — pilihan strip disembunyikan di kiosk'
+              : 'Belum ada template bertipe Strip Foto untuk outlet ini'"
+            persistent-hint
+            :disabled="!secondaryOptions.length"
             style="max-width:320px"
           />
           <VTextField
@@ -169,6 +195,12 @@ onMounted(async () => { await fetchOutlets(); await fetchAll() })
               <img v-if="t.current_version?.background_url" :src="t.current_version.background_url" :alt="t.label" style="width:100%;height:100%;object-fit:contain;" >
               <div v-else class="d-flex align-center justify-center" style="height:100%;color:#bbb;"><VIcon size="40">bx bx-image</VIcon></div>
               <VChip size="x-small" color="primary" style="position:absolute;top:6px;left:6px;">{{ t.paper_size }}</VChip>
+              <VChip
+                v-if="t.print_type === 'secondary'"
+                size="x-small"
+                color="secondary"
+                style="position:absolute;top:6px;right:6px;"
+              >Strip</VChip>
               <VChip size="x-small" :color="statusOf(t).color" style="position:absolute;top:6px;right:6px;">{{ statusOf(t).text }}</VChip>
             </div>
             <VCardText class="pa-2">

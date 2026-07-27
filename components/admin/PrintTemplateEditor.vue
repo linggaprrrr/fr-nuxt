@@ -34,6 +34,14 @@ const PAPER_SIZES = [
   { value: 'custom', title: 'Custom' },
 ]
 
+// Which of the outlet's two print products this template is. Nothing renders
+// differently — a strip is just N slots on a 2x6 canvas — but the outlet's
+// print settings has one slot per type, and checkout refuses a mismatch.
+const PRINT_TYPES = [
+  { value: 'primary', title: 'Primary — Cetak Foto (layout biasa)' },
+  { value: 'secondary', title: 'Secondary — Strip Foto' },
+]
+
 // Mirrors fr/app/routers/print_template.py's PAPER_SIZE_INCHES exactly — used
 // to size the canvas from paper size alone when there's no background image.
 const PAPER_SIZE_INCHES: Record<string, [number, number]> = {
@@ -65,6 +73,7 @@ const price       = ref<number | null>(null)  // per-print price (IDR) — paper
 const isGlobal    = ref(false)
 const outletIds   = ref<string[]>([])
 const paperSize   = ref('4R')
+const printType   = ref('primary')
 const orientation = ref<'portrait' | 'landscape'>('portrait')
 const dpi         = ref(300)
 const customW     = ref<number | null>(null)
@@ -168,6 +177,7 @@ function resetEditor() {
   isGlobal.value = false
   outletIds.value = []
   paperSize.value = '4R'
+  printType.value = 'primary'
   orientation.value = 'portrait'
   dpi.value = 300
   customW.value = null
@@ -229,6 +239,7 @@ function loadFromTemplate(t: any) {
   isGlobal.value = t.is_global ?? false
   outletIds.value = t.outlet_ids ?? []
   paperSize.value = t.paper_size ?? '4R'
+  printType.value = t.print_type ?? 'primary'
 
   const v = t.draft_version ?? t.current_version
   currentVersion.value = t.current_version ?? null
@@ -383,6 +394,7 @@ function buildForm(): FormData | null {
   const form = new FormData()
   form.append('label', label.value.trim())
   form.append('paper_size', paperSize.value)
+  form.append('print_type', printType.value)
   form.append('orientation', orientation.value)
   form.append('dpi', String(dpi.value))
   if (paperSize.value === 'custom') {
@@ -569,6 +581,20 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
           </div>
 
           <VDivider />
+
+          <div>
+            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:#888;">Jenis Cetak</p>
+            <VSelect
+              v-model="printType"
+              :items="PRINT_TYPES"
+              item-title="title"
+              item-value="value"
+              density="compact"
+              variant="outlined"
+              hint="Menentukan slot mana yang bisa dipakai di Pengaturan Cetak per Outlet"
+              persistent-hint
+            />
+          </div>
 
           <div>
             <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:#888;">Ukuran Kertas</p>

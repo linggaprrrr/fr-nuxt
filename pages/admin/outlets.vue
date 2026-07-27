@@ -78,6 +78,16 @@ function openCreate() {
   dialog.value = true
 }
 
+// Branding + Settings PIN — kiosk-only, so it gets its own action rather than
+// crowding the shared outlet form with fields a staffed outlet never uses.
+const brandingDialog = ref(false)
+const brandingOutlet = ref<Outlet | null>(null)
+
+function openBranding(outlet: Outlet) {
+  brandingOutlet.value = outlet
+  brandingDialog.value = true
+}
+
 function openEdit(outlet: Outlet) {
   editingId.value = outlet.id
   form.value = {
@@ -198,6 +208,10 @@ watch([page, search, activeTab], fetchOutlets)
 
         <template #item.actions="{ item }">
           <div class="d-flex justify-end" style="gap: 4px;">
+            <VBtn v-if="item.is_kiosk" icon variant="text" size="small" color="default" @click="openBranding(item)">
+              <VIcon icon="bx-palette" />
+              <VTooltip activator="parent">Branding &amp; PIN</VTooltip>
+            </VBtn>
             <VBtn icon variant="text" size="small" color="default" @click="openEdit(item)">
               <VIcon icon="bx-edit-alt" />
               <VTooltip activator="parent">Edit</VTooltip>
@@ -253,5 +267,7 @@ watch([page, search, activeTab], fetchOutlets)
         </VCol>
       </VRow>
     </AppModal>
+
+    <KioskBrandingModal v-model="brandingDialog" :outlet="brandingOutlet" />
   </div>
 </template>
