@@ -100,6 +100,10 @@ async function fetchOutlets() {
   outlets.value = res?.data || []
 }
 
+function selectOutlet(_e: Event, { item }: { item: any }) {
+  outletId.value = item.id
+}
+
 watch(outletId, loadOutlet)
 onMounted(fetchOutlets)
 </script>
@@ -109,17 +113,19 @@ onMounted(fetchOutlets)
     <PageHeader title="Access Methods" subtitle="Configure which checkout methods a kiosk offers, per outlet." />
 
     <VCard flat border rounded="lg" class="mb-4">
-      <VCardText>
-        <VSelect
-          v-model="outletId"
-          :items="outlets.map(o => ({ title: o.name, value: o.id }))"
-          label="Select Outlet"
-          density="compact"
-          variant="outlined"
-          hide-details
-          style="max-width:320px"
-        />
-      </VCardText>
+      <VDataTable
+        :headers="[{ title: 'Outlet', key: 'name' }, { title: 'Address', key: 'address' }]"
+        :items="outlets"
+        item-value="id"
+        density="compact"
+        hover
+        no-data-text="No kiosk outlets found"
+        @click:row="selectOutlet"
+      >
+        <template #item.name="{ item }">
+          <span :class="{ 'text-primary font-weight-bold': item.id === outletId }">{{ item.name }}</span>
+        </template>
+      </VDataTable>
     </VCard>
 
     <VProgressLinear v-if="loading" indeterminate color="primary" class="mb-4" />
@@ -198,3 +204,9 @@ onMounted(fetchOutlets)
     </div>
   </div>
 </template>
+
+<style scoped>
+:deep(tbody tr) {
+  cursor: pointer;
+}
+</style>

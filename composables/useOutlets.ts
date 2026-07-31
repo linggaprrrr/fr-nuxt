@@ -69,14 +69,20 @@ export const useOutlets = () => {
     // Kiosk branding. Multipart because banner/background are file uploads;
     // an omitted file means "keep", so removing one needs the clear_* flag
     // rather than sending an empty part.
+    const getOutletBranding = async (id: string) => {
+        const response = await authFetch(`outlets/${id}/branding`)
+        return response
+    }
+
     const updateOutletBranding = async (
         id: string,
-        { primaryColor, banner, background, clearBanner, clearBackground }: {
+        { primaryColor, banner, background, clearBanner, clearBackground, disabledTools }: {
             primaryColor?: string | null
             banner?: File | null
             background?: File | null
             clearBanner?: boolean
             clearBackground?: boolean
+            disabledTools?: string[]
         }
     ) => {
         const form = new FormData()
@@ -85,6 +91,7 @@ export const useOutlets = () => {
         if (background) form.append('background', background)
         if (clearBanner) form.append('clear_banner', 'true')
         if (clearBackground) form.append('clear_background', 'true')
+        if (disabledTools !== undefined) form.append('disabled_editor_tools', JSON.stringify(disabledTools))
 
         const response = await authFetch(`outlets/${id}/branding`, {
             method: 'PUT',
@@ -110,6 +117,7 @@ export const useOutlets = () => {
       getOutletById,
       getOutletsByUnit,
       updateOutletById,
+      getOutletBranding,
       updateOutletBranding,
       setOutletSettingsPin
     }
