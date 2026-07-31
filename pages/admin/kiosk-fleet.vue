@@ -89,8 +89,10 @@ onMounted(fetchAll)
           <thead>
             <tr>
               <th>Outlet</th>
-              <th>Printer</th>
+              <th>Printer Foto</th>
               <th>Status</th>
+              <th>Printer Struk</th>
+              <th>Status Struk</th>
               <th>Sisa Cetak</th>
               <th>App Version</th>
               <th>Terakhir Terlihat</th>
@@ -102,6 +104,19 @@ onMounted(fetchAll)
               <td>{{ k.outlet_name }}</td>
               <td>{{ k.printer_name ?? '-' }}</td>
               <td><VChip size="small" :color="statusColor(k.printer_status)">{{ k.printer_status }}</VChip></td>
+              <td>{{ k.receipt_printer_name ?? '-' }}</td>
+              <td>
+                <!-- No receipt printer configured is not a fault, so it reads
+                     as an em dash rather than a red "offline" chip. -->
+                <VChip
+                  v-if="k.receipt_printer_status"
+                  size="small"
+                  :color="statusColor(k.receipt_printer_status)"
+                >
+                  {{ k.receipt_printer_status }}
+                </VChip>
+                <span v-else class="text-medium-emphasis">—</span>
+              </td>
               <td>
                 <!-- null initial = tracking never configured; an em dash says
                      that plainly instead of implying a real count of zero. -->
