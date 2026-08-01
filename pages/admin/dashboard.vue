@@ -71,6 +71,10 @@ definePageMeta({ layout: 'default' })
       </VCol>
     </VRow>
 
+    <!-- Direction, not just totals: the tiles above say how much, this says
+         whether that is up or down and which outlets are trading. -->
+    <TodaySnapshot />
+
     <!-- Charts -->
     <VRow class="mt-1">
       <VCol cols="12" md="8">

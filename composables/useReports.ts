@@ -1,4 +1,24 @@
 
+export interface TodayOutlet {
+  outlet_id: string
+  outlet_name: string
+  revenue: number
+  transactions: number
+  last_transaction_at: string | null
+}
+
+export interface TodaySnapshot {
+  revenue_today: number
+  revenue_yesterday: number
+  // null = no basis to compare (nothing yesterday), which the UI must show as
+  // an em dash rather than 0%.
+  revenue_delta_pct: number | null
+  transactions_today: number
+  transactions_yesterday: number
+  transactions_delta_pct: number | null
+  outlets: TodayOutlet[]
+}
+
 export interface OperationalAlert {
   kind: 'kiosk_offline' | 'printer_down' | 'media_low' | 'print_failed' | 'txn_stuck'
   severity: 'high' | 'medium' | 'low'
@@ -191,6 +211,10 @@ export function useReports() {
     return await authFetch(`/statistics/alerts`, { method: 'GET' })
   }
 
+  const getTodaySnapshot = async (): Promise<TodaySnapshot> => {
+    return await authFetch(`/statistics/today`, { method: 'GET' })
+  }
+
   const getDasboardStatistcs = async (): Promise<ReportResponse | null>  => {
     const data = await authFetch<ReportResponse>(`/statistics/`, {      
       method: 'GET'        
@@ -227,6 +251,7 @@ export function useReports() {
 
   return {    
     getOperationalAlerts,
+    getTodaySnapshot,
     getDasboardStatistcs,
     getTransactionsReport,
     getAllUnitReports,
