@@ -40,6 +40,12 @@ function openStock(kiosk: any) {
   stockDialog.value = true
 }
 
+// The warning only carries weight if it isn't always on screen — and != null
+// (not !==) so it still fires when the value is undefined, not just null.
+const stockChanged = computed(() =>
+  stockInitial.value != null && stockInitial.value !== stockTarget.value?.stock?.initial,
+)
+
 async function saveStock() {
   if (!stockTarget.value) return
   stockSaving.value = true
@@ -172,46 +178,102 @@ onMounted(fetchAll)
 
     <AppModal
       v-model="stockDialog"
-      :title="`Stok Cetak — ${stockTarget?.outlet_name ?? ''}`"
-      icon="bx-layer"
-      max-width="480"
+      title="Stok cetak"
+      :description="stockTarget?.outlet_name"
+      size="sm"
       :loading="stockSaving"
       confirm-text="Simpan"
       cancel-text="Batal"
       @confirm="saveStock"
     >
-      <VRow>
-        <VCol cols="12">
-          <VTextField
-            v-model.number="stockInitial"
-            type="number"
-            label="Jumlah Kertas Terpasang"
-            placeholder="cth: 1000"
-            density="compact"
-            variant="outlined"
-            hint="Isi setelah mengganti kertas/ribbon — hitungan tercetak otomatis kembali ke 0"
-            persistent-hint
-            clearable
-          />
-        </VCol>
-        <VCol cols="12">
-          <VTextField
-            v-model.number="stockThreshold"
-            type="number"
-            label="Peringatan bila sisa kurang dari"
-            density="compact"
-            variant="outlined"
-            hint="Kiosk dan dashboard menampilkan peringatan di bawah angka ini"
-            persistent-hint
-          />
-        </VCol>
-        <VCol v-if="stockTarget?.stock?.initial !== null" cols="12">
-          <VAlert type="info" variant="tonal" density="compact" class="text-caption">
-            Saat ini: {{ stockTarget?.stock?.printed }} tercetak,
-            sisa {{ stockTarget?.stock?.remaining }} dari {{ stockTarget?.stock?.initial }}.
-          </VAlert>
-        </VCol>
-      </VRow>
+      <div v-if="stockTarget?.stock?.initial != null" class="stock-strip">
+        <div class="stock-strip__item">
+          <span class="stock-strip__value">{{ stockTarget.stock.printed }}</span>
+          <span class="stock-strip__label">Tercetak</span>
+        </div>
+        <div class="stock-strip__item">
+          <span class="stock-strip__value">{{ stockTarget.stock.remaining }}</span>
+          <span class="stock-strip__label">Sisa</span>
+        </div>
+        <div class="stock-strip__item">
+          <span class="stock-strip__value">{{ stockTarget.stock.initial }}</span>
+          <span class="stock-strip__label">Kapasitas</span>
+        </div>
+      </div>
+
+      <FormSection title="Stok">
+        <FormField label="Jumlah kertas terpasang" helper="Isi setelah mengganti kertas atau ribbon." width="num">
+          <template #default="{ id, describedBy }">
+            <VTextField
+              :id="id"
+              v-model.number="stockInitial"
+              type="number"
+              inputmode="numeric"
+              placeholder="cth: 1000"
+              :aria-describedby="describedBy"
+              clearable
+            />
+          </template>
+        </FormField>
+
+        <InlineAlert v-if="stockChanged" tone="warning">
+          Menyimpan akan mereset hitungan tercetak ke 0.
+        </InlineAlert>
+      </FormSection>
+
+      <FormSection title="Peringatan">
+        <FormField
+          label="Peringatan bila sisa kurang dari"
+          helper="Kiosk dan dashboard menampilkan peringatan di bawah angka ini."
+          width="num"
+        >
+          <template #default="{ id, describedBy }">
+            <VTextField
+              :id="id"
+              v-model.number="stockThreshold"
+              type="number"
+              inputmode="numeric"
+              :aria-describedby="describedBy"
+            />
+          </template>
+        </FormField>
+      </FormSection>
     </AppModal>
   </div>
 </template>
+
+<style scoped>
+.stock-strip {
+  display: flex;
+  border: 1px solid var(--n-200);
+  border-radius: var(--radius-lg);
+  background: var(--n-50);
+  overflow: hidden;
+}
+
+.stock-strip__item {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-5) var(--sp-4);
+}
+
+.stock-strip__item + .stock-strip__item { border-left: 1px solid var(--n-200); }
+
+.stock-strip__value {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-strip__label {
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+</style>

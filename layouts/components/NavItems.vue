@@ -16,6 +16,11 @@ import VerticalNavLink from '../../@layouts/components/VerticalNavLink.vue'
 // Indonesian headings to match the rest of the admin. No page was removed.
 
 const dashboardLink = Object.freeze({ title: 'Dashboard', icon: 'bx bx-home-smile', to: '/admin/dashboard' })
+// Superadmin-only: it aggregates across every tenant. Only this nav file is
+// rendered for superadmins, so the link is hidden from unit/outlet roles by
+// living here — but the endpoint 404s for them regardless, which is the actual
+// boundary.
+const businessLink = Object.freeze({ title: 'Bisnis', icon: 'bx bx-trending-up', to: '/admin/business' })
 
 // ── Operasional ──
 const opsSection = Object.freeze({ heading: 'Operasional' })
@@ -56,6 +61,7 @@ const timeOperationLink = Object.freeze({ title: 'Time Operation', icon: 'bx bxs
 
 <template>
   <VerticalNavLink :item="dashboardLink" />
+  <VerticalNavLink :item="businessLink" />
 
   <VerticalNavSectionTitle :item="opsSection" />
   <VerticalNavGroup :item="photosGroup">

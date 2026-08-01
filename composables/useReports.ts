@@ -1,4 +1,33 @@
 
+export interface BusinessOverview {
+  period_days: number
+  funnel: {
+    scans: number
+    scans_with_matches: number
+    paid_transactions: number
+    match_rate_pct: number | null
+    conversion_pct: number | null
+  }
+  revenue: number
+  revenue_prev: number
+  revenue_delta_pct: number | null
+  transactions: number
+  transactions_prev: number
+  transactions_delta_pct: number | null
+  photos_sold: number
+  avg_basket: number
+  revenue_per_photo: number
+  mix: { kind: string, revenue: number, transactions: number }[]
+  leaderboard: {
+    outlet_id: string
+    outlet_name: string
+    revenue: number
+    transactions: number
+    photos: number
+    avg_basket: number
+  }[]
+}
+
 export interface TodayOutlet {
   outlet_id: string
   outlet_name: string
@@ -211,6 +240,10 @@ export function useReports() {
     return await authFetch(`/statistics/alerts`, { method: 'GET' })
   }
 
+  const getBusinessOverview = async (days = 30): Promise<BusinessOverview> => {
+    return await authFetch(`/statistics/business?days=${days}`, { method: 'GET' })
+  }
+
   const getTodaySnapshot = async (): Promise<TodaySnapshot> => {
     return await authFetch(`/statistics/today`, { method: 'GET' })
   }
@@ -252,6 +285,7 @@ export function useReports() {
   return {    
     getOperationalAlerts,
     getTodaySnapshot,
+    getBusinessOverview,
     getDasboardStatistcs,
     getTransactionsReport,
     getAllUnitReports,

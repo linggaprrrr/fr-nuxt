@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onBeforeUnmount } from 'vue'
 import { getApiErrorMessage } from '@/utils/apiHelpers'
 
 // Kiosk branding + Settings PIN for one outlet. Kiosks pick these up on their
@@ -40,18 +40,82 @@ const toolEnabled = ref<Record<string, boolean>>(
   Object.fromEntries(EDITOR_TOOLS.map(t => [t.key, true]))
 )
 
+// What the outlet already has, so the preview can show the saved images when
+// no new file has been picked.
+const savedBannerUrl = ref<string | null>(null)
+const savedBackgroundUrl = ref<string | null>(null)
+const showPreview = ref(false)
+
+// Where the splash's Start button sits, as one of nine anchors. Nine presets
+// rather than free x/y: a percentage tuned to one banner lands badly when the
+// artwork or the kiosk's screen ratio changes, and nobody is standing there
+// to notice it covering the subject's face.
+const CTA_POSITIONS = [
+  ['top-left', 'top-center', 'top-right'],
+  ['middle-left', 'middle-center', 'middle-right'],
+  ['bottom-left', 'bottom-center', 'bottom-right'],
+]
+const bannerCtaPosition = ref('bottom-center')
+// Empty = use the kiosk's own translated default, so the button still follows
+// the customer's ID/EN toggle unless an outlet deliberately overrides it.
+const bannerCtaLabel = ref('')
+
+// Object URLs for files chosen but not yet uploaded — the whole point is to
+// judge the branding *before* saving. Revoked on replacement and on close so
+// the blobs don't accumulate over a session of trying images.
+const bannerObjectUrl = ref<string | null>(null)
+const backgroundObjectUrl = ref<string | null>(null)
+
+function revokeObjectUrls() {
+  if (bannerObjectUrl.value) URL.revokeObjectURL(bannerObjectUrl.value)
+  if (backgroundObjectUrl.value) URL.revokeObjectURL(backgroundObjectUrl.value)
+  bannerObjectUrl.value = null
+  backgroundObjectUrl.value = null
+}
+
+watch(banner, (f) => {
+  if (bannerObjectUrl.value) URL.revokeObjectURL(bannerObjectUrl.value)
+  bannerObjectUrl.value = f ? URL.createObjectURL(f) : null
+})
+watch(background, (f) => {
+  if (backgroundObjectUrl.value) URL.revokeObjectURL(backgroundObjectUrl.value)
+  backgroundObjectUrl.value = f ? URL.createObjectURL(f) : null
+})
+
+// Pending state, in the order the backend applies it: a newly picked file
+// wins, then the clear checkbox, then whatever is already saved.
+const previewBannerUrl = computed(() => {
+  if (bannerObjectUrl.value) return bannerObjectUrl.value
+  return clearBanner.value ? null : savedBannerUrl.value
+})
+const previewBackgroundUrl = computed(() => {
+  if (backgroundObjectUrl.value) return backgroundObjectUrl.value
+  return clearBackground.value ? null : savedBackgroundUrl.value
+})
+
+onBeforeUnmount(revokeObjectUrls)
+
 const dialog = computed({
   get: () => props.modelValue,
   set: (v: boolean) => emit('update:modelValue', v),
 })
 
 watch(() => props.modelValue, async (open) => {
-  if (!open || !props.outlet) return
+  // Closing: drop the blobs and collapse the preview so reopening starts clean
+  // rather than showing the last outlet's images.
+  if (!open) {
+    revokeObjectUrls()
+    showPreview.value = false
+    return
+  }
+  if (!props.outlet) return
   // The PIN is write-only server-side, so there is nothing to prefill — an
   // empty box here means "leave the current PIN alone".
   primaryColor.value = '#017DC5'
   banner.value = null
   background.value = null
+  savedBannerUrl.value = null
+  savedBackgroundUrl.value = null
   clearBanner.value = false
   clearBackground.value = false
   pin.value = ''
@@ -66,6 +130,10 @@ watch(() => props.modelValue, async (open) => {
     const res: any = await getOutletBranding(props.outlet.id)
     const data = res?.data ?? res ?? {}
     if (data.primary_color) primaryColor.value = data.primary_color
+    savedBannerUrl.value = data.banner_url ?? null
+    bannerCtaPosition.value = data.banner_cta_position ?? 'bottom-center'
+    bannerCtaLabel.value = data.banner_cta_label ?? ''
+    savedBackgroundUrl.value = data.background_url ?? null
     const disabled: string[] = data.disabled_tools ?? []
     EDITOR_TOOLS.forEach((t) => { toolEnabled.value[t.key] = !disabled.includes(t.key) })
   } catch (error: any) {
@@ -126,6 +194,8 @@ async function submit() {
       background: background.value,
       clearBanner: clearBanner.value,
       clearBackground: clearBackground.value,
+      bannerCtaPosition: bannerCtaPosition.value,
+      bannerCtaLabel: bannerCtaLabel.value,
       disabledTools: EDITOR_TOOLS.filter(t => !toolEnabled.value[t.key]).map(t => t.key),
     })
     // Separate call on purpose: branding is cosmetic and the PIN is a
@@ -161,8 +231,6 @@ async function submit() {
           <input v-model="primaryColor" type="color" style="width: 44px; height: 40px; border: none; background: none; cursor: pointer; padding: 0;" >
           <VTextField
             v-model="primaryColor"
-            density="compact"
-            variant="outlined"
             hide-details
             placeholder="#017DC5"
             style="max-width: 160px;"
@@ -177,14 +245,42 @@ async function submit() {
         <VFileInput
           v-model="banner"
           label="Banner (layar sambutan)"
-          accept="image/png,image/jpeg,image/webp"
+          accept="image/png,image/jpeg,image/webp,image/gif"
           prepend-icon="bx-image"
           prepend-inner-icon=""
-          density="compact"
-          variant="outlined"
           :disabled="clearBanner"
         />
         <VCheckbox v-model="clearBanner" label="Hapus banner saat ini" density="compact" hide-details />
+
+        <!-- Only meaningful when a banner exists to sit the button on. -->
+        <div v-if="previewBannerUrl" class="mt-3">
+          <VTextField
+            v-model="bannerCtaLabel"
+            label="Teks tombol"
+            placeholder="Mulai"
+            maxlength="40"
+            counter="40"
+            density="compact"
+            hint="Kosongkan untuk memakai teks bawaan (mengikuti bahasa ID/EN)."
+            persistent-hint
+            class="mb-3"
+          />
+          <div class="text-caption font-weight-medium mb-1">Posisi tombol</div>
+          <div class="text-caption text-medium-emphasis mb-2">
+            Pilih sudut yang tidak menutupi bagian penting banner.
+          </div>
+          <div class="cta-grid">
+            <button
+              v-for="pos in CTA_POSITIONS.flat()"
+              :key="pos"
+              type="button"
+              class="cta-cell"
+              :class="{ 'cta-cell--on': bannerCtaPosition === pos }"
+              :aria-label="pos"
+              @click="bannerCtaPosition = pos"
+            />
+          </div>
+        </div>
       </VCol>
 
       <VCol cols="12" md="6">
@@ -194,17 +290,39 @@ async function submit() {
           accept="image/png,image/jpeg,image/webp"
           prepend-icon="bx-landscape"
           prepend-inner-icon=""
-          density="compact"
-          variant="outlined"
           :disabled="clearBackground"
         />
         <VCheckbox v-model="clearBackground" label="Hapus latar saat ini" density="compact" hide-details />
       </VCol>
 
       <VCol cols="12">
+        <VBtn
+          variant="tonal"
+          color="primary"
+          size="small"
+          :prepend-icon="showPreview ? 'bx-chevron-up' : 'bx-show'"
+          @click="showPreview = !showPreview"
+        >
+          {{ showPreview ? 'Sembunyikan pratinjau' : 'Lihat pratinjau kiosk' }}
+        </VBtn>
+      </VCol>
+
+      <!-- Shows the pending state, including files not yet uploaded, so the
+           branding can be judged before saving and restarting a kiosk. -->
+      <VCol v-if="showPreview" cols="12">
+        <KioskBrandingPreview
+          :banner-url="previewBannerUrl"
+          :background-url="previewBackgroundUrl"
+          :primary-color="primaryColor"
+          :cta-position="bannerCtaPosition"
+          :cta-label="bannerCtaLabel"
+          :outlet-name="outlet?.name ?? ''"
+        />
+      </VCol>
+
+      <VCol cols="12">
         <VAlert type="info" variant="tonal" density="compact" class="text-caption">
-          Maksimal 5MB per gambar (PNG/JPEG/WebP). Kiosk memuat branding saat booting,
-          jadi perubahan tampil setelah kiosk dinyalakan ulang.
+          Maksimal 12MB per gambar. Banner: PNG/JPEG/WebP/GIF (GIF bisa bergerak). Latar: PNG/JPEG/WebP. Setelah disimpan, tekan "Sinkronkan" di Pengaturan kiosk agar perubahan langsung tampil — tidak perlu menyalakan ulang.
         </VAlert>
       </VCol>
 
@@ -237,8 +355,6 @@ async function submit() {
               type="password"
               inputmode="numeric"
               maxlength="6"
-              density="compact"
-              variant="outlined"
               :error-messages="pinFormatError ? [pinFormatError] : []"
               @keydown="blockNonDigitKey"
               @update:model-value="pin = sanitizePin($event)"
@@ -251,8 +367,6 @@ async function submit() {
               type="password"
               inputmode="numeric"
               maxlength="6"
-              density="compact"
-              variant="outlined"
               :error-messages="pinMatchError ? [pinMatchError] : []"
               @keydown="blockNonDigitKey"
               @update:model-value="pinConfirm = sanitizePin($event)"
@@ -263,3 +377,33 @@ async function submit() {
     </VRow>
   </AppModal>
 </template>
+
+<style scoped>
+/* Nine anchors laid out as they appear on screen, so the control is a map of
+   the kiosk rather than a dropdown of names nobody can picture. */
+.cta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  width: 132px;
+  aspect-ratio: 16 / 10;
+  padding: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.cta-cell {
+  border: 1px dashed rgba(0, 0, 0, 0.22);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.cta-cell:hover { background: rgba(0, 0, 0, 0.06); }
+.cta-cell--on {
+  background: rgb(var(--v-theme-primary));
+  border-style: solid;
+  border-color: rgb(var(--v-theme-primary));
+}
+</style>

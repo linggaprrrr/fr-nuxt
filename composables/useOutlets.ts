@@ -76,12 +76,14 @@ export const useOutlets = () => {
 
     const updateOutletBranding = async (
         id: string,
-        { primaryColor, banner, background, clearBanner, clearBackground, disabledTools }: {
+        { primaryColor, banner, background, clearBanner, clearBackground, bannerCtaPosition, bannerCtaLabel, disabledTools }: {
             primaryColor?: string | null
             banner?: File | null
             background?: File | null
             clearBanner?: boolean
             clearBackground?: boolean
+            bannerCtaPosition?: string
+            bannerCtaLabel?: string
             disabledTools?: string[]
         }
     ) => {
@@ -91,6 +93,8 @@ export const useOutlets = () => {
         if (background) form.append('background', background)
         if (clearBanner) form.append('clear_banner', 'true')
         if (clearBackground) form.append('clear_background', 'true')
+        if (bannerCtaPosition !== undefined) form.append('banner_cta_position', bannerCtaPosition)
+        if (bannerCtaLabel !== undefined) form.append('banner_cta_label', bannerCtaLabel)
         if (disabledTools !== undefined) form.append('disabled_editor_tools', JSON.stringify(disabledTools))
 
         const response = await authFetch(`outlets/${id}/branding`, {
