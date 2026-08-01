@@ -27,6 +27,15 @@ async function fetchAll() {
 // to be noticed without reading every row.
 const lowStockKiosks = computed(() => kiosks.value.filter(k => k.stock?.low))
 
+// A stalled queue outranks low stock: the customer has already paid and their
+// paper is not coming out. print_stalled is computed server-side so the
+// threshold can be tuned without shipping a kiosk build.
+const stalledKiosks = computed(() => kiosks.value.filter(k => k.print_stalled))
+function queueAge(k: any) {
+  const mins = Math.floor((k.print_queue_age_ms ?? 0) / 60000)
+  return mins >= 60 ? `${Math.floor(mins / 60)} jam` : `${mins} menit`
+}
+
 const stockDialog = ref(false)
 const stockTarget = ref<any>(null)
 const stockInitial = ref<number | null>(null)
@@ -66,6 +75,22 @@ onMounted(fetchAll)
 <template>
   <div>
     <PageHeader title="Kiosk Fleet" subtitle="Status printer dan konektivitas tiap kiosk." />
+
+    <VAlert
+      v-if="stalledKiosks.length"
+      type="error"
+      variant="tonal"
+      class="mb-4"
+      icon="bx-error-circle"
+    >
+      <p class="font-weight-bold mb-1">
+        {{ stalledKiosks.length }} kiosk macet — antrean cetak tidak jalan
+      </p>
+      <p class="text-caption mb-0">
+        {{ stalledKiosks.map(k => `${k.outlet_name} (${k.print_queue_count} job, tertua ${queueAge(k)})`).join(' · ') }}
+        — biasanya print spooler Windows perlu di-restart.
+      </p>
+    </VAlert>
 
     <VAlert
       v-if="lowStockKiosks.length"
