@@ -91,6 +91,8 @@ onMounted(fetchAll)
               <th>Outlet</th>
               <th>Printer Foto</th>
               <th>Status</th>
+              <th>Printer Strip</th>
+              <th>Status Strip</th>
               <th>Printer Struk</th>
               <th>Status Struk</th>
               <th>Sisa Cetak</th>
@@ -104,6 +106,19 @@ onMounted(fetchAll)
               <td>{{ k.outlet_name }}</td>
               <td>{{ k.printer_name ?? '-' }}</td>
               <td><VChip size="small" :color="statusColor(k.printer_status)">{{ k.printer_status }}</VChip></td>
+              <td>{{ k.secondary_printer_name ?? '-' }}</td>
+              <td>
+                <!-- Unset means strips go to the primary printer, a normal
+                     single-printer setup — not a fault. -->
+                <VChip
+                  v-if="k.secondary_printer_status"
+                  size="small"
+                  :color="statusColor(k.secondary_printer_status)"
+                >
+                  {{ k.secondary_printer_status }}
+                </VChip>
+                <span v-else class="text-medium-emphasis">—</span>
+              </td>
               <td>{{ k.receipt_printer_name ?? '-' }}</td>
               <td>
                 <!-- No receipt printer configured is not a fault, so it reads
