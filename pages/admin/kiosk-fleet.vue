@@ -105,7 +105,16 @@ onMounted(fetchAll)
             <tr v-for="k in kiosks" :key="k.id">
               <td>{{ k.outlet_name }}</td>
               <td>{{ k.printer_name ?? '-' }}</td>
-              <td><VChip size="small" :color="statusColor(k.printer_status)">{{ k.printer_status }}</VChip></td>
+              <td>
+                <!-- No photo printer paired yet (receipt-only kiosk, or still
+                     being set up). printer_status is NOT NULL server-side so it
+                     still says "offline"; a red chip for a device that was
+                     never configured reads as a fault it isn't. -->
+                <VChip v-if="k.printer_name" size="small" :color="statusColor(k.printer_status)">
+                  {{ k.printer_status }}
+                </VChip>
+                <span v-else class="text-medium-emphasis">—</span>
+              </td>
               <td>{{ k.secondary_printer_name ?? '-' }}</td>
               <td>
                 <!-- Unset means strips go to the primary printer, a normal
