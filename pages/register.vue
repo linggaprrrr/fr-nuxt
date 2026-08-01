@@ -67,40 +67,49 @@ definePageMeta({ layout: 'blank' })
             <VRow>
               <!-- Username -->
               <VCol cols="12">
-                <VTextField
-                  :id="useId()"
-                  v-model="form.username"
-                  autofocus
-                  label="Username"
-                  placeholder="Johndoe"
-                  variant="outlined"
-                />
+                <FormField label="Username">
+                  <template #default="{ id, describedBy }">
+                    <VTextField
+                      :id="id"
+                      v-model="form.username"
+                      autofocus
+                      placeholder="Johndoe"
+                      :aria-describedby="describedBy"
+                    />
+                  </template>
+                </FormField>
               </VCol>
               <!-- email -->
               <VCol cols="12">
-                <VTextField
-                  :id="useId()"
-                  v-model="form.email"
-                  label="Email"
-                  type="email"
-                  placeholder="johndoe@email.com"
-                  variant="outlined"
-                />
+                <FormField label="Email">
+                  <template #default="{ id, describedBy }">
+                    <VTextField
+                      :id="id"
+                      v-model="form.email"
+                      type="email"
+                      placeholder="johndoe@email.com"
+                      :aria-describedby="describedBy"
+                    />
+                  </template>
+                </FormField>
               </VCol>
 
               <!-- password -->
               <VCol cols="12">
-                <VTextField
-                  :id="useId()"
-                  v-model="form.password"
-                  label="Password"
-                  autocomplete="password"
-                  placeholder="············"
-                  :type="isPasswordVisible ? 'text' : 'password'"
-                  variant="outlined"
-                  :append-inner-icon="isPasswordVisible ? 'bx-hide' : 'bx-show'"
-                  @click:append-inner="isPasswordVisible = !isPasswordVisible"
-                />
+                <FormField label="Password">
+                  <template #default="{ id, describedBy }">
+                    <VTextField
+                      :id="id"
+                      v-model="form.password"
+                      autocomplete="password"
+                      placeholder="············"
+                      :type="isPasswordVisible ? 'text' : 'password'"
+                      :aria-describedby="describedBy"
+                      :append-inner-icon="isPasswordVisible ? 'bx-hide' : 'bx-show'"
+                      @click:append-inner="isPasswordVisible = !isPasswordVisible"
+                    />
+                  </template>
+                </FormField>
 
                 <div class="d-flex align-center my-6">
                   <VCheckbox

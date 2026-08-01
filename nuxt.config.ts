@@ -6,6 +6,7 @@ import vuetify from 'vite-plugin-vuetify'
 export default defineNuxtConfig({
   app: {
     head: {
+      htmlAttrs: { lang: 'id' },
       titleTemplate: '%s - Find Your Photos with Just Your Face',
       title: 'Ownize',
 

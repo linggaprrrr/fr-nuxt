@@ -104,30 +104,36 @@ const handleLoginError = () => {
             <VRow>
               <!-- email -->
               <VCol cols="12">
-                <VTextField
-                  :id="useId()"
-                  v-model="form.email"
-                  autofocus
-                  label="Email"
-                  type="email"
-                  placeholder="johndoe@email.com"
-                  variant="outlined"
-                />
+                <FormField label="Email">
+                  <template #default="{ id, describedBy }">
+                    <VTextField
+                      :id="id"
+                      v-model="form.email"
+                      autofocus
+                      type="email"
+                      placeholder="johndoe@email.com"
+                      :aria-describedby="describedBy"
+                    />
+                  </template>
+                </FormField>
               </VCol>
 
               <!-- password -->
               <VCol cols="12">
-                <VTextField
-                  :id="useId()"
-                  v-model="form.password"
-                  label="Password"
-                  placeholder="············"
-                  :type="isPasswordVisible ? 'text' : 'password'"
-                  autocomplete="password"
-                  variant="outlined"
-                  :append-inner-icon="isPasswordVisible ? 'bx-hide' : 'bx-show'"
-                  @click:append-inner="isPasswordVisible = !isPasswordVisible"
-                />
+                <FormField label="Password">
+                  <template #default="{ id, describedBy }">
+                    <VTextField
+                      :id="id"
+                      v-model="form.password"
+                      placeholder="············"
+                      :type="isPasswordVisible ? 'text' : 'password'"
+                      autocomplete="password"
+                      :aria-describedby="describedBy"
+                      :append-inner-icon="isPasswordVisible ? 'bx-hide' : 'bx-show'"
+                      @click:append-inner="isPasswordVisible = !isPasswordVisible"
+                    />
+                  </template>
+                </FormField>
 
                 <!-- remember me checkbox -->
                 <div class="d-flex align-center justify-space-between flex-wrap my-6">
@@ -148,7 +154,7 @@ const handleLoginError = () => {
                 <!-- login button -->
                 <VBtn
                   block
-                  color="#FB3AA2"
+                  color="primary"
                   type="submit"
                 >
                   Login

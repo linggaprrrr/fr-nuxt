@@ -9,3 +9,6 @@ dist/
 
 # Local Claude Code context (not shared)
 CLAUDE.md
+
+# Claude Code local state (contains worktrees/ and machine-local settings)
+.claude/

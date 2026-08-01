@@ -1,6 +1,10 @@
 export const useAuth = () => {
   const config = useRuntimeConfig()
-  
+  // ponytail: SSR-readable mirror of the localStorage token/user, so auth.global.ts
+  // can redirect before render instead of after hydration. Not the source of truth.
+  const accessTokenCookie = useCookie<string | null>('access_token')
+  const userCookie = useCookie<{ role: string } | null>('user')
+
 
 
   const login = async (email: string, password: string) => {
@@ -20,6 +24,8 @@ export const useAuth = () => {
           localStorage.setItem('access_token', accessToken)
           localStorage.setItem('refresh_token', refreshToken)
           localStorage.setItem('user', JSON.stringify(user))
+          accessTokenCookie.value = accessToken
+          userCookie.value = user as { role: string }
 
           const userStr = JSON.stringify(user)
           if (userStr) {
@@ -85,6 +91,8 @@ export const useAuth = () => {
           localStorage.setItem('access_token', accessToken)
           localStorage.setItem('refresh_token', refreshToken)
           localStorage.setItem('user', JSON.stringify(user))
+          accessTokenCookie.value = accessToken
+          userCookie.value = user as { role: string }
           const userStr = JSON.stringify(user)
           if (userStr) {
             const user = JSON.parse(userStr) as { role: string };
@@ -120,6 +128,7 @@ export const useAuth = () => {
       if (response?.access_token && response?.refresh_token) {
         localStorage.setItem('access_token', response.access_token)
         localStorage.setItem('refresh_token', response.refresh_token)
+        accessTokenCookie.value = response.access_token
         return true
       }
       logout()
@@ -140,7 +149,9 @@ export const useAuth = () => {
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
       localStorage.removeItem('user')
-      return navigateTo('/login')      
+      accessTokenCookie.value = null
+      userCookie.value = null
+      return navigateTo('/login')
     }
   }
 

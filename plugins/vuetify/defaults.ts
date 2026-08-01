@@ -76,6 +76,9 @@ export default {
       showArrows: true,
     },
   },
+  VTab: {
+    ripple: false,
+  },
   VTooltip: {
     // set v-tooltip default location to top
     location: 'top',
@@ -101,7 +104,7 @@ export default {
   VSelect: {
     variant: 'outlined',
     color: 'primary',
-    density: 'comfortable',
+    density: 'compact',
     hideDetails: 'auto',
     VChip: {
       label: true,
@@ -140,14 +143,14 @@ export default {
   },
   VTextField: {
     variant: 'outlined',
-    density: 'comfortable',
+    density: 'compact',
     color: 'primary',
     hideDetails: 'auto',
   },
   VAutocomplete: {
     variant: 'outlined',
     color: 'primary',
-    density: 'comfortable',
+    density: 'compact',
     hideDetails: 'auto',
     menuProps: {
       contentClass: 'app-autocomplete__content v-autocomplete__content',
@@ -158,7 +161,7 @@ export default {
   },
   VCombobox: {
     variant: 'outlined',
-    density: 'comfortable',
+    density: 'compact',
     color: 'primary',
     hideDetails: 'auto',
     VChip: {
@@ -167,7 +170,7 @@ export default {
   },
   VFileInput: {
     variant: 'outlined',
-    density: 'comfortable',
+    density: 'compact',
     color: 'primary',
     hideDetails: 'auto',
     prependIcon: '',
@@ -175,7 +178,7 @@ export default {
   },
   VTextarea: {
     variant: 'outlined',
-    density: 'comfortable',
+    density: 'compact',
     color: 'primary',
     hideDetails: 'auto',
   },

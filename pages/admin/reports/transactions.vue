@@ -107,10 +107,10 @@ definePageMeta({ layout: 'default', title: 'Laporan Foto Terjual' })
       <VCardText>
         <VRow dense>
           <VCol cols="12" md="3">
-            <VTextField v-model="startDate" label="Start Date" type="date" variant="outlined" />
+            <VTextField v-model="startDate" label="Start Date" type="date" />
           </VCol>
           <VCol cols="12" md="3">
-            <VTextField v-model="endDate" label="End Date" type="date" variant="outlined" />
+            <VTextField v-model="endDate" label="End Date" type="date" />
           </VCol>
           <VCol cols="12" md="6" class="d-flex align-center gap-2">
             <VBtn color="primary" prepend-icon="bx-search-alt" @click="fetchFotoTerjual">Terapkan</VBtn>

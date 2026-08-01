@@ -1,1 +1,137 @@
-// Write your overrides
+// Design tokens + global overrides — see DESIGN_SPEC.md for the full rationale.
+// Phase 1 + 2 of the form/dialog rework. Kept out of @core/@layouts (vendored,
+// per CLAUDE.md) so re-vendoring the Sneat template never clobbers this file.
+
+:root {
+  // ── Spacing (4px base) ──────────────────────────────────────────────
+  --sp-1: 2px;  --sp-2: 4px;  --sp-3: 6px;   --sp-4: 8px;   --sp-5: 12px; --sp-6: 16px;
+  --sp-7: 20px; --sp-8: 24px; --sp-9: 32px;  --sp-10: 40px; --sp-11: 48px; --sp-12: 64px;
+
+  // ── Radius ──────────────────────────────────────────────────────────
+  --radius-sm: 4px; --radius-md: 6px; --radius-lg: 10px;
+  --radius-xl: 12px; --radius-2xl: 16px; --radius-full: 9999px;
+
+  // ── Type ────────────────────────────────────────────────────────────
+  // System stack, not a webfont: SF Pro on macOS, Segoe UI Variable on Windows —
+  // zero bytes downloaded, zero FOUT. The vendored "Public Sans" var is declared
+  // in @core but never loaded anywhere, so today's UI silently renders Roboto.
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI",
+               Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --fs-2xs: 11px; --fs-xs: 12px; --fs-sm: 13px; --fs-md: 14px;
+  --fs-lg: 16px;  --fs-xl: 20px; --fs-2xl: 24px;
+  --fw-normal: 400; --fw-medium: 500; --fw-semibold: 600;
+  --tracking-tight: -.014em; --tracking-snug: -.006em; --tracking-wide: .04em;
+
+  // ── Cool neutrals (sit under the brand navy rather than fighting it) ──
+  --n-0: #ffffff;  --n-25: #fcfcfd; --n-50: #f8fafb;  --n-100: #f1f4f7; --n-200: #e4e9ef;
+  --n-300: #cfd7e0; --n-400: #9aa7b6; --n-500: #6b7a8c; --n-600: #4d5c6e; --n-700: #384656;
+  --n-800: #24303e; --n-900: #16202b;
+
+  --text-primary: var(--n-800);
+  --text-secondary: var(--n-600);
+  --text-tertiary: var(--n-500);   // 4.9:1 on white — the only AA-safe "helper text" gray
+  --text-disabled: var(--n-400);
+
+  --border-subtle: 1px solid var(--n-100);
+  --border-default: 1px solid var(--n-200);
+  --border-strong: 1px solid var(--n-300);
+
+  // ── Semantic (rebalanced — the Sneat defaults don't pass text contrast) ──
+  --success: #1a8754; --success-bg: #e9f5ee; --success-border: #a8d8bd; --success-text: #11603c;
+  --warning: #d97706; --warning-bg: #fef6e7; --warning-border: #f3d19b; --warning-text: #92400e;
+  --danger:  #d92d20; --danger-bg:  #fdf0ef; --danger-border:  #f3b5ae; --danger-text:  #a4231a;
+
+  // ── Shadow (cool-tinted, not pure black — pure black on white reads as dirt) ──
+  --shadow-xs: 0 1px 2px rgb(22 32 43 / .05);
+  --shadow-sm: 0 1px 2px rgb(22 32 43 / .04), 0 2px 4px -1px rgb(22 32 43 / .06);
+  --shadow-md: 0 4px 8px -2px rgb(22 32 43 / .08), 0 2px 4px -2px rgb(22 32 43 / .04);
+  --shadow-lg: 0 12px 24px -6px rgb(22 32 43 / .10), 0 4px 8px -4px rgb(22 32 43 / .06);
+  --shadow-dialog: 0 24px 48px -12px rgb(22 32 43 / .18), 0 0 0 1px rgb(22 32 43 / .04);
+  --shadow-focus: 0 0 0 3px rgb(27 87 130 / .14);
+  --shadow-focus-danger: 0 0 0 3px rgb(217 45 32 / .12);
+
+  // ── Size ────────────────────────────────────────────────────────────
+  --control-h: 36px; --control-h-lg: 44px;
+  --input-w-num: 160px; --input-w-date: 200px; --input-w-code: 240px;
+  --measure: 60ch; --content-max: 880px;
+
+  // ── Motion ──────────────────────────────────────────────────────────
+  --dur-fast: 120ms; --dur-normal: 180ms;
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --ease-in-out: cubic-bezier(.4, 0, .2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-normal: 0ms; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+// ── Typeface ──────────────────────────────────────────────────────────
+// Vuetify compiles $body-font-family into its own utility classes at build
+// time; overriding the SCSS var means editing vendored @core. This one rule
+// is the cheaper, contained fix.
+.v-application, body {
+  font-family: var(--font-sans) !important;
+}
+
+// ── Radius ────────────────────────────────────────────────────────────
+// rounded="lg" is used ~100x across the app and is the one token everyone
+// already honors — just correct its value (Vuetify's compiled "lg" is 8px).
+.rounded-lg { border-radius: var(--radius-lg) !important; }
+
+// ── Inputs (the "default Vuetify" tell #1: 56/48px Material fields) ────
+.v-input--density-compact {
+  --v-input-control-height: var(--control-h);
+  --v-field-padding-start: 12px;
+  --v-field-padding-end: 12px;
+}
+
+.v-field--variant-outlined {
+  border-radius: var(--radius-md);
+  font-size: var(--fs-md);
+  transition: box-shadow var(--dur-fast) var(--ease-in-out);
+
+  // --n-200/--n-300 read as basically invisible against a white card (~1.3:1 /
+  // ~1.9:1 contrast) — --n-400 is the lightest neutral that's actually visible.
+  .v-field__outline { color: var(--n-400); opacity: 1; transition: color var(--dur-fast) var(--ease-in-out); }
+  &:hover .v-field__outline { color: var(--n-500); }
+
+  // Vuetify thickens the outline to 2px on focus, which visibly resizes the
+  // field. A ring reads as "focused" without the field moving under the eye.
+  &.v-field--focused {
+    box-shadow: var(--shadow-focus);
+    .v-field__outline { color: rgb(var(--v-theme-primary)); --v-field-border-width: 1px; }
+  }
+
+  &.v-input--error.v-field--focused { box-shadow: var(--shadow-focus-danger); }
+
+  // Top labels replace the floating label — the notch exists to make room
+  // for one and is otherwise just a visual seam in the border.
+  .v-field__outline__notch { display: none; }
+}
+
+.v-field input,
+.v-field textarea { font-variant-numeric: tabular-nums; }
+
+// iOS Safari zooms the viewport on focus for any input below 16px and never
+// un-zooms on blur — every mobile field entry currently triggers this.
+@media (max-width: 599px) {
+  .v-field input, .v-field textarea, .v-field .v-select__selection-text { font-size: 16px; }
+}
+
+// ── Buttons (the "default Vuetify" tell #2: uppercase + ripple) ────────
+.v-btn {
+  height: var(--control-h) !important;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  text-transform: none !important;
+  letter-spacing: normal;
+  border-radius: var(--radius-md) !important;
+  box-shadow: none !important;
+
+  &.v-btn--size-small { height: 32px !important; }
+  &.v-btn--size-large, &.v-btn--size-x-large { height: var(--control-h-lg) !important; }
+  &.v-btn--icon { border-radius: var(--radius-md) !important; }
+}

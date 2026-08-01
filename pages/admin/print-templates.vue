@@ -15,30 +15,36 @@ const editorOpen      = ref(false)
 const editingTemplate = ref<any | null>(null)
 
 async function fetchAll() {
-  const params: any = {}
-  if (selectedOutletId.value) params.outlet_id = selectedOutletId.value
-  await getPrintTemplates(params)
+  // The list is the library — always the full one. Which templates a given
+  // outlet can actually use is answered by step 2's dropdowns, not by
+  // silently filtering this grid.
+  await getPrintTemplates({})
 }
 
 async function fetchOutlets() {
   const res = await useOutlets().getOutlets({ page: 1, limit: 9999, is_kiosk: true })
   outlets.value = res?.data || []
+  if (outlets.value.length === 1) selectedOutletId.value = outlets.value[0].id
 }
 
 function openCreate() { editingTemplate.value = null; editorOpen.value = true }
 function openEdit(t: any) { editingTemplate.value = t; editorOpen.value = true }
 
 function outletNames(t: any) {
-  if (t.is_global) return 'Semua Outlet'
-  if (!t.outlet_ids?.length) return 'Belum ditugaskan'
+  if (t.is_global) return 'Semua outlet'
+  if (!t.outlet_ids?.length) return 'Belum ditugaskan ke outlet'
   return t.outlet_ids.map((id: string) => outlets.value.find(o => o.id === id)?.name ?? id).join(', ')
 }
 
+function typeLabel(t: any) { return t.print_type === 'secondary' ? 'Strip foto' : 'Foto biasa' }
+
+// Short, so it fits a chip. "Draft" is the state that blocks a template from
+// being selectable in step 2, so it has to read as a problem, not a stage.
 function statusOf(t: any) {
   if (!t.is_active) return { text: 'Nonaktif', color: 'default' }
-  if (!t.current_version) return { text: 'Belum publish', color: 'warning' }
-  if (t.draft_version && t.draft_version.id !== t.current_version.id) return { text: `Published v${t.current_version.version_number} · draft menunggu`, color: 'info' }
-  return { text: `Published v${t.current_version.version_number}`, color: 'success' }
+  if (!t.current_version) return { text: 'Draft', color: 'warning' }
+  if (t.draft_version && t.draft_version.id !== t.current_version.id) return { text: `Live v${t.current_version.version_number} + draft`, color: 'info' }
+  return { text: `Live v${t.current_version.version_number}`, color: 'success' }
 }
 
 async function handleDelete(t: any) {
@@ -61,26 +67,52 @@ function openAssign(t: any) {
 async function saveAssign() {
   await assignOutlets(assigningTemplate.value.id, assignSelection.value)
   if (error.value) { toast.error(error.value); return }
-  toast.success('Assignment outlet diperbarui')
+  toast.success('Outlet template diperbarui')
   showAssign.value = false
   await fetchAll()
 }
 
-// ── Outlet printing settings panel ─────────────────────────────────────────
+// ── Step 2: per-outlet printing settings ───────────────────────────────────
 const selectedOutletId = ref<string>('')
 const currentSetting = ref<any | null>(null)
+const settingLoading = ref(false)
 const settingSaving = ref(false)
 
 async function loadOutletSetting() {
   if (!selectedOutletId.value) { currentSetting.value = null; return }
+  settingLoading.value = true
   currentSetting.value = await getOutletPrintSetting(selectedOutletId.value)
+  settingLoading.value = false
+  if (settingError.value) toast.error(settingError.value)
 }
-watch(selectedOutletId, () => { loadOutletSetting(); fetchAll() })
+watch(selectedOutletId, loadOutletSetting)
+
+const selectedOutletName = computed(() => outlets.value.find(o => o.id === selectedOutletId.value)?.name ?? '')
 
 const templatesForSettingsOutlet = computed(() => {
   if (!selectedOutletId.value) return []
   return templates.value.filter(t => t.is_active && t.current_version && (t.is_global || t.outlet_ids?.includes(selectedOutletId.value)))
 })
+
+// A template with no price is rejected by the kiosk's own gate (Cart.jsx's
+// `usable()` requires currentVersion AND price), so it can be assigned,
+// published, and selected here and still never appear at checkout — silently.
+// Surfaced as a warning rather than filtered out of the dropdown: hiding it
+// would leave an admin hunting for a template that looks fine on this page.
+const unpricedSelected = computed(() => [
+  { slot: 'Cetak foto biasa', id: currentSetting.value?.default_template_id },
+  { slot: 'Cetak strip foto', id: currentSetting.value?.secondary_template_id },
+].map(s => ({ ...s, tpl: templates.value.find(t => t.id === s.id) }))
+  .filter(s => s.tpl && !s.tpl.price))
+
+// Each slot only lists templates of its own type — the backend rejects a
+// mismatch at checkout, so offering one here would just be a trap.
+const primaryOptions = computed(() =>
+  templatesForSettingsOutlet.value.filter(t => (t.print_type ?? 'primary') === 'primary')
+    .map(t => ({ title: t.label, value: t.id })))
+const secondaryOptions = computed(() =>
+  templatesForSettingsOutlet.value.filter(t => t.print_type === 'secondary')
+    .map(t => ({ title: t.label, value: t.id })))
 
 async function saveOutletSetting() {
   if (!currentSetting.value) return
@@ -88,12 +120,15 @@ async function saveOutletSetting() {
   const res = await updateOutletPrintSetting(selectedOutletId.value, {
     printing_enabled: currentSetting.value.printing_enabled,
     default_template_id: currentSetting.value.default_template_id,
+    // Always sent, including as null — that's how the backend distinguishes
+    // "withdraw strip prints" from "leave it alone".
+    secondary_template_id: currentSetting.value.secondary_template_id ?? null,
     max_copies_per_order: currentSetting.value.max_copies_per_order,
   })
   settingSaving.value = false
   if (settingError.value) { toast.error(settingError.value); return }
   currentSetting.value = res
-  toast.success('Pengaturan cetak outlet disimpan')
+  toast.success(`Pengaturan cetak ${selectedOutletName.value} disimpan — kiosk sinkron otomatis.`)
 }
 
 onMounted(async () => { await fetchOutlets(); await fetchAll() })
@@ -101,73 +136,45 @@ onMounted(async () => { await fetchOutlets(); await fetchAll() })
 
 <template>
   <div>
-    <PageHeader title="Print Templates" subtitle="Kelola template cetak foto yang bisa dikonfigurasi per outlet.">
+    <PageHeader
+      title="Cetak Foto"
+      subtitle="Dua langkah: buat template cetaknya dulu, lalu tentukan template mana yang dipakai kiosk tiap outlet."
+    >
       <template #actions>
-        <VBtn color="primary" prepend-icon="bx-plus" @click="openCreate">Tambah Print Template</VBtn>
+        <VBtn color="primary" prepend-icon="bx-plus" @click="openCreate">Tambah Template</VBtn>
       </template>
     </PageHeader>
 
-    <!-- Outlet printing settings -->
-    <VCard flat border rounded="lg" class="mb-4">
+    <!-- ── Step 1 · template library ───────────────────────────────────── -->
+    <VCard flat border rounded="lg" class="mb-6">
       <VCardText>
-        <p class="text-subtitle-2 font-weight-bold mb-3">Pengaturan Cetak per Outlet</p>
-        <VSelect
-          v-model="selectedOutletId"
-          :items="[{ title: 'Semua Outlet', value: '' }, ...outlets.map(o => ({ title: o.name, value: o.id }))]"
-          label="Pilih Outlet"
-          density="compact"
-          variant="outlined"
-          hide-details
-          style="max-width:320px"
-          class="mb-4"
-        />
-        <div v-if="currentSetting" class="d-flex flex-column gap-3">
-          <div class="d-flex align-center justify-space-between pa-3 rounded-lg" style="background:#f9f9f9;border:1px solid #eee;max-width:520px;">
-            <div>
-              <p class="text-body-2 font-weight-medium">Aktifkan Cetak</p>
-              <p class="text-caption text-medium-emphasis">Nonaktif = tombol cetak tidak muncul di kiosk outlet ini</p>
-            </div>
-            <VSwitch v-model="currentSetting.printing_enabled" color="success" hide-details density="compact" />
+        <div class="step-head">
+          <span class="step-head__num">1</span>
+          <div>
+            <p class="step-head__title">Buat template cetak</p>
+            <p class="step-head__desc">
+              Atur layout, ukuran kertas, dan harga per lembar. Template baru berstatus
+              <strong>Draft</strong> — publikasikan dulu agar bisa dipakai di langkah 2.
+            </p>
           </div>
-          <VSelect
-            v-model="currentSetting.default_template_id"
-            :items="templatesForSettingsOutlet.map(t => ({ title: t.label, value: t.id }))"
-            label="Template Default"
-            density="compact"
-            variant="outlined"
-            clearable
-            hint="Hanya template published yang di-assign (atau global) ke outlet ini yang muncul"
-            persistent-hint
-            style="max-width:320px"
-          />
-          <VTextField
-            v-model.number="currentSetting.max_copies_per_order"
-            type="number"
-            label="Maks. Salinan per Pesanan (opsional)"
-            density="compact"
-            variant="outlined"
-            style="max-width:320px"
-          />
-          <VBtn color="primary" :loading="settingSaving" class="align-self-start" @click="saveOutletSetting">Simpan</VBtn>
         </div>
-        <p v-else-if="selectedOutletId" class="text-caption text-medium-emphasis">Memuat…</p>
-      </VCardText>
-    </VCard>
 
-    <VCard flat border rounded="lg">
-      <VCardText>
         <VProgressLinear v-if="loading" indeterminate color="primary" class="mb-4" />
-        <div v-if="!loading && templates.length === 0" class="text-center pa-12 text-medium-emphasis">
-          <VIcon size="56" class="mb-3" color="grey-lighten-1">bx-image-alt</VIcon>
-          <p class="text-subtitle-1">Belum ada print template</p>
-          <p class="text-caption">Klik "Tambah Print Template" untuk mulai.</p>
-        </div>
 
-        <div class="templates-grid">
+        <EmptyState
+          v-if="!loading && templates.length === 0"
+          icon="bx-image-alt"
+          title="Belum ada template cetak"
+          description="Mulai dari satu template foto biasa (mis. 4R), publikasikan, lalu lanjut ke langkah 2."
+        >
+          <VBtn color="primary" prepend-icon="bx-plus" @click="openCreate">Tambah Template</VBtn>
+        </EmptyState>
+
+        <div v-else class="templates-grid">
           <VCard v-for="t in templates" :key="t.id" :class="{ 'opacity-50': !t.is_active }" border flat class="template-card">
             <div class="template-thumb">
               <img v-if="t.current_version?.background_url" :src="t.current_version.background_url" :alt="t.label" style="width:100%;height:100%;object-fit:contain;" >
-              <div v-else class="d-flex align-center justify-center" style="height:100%;color:#bbb;"><VIcon size="40">bx bx-image</VIcon></div>
+              <div v-else class="d-flex align-center justify-center template-thumb__placeholder"><VIcon size="40">bx bx-image</VIcon></div>
               <VChip size="x-small" color="primary" style="position:absolute;top:6px;left:6px;">{{ t.paper_size }}</VChip>
               <VChip size="x-small" :color="statusOf(t).color" style="position:absolute;top:6px;right:6px;">{{ statusOf(t).text }}</VChip>
             </div>
@@ -179,53 +186,232 @@ onMounted(async () => { await fetchOutlets(); await fetchAll() })
                 </div>
               </div>
               <div class="text-caption text-medium-emphasis text-truncate">
-                <VIcon size="10">bx-store</VIcon> {{ outletNames(t) }}
+                {{ typeLabel(t) }} · {{ outletNames(t) }}
               </div>
             </VCardText>
             <VCardActions class="pa-2 pt-0 flex-wrap">
-              <VBtn size="small" variant="tonal" color="warning" prepend-icon="bx-edit-alt" class="text-none" @click="openEdit(t)">Edit</VBtn>
+              <VBtn size="small" variant="tonal" color="primary" prepend-icon="bx-edit-alt" class="text-none" @click="openEdit(t)">Edit</VBtn>
               <VBtn v-if="!t.is_global" size="small" variant="tonal" color="secondary" prepend-icon="bx-store" class="text-none" @click="openAssign(t)">Outlet</VBtn>
               <VSpacer />
-              <VBtn icon variant="text" size="small" @click="handleDelete(t)"><VIcon color="error">bx-trash-alt</VIcon></VBtn>
+              <VBtn icon variant="text" size="small" aria-label="Nonaktifkan template" @click="handleDelete(t)">
+                <VIcon color="error">bx-power-off</VIcon>
+                <VTooltip activator="parent" location="top">Nonaktifkan</VTooltip>
+              </VBtn>
             </VCardActions>
           </VCard>
         </div>
       </VCardText>
     </VCard>
 
+    <!-- ── Step 2 · per-outlet setup ───────────────────────────────────── -->
+    <VCard flat border rounded="lg">
+      <VCardText>
+        <div class="step-head">
+          <span class="step-head__num">2</span>
+          <div>
+            <p class="step-head__title">Pakai template di outlet</p>
+            <p class="step-head__desc">
+              Tiap kiosk memakai satu template foto biasa dan (opsional) satu template strip foto.
+              Hanya template berstatus <strong>Live</strong> dan ditugaskan ke outlet tersebut yang bisa dipilih.
+            </p>
+          </div>
+        </div>
+
+        <div v-if="outlets.length > 1" class="outlet-picker mb-6">
+          <button
+            v-for="o in outlets"
+            :key="o.id"
+            type="button"
+            class="outlet-picker__item"
+            :class="{ 'outlet-picker__item--active': o.id === selectedOutletId }"
+            @click="selectedOutletId = o.id"
+          >
+            {{ o.name }}
+          </button>
+        </div>
+
+        <EmptyState
+          v-if="!outlets.length"
+          icon="bx-store-alt"
+          title="Belum ada outlet kiosk"
+          description="Tandai sebuah outlet sebagai kiosk terlebih dahulu di halaman Outlets."
+        />
+        <EmptyState
+          v-else-if="!selectedOutletId"
+          icon="bx-store"
+          title="Pilih outlet"
+          description="Pilih outlet di atas untuk mengatur template cetak kiosk-nya."
+        />
+
+        <VProgressLinear v-else-if="settingLoading" indeterminate color="primary" />
+
+        <template v-else-if="currentSetting">
+          <SettingsCard
+            title="Cetak foto aktif di kiosk"
+            :description="`Kalau nonaktif, tombol cetak tidak muncul sama sekali di kiosk ${selectedOutletName}.`"
+          >
+            <VSwitch v-model="currentSetting.printing_enabled" color="success" hide-details />
+          </SettingsCard>
+
+          <InlineAlert v-if="!currentSetting.printing_enabled" tone="info" class="mt-4">
+            Cetak dimatikan untuk {{ selectedOutletName }} — pelanggan hanya bisa mengunduh foto digital.
+          </InlineAlert>
+
+          <template v-else>
+            <InlineAlert v-if="!primaryOptions.length" tone="warning" class="mt-4">
+              Belum ada template <strong>foto biasa</strong> yang Live untuk outlet ini. Publikasikan template
+              di langkah 1 dan tugaskan ke {{ selectedOutletName }} lewat tombol <strong>Outlet</strong>.
+            </InlineAlert>
+            <InlineAlert v-else-if="!currentSetting.default_template_id" tone="warning" class="mt-4">
+              Cetak aktif tapi belum ada template foto biasa yang dipilih — kiosk akan menolak pesanan cetak.
+            </InlineAlert>
+
+            <InlineAlert v-for="u in unpricedSelected" :key="u.slot" tone="warning" class="mt-4">
+              <strong>{{ u.tpl.label }}</strong> ({{ u.slot }}) belum punya harga per lembar, jadi kiosk
+              <strong>tidak akan menawarkan cetak sama sekali</strong> — meski template ini sudah Live dan dipilih.
+              Isi harganya lewat <strong>Edit</strong> di langkah 1.
+            </InlineAlert>
+
+            <FormSection title="Template yang dipakai">
+              <FormField
+                label="Cetak foto biasa"
+                helper="Dipakai saat pelanggan memesan cetak foto standar."
+              >
+                <template #default="{ id, describedBy }">
+                  <VSelect
+                    :id="id"
+                    v-model="currentSetting.default_template_id"
+                    :items="primaryOptions"
+                    :disabled="!primaryOptions.length"
+                    clearable
+                    placeholder="Pilih template"
+                    :aria-describedby="describedBy"
+                  />
+                </template>
+              </FormField>
+
+              <FormField
+                label="Cetak strip foto"
+                optional
+                :helper="secondaryOptions.length
+                  ? 'Kosongkan bila outlet ini tidak menjual strip foto — pilihan strip disembunyikan di kiosk.'
+                  : 'Belum ada template bertipe strip foto yang Live untuk outlet ini.'"
+              >
+                <template #default="{ id, describedBy }">
+                  <VSelect
+                    :id="id"
+                    v-model="currentSetting.secondary_template_id"
+                    :items="secondaryOptions"
+                    :disabled="!secondaryOptions.length"
+                    clearable
+                    placeholder="Tidak menjual strip foto"
+                    :aria-describedby="describedBy"
+                  />
+                </template>
+              </FormField>
+
+              <FormField
+                label="Maks. salinan per pesanan"
+                optional
+                width="num"
+                helper="Kosongkan untuk tanpa batas."
+              >
+                <template #default="{ id, describedBy }">
+                  <VTextField
+                    :id="id"
+                    v-model.number="currentSetting.max_copies_per_order"
+                    type="number"
+                    min="1"
+                    placeholder="cth: 5"
+                    :aria-describedby="describedBy"
+                  />
+                </template>
+              </FormField>
+            </FormSection>
+          </template>
+
+          <div class="d-flex justify-end mt-6">
+            <VBtn color="primary" :loading="settingSaving" prepend-icon="bx-save" @click="saveOutletSetting">
+              Simpan Pengaturan {{ selectedOutletName }}
+            </VBtn>
+          </div>
+        </template>
+      </VCardText>
+    </VCard>
+
     <PrintTemplateEditor v-model="editorOpen" :editing-template="editingTemplate" @saved="fetchAll" />
 
     <!-- Manage outlets dialog -->
-    <VDialog v-model="showAssign" max-width="420">
-      <VCard v-if="assigningTemplate" rounded="lg">
-        <VCardTitle class="d-flex align-center gap-2 pa-4 pb-2">
-          <VIcon color="primary">bx-store</VIcon> Kelola Outlet — {{ assigningTemplate.label }}
-        </VCardTitle>
-        <VDivider />
-        <VCardText class="pa-4">
+    <AppModal
+      v-model="showAssign"
+      title="Outlet yang Memakai Template Ini"
+      :description="assigningTemplate?.label"
+      size="sm"
+      confirm-text="Simpan"
+      cancel-text="Batal"
+      @confirm="saveAssign"
+    >
+      <FormField label="Outlet" helper="Template hanya bisa dipilih di langkah 2 untuk outlet yang tercentang di sini.">
+        <template #default="{ id, describedBy }">
           <VSelect
+            :id="id"
             v-model="assignSelection"
             :items="outlets.map(o => ({ title: o.name, value: o.id }))"
-            label="Outlet"
             multiple
             chips
-            density="compact"
-            variant="outlined"
+            :aria-describedby="describedBy"
           />
-        </VCardText>
-        <VCardActions class="pa-4 pt-0">
-          <VSpacer />
-          <VBtn variant="text" @click="showAssign = false">Batal</VBtn>
-          <VBtn color="primary" @click="saveAssign">Simpan</VBtn>
-        </VCardActions>
-      </VCard>
-    </VDialog>
+        </template>
+      </FormField>
+    </AppModal>
   </div>
 </template>
 
 <style scoped>
+.step-head { display: flex; gap: var(--sp-5); margin-bottom: var(--sp-7); }
+
+.step-head__num {
+  flex: 0 0 auto;
+  inline-size: 26px;
+  block-size: 26px;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-primary) / 10%);
+  color: rgb(var(--v-theme-primary));
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-head__title { font-size: var(--fs-md); font-weight: var(--fw-semibold); color: var(--text-primary); margin: 0; }
+.step-head__desc { font-size: var(--fs-sm); color: var(--text-tertiary); margin: var(--sp-1) 0 0; max-width: var(--measure); }
+
+.outlet-picker { display: flex; flex-wrap: wrap; gap: var(--sp-4); }
+
+.outlet-picker__item {
+  padding: var(--sp-3) var(--sp-6);
+  border-radius: var(--radius-md);
+  border: var(--border-default);
+  background: var(--n-0);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-in-out), color var(--dur-fast) var(--ease-in-out);
+}
+
+.outlet-picker__item:hover { border-color: var(--n-300); }
+
+.outlet-picker__item--active {
+  border-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-primary));
+  background: rgb(var(--v-theme-primary) / 6%);
+}
+
 .templates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
 .template-card { transition: box-shadow 0.2s; }
-.template-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.12); }
-.template-thumb { position: relative; background: #f5f5f5; height: 160px; overflow: hidden; }
+.template-card:hover { box-shadow: var(--shadow-md); }
+.template-thumb { position: relative; background: var(--n-50); height: 160px; overflow: hidden; }
+.template-thumb__placeholder { height: 100%; color: var(--text-tertiary); }
 </style>

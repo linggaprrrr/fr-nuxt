@@ -22,7 +22,8 @@ const iconFor: Record<string, string> = {
         :key="t.id"
         class="app-toast"
         :class="`app-toast--${t.color}`"
-        role="alert"
+        :role="t.color === 'error' || t.color === 'warning' ? 'alert' : 'status'"
+        :aria-live="t.color === 'error' || t.color === 'warning' ? 'assertive' : 'polite'"
       >
         <VIcon
           :icon="iconFor[t.color] || 'bx-info-circle'"

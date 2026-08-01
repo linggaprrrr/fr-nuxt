@@ -93,8 +93,6 @@ onMounted(() => { fetchOutlets(); fetchAll() })
           v-model="outletFilter"
           :items="[{ title: 'Semua Outlet', value: '' }, ...outlets.map(o => ({ title: o.name, value: o.id }))]"
           label="Filter Outlet"
-          density="compact"
-          variant="outlined"
           hide-details
           style="max-width:300px"
           @update:modelValue="fetchAll"
@@ -154,27 +152,22 @@ onMounted(() => { fetchOutlets(); fetchAll() })
     <TemplateFrameEditor v-model="editorOpen" :editing-template="editingTemplate" @save="handleEditorSave" />
 
     <!-- View dialog -->
-    <VDialog v-model="showView" max-width="560">
-      <VCard rounded="lg" v-if="viewTemplate">
-        <VCardTitle class="d-flex align-center gap-2 pa-4 pb-2">
-          <VIcon color="primary">bx-show</VIcon>
-          {{ viewTemplate.label }}
-          <VSpacer />
-          <VBtn icon variant="text" size="small" @click="showView = false"><VIcon>bx-x</VIcon></VBtn>
-        </VCardTitle>
-        <VDivider />
-        <VCardText class="pa-4 text-center">
-          <img :src="viewTemplate.src" :alt="viewTemplate.label"
-            style="max-width:100%;max-height:400px;object-fit:contain;border-radius:8px;border:1px solid #e5e7eb;" />
-          <div class="d-flex justify-center gap-2 mt-3">
-            <VChip size="small" color="primary">{{ viewTemplate.slot_count }} slot</VChip>
-            <VChip size="small" :color="viewTemplate.is_active ? 'success' : 'default'">
-              {{ viewTemplate.is_active ? 'Aktif' : 'Nonaktif' }}
-            </VChip>
-          </div>
-        </VCardText>
-      </VCard>
-    </VDialog>
+    <AppModal
+      v-model="showView"
+      :title="viewTemplate?.label"
+      size="md"
+      hide-footer
+    >
+      <div v-if="viewTemplate" class="text-center">
+        <img :src="viewTemplate.src" :alt="viewTemplate.label" class="view-template-img">
+        <div class="d-flex justify-center gap-2 mt-3">
+          <VChip size="small" color="primary">{{ viewTemplate.slot_count }} slot</VChip>
+          <VChip size="small" :color="viewTemplate.is_active ? 'success' : 'default'">
+            {{ viewTemplate.is_active ? 'Aktif' : 'Nonaktif' }}
+          </VChip>
+        </div>
+      </div>
+    </AppModal>
   </div>
 </template>
 
@@ -182,5 +175,6 @@ onMounted(() => { fetchOutlets(); fetchAll() })
 .templates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
 .template-card { transition: box-shadow 0.2s; }
 .template-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.12); }
-.template-thumb { position: relative; background: #f5f5f5; height: 160px; overflow: hidden; }
+.template-thumb { position: relative; background: var(--n-100); height: 160px; overflow: hidden; }
+.view-template-img { max-width: 100%; max-height: 400px; object-fit: contain; border-radius: var(--radius-md); border: var(--border-default); }
 </style>

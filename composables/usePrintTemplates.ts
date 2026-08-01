@@ -24,6 +24,9 @@ export interface PrintTemplate {
   id: string
   label: string
   paper_size: string
+  // 'primary' = normal photo layout, 'secondary' = photo strip. Which of the
+  // outlet's two print slots this template can fill.
+  print_type: 'primary' | 'secondary'
   is_global: boolean
   is_active: boolean
   current_version: PrintTemplateVersion | null

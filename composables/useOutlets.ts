@@ -66,12 +66,63 @@ export const useOutlets = () => {
 
 
 
+    // Kiosk branding. Multipart because banner/background are file uploads;
+    // an omitted file means "keep", so removing one needs the clear_* flag
+    // rather than sending an empty part.
+    const getOutletBranding = async (id: string) => {
+        const response = await authFetch(`outlets/${id}/branding`)
+        return response
+    }
+
+    const updateOutletBranding = async (
+        id: string,
+        { primaryColor, banner, background, clearBanner, clearBackground, bannerCtaPosition, bannerCtaLabel, disabledTools }: {
+            primaryColor?: string | null
+            banner?: File | null
+            background?: File | null
+            clearBanner?: boolean
+            clearBackground?: boolean
+            bannerCtaPosition?: string
+            bannerCtaLabel?: string
+            disabledTools?: string[]
+        }
+    ) => {
+        const form = new FormData()
+        if (primaryColor !== undefined) form.append('primary_color', primaryColor ?? '')
+        if (banner) form.append('banner', banner)
+        if (background) form.append('background', background)
+        if (clearBanner) form.append('clear_banner', 'true')
+        if (clearBackground) form.append('clear_background', 'true')
+        if (bannerCtaPosition !== undefined) form.append('banner_cta_position', bannerCtaPosition)
+        if (bannerCtaLabel !== undefined) form.append('banner_cta_label', bannerCtaLabel)
+        if (disabledTools !== undefined) form.append('disabled_editor_tools', JSON.stringify(disabledTools))
+
+        const response = await authFetch(`outlets/${id}/branding`, {
+            method: 'PUT',
+            body: form
+        })
+        return response
+    }
+
+    // Write-only: the backend hashes it and no endpoint reads it back, so a
+    // forgotten kiosk PIN is reset here, never recovered.
+    const setOutletSettingsPin = async (id: string, pin: string) => {
+        const response = await authFetch(`outlets/${id}/settings-pin`, {
+            method: 'PUT',
+            body: { pin }
+        })
+        return response
+    }
+
     return {
       getOutlets,
       createOutlet,
       deleteOutletById,
       getOutletById,
       getOutletsByUnit,
-      updateOutletById
+      updateOutletById,
+      getOutletBranding,
+      updateOutletBranding,
+      setOutletSettingsPin
     }
   }

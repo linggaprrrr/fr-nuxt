@@ -1,4 +1,60 @@
 
+export interface BusinessOverview {
+  period_days: number
+  funnel: {
+    scans: number
+    scans_with_matches: number
+    paid_transactions: number
+    match_rate_pct: number | null
+    conversion_pct: number | null
+  }
+  revenue: number
+  revenue_prev: number
+  revenue_delta_pct: number | null
+  transactions: number
+  transactions_prev: number
+  transactions_delta_pct: number | null
+  photos_sold: number
+  avg_basket: number
+  revenue_per_photo: number
+  mix: { kind: string, revenue: number, transactions: number }[]
+  leaderboard: {
+    outlet_id: string
+    outlet_name: string
+    revenue: number
+    transactions: number
+    photos: number
+    avg_basket: number
+  }[]
+}
+
+export interface TodayOutlet {
+  outlet_id: string
+  outlet_name: string
+  revenue: number
+  transactions: number
+  last_transaction_at: string | null
+}
+
+export interface TodaySnapshot {
+  revenue_today: number
+  revenue_yesterday: number
+  // null = no basis to compare (nothing yesterday), which the UI must show as
+  // an em dash rather than 0%.
+  revenue_delta_pct: number | null
+  transactions_today: number
+  transactions_yesterday: number
+  transactions_delta_pct: number | null
+  outlets: TodayOutlet[]
+}
+
+export interface OperationalAlert {
+  kind: 'kiosk_offline' | 'printer_down' | 'media_low' | 'print_failed' | 'txn_stuck'
+  severity: 'high' | 'medium' | 'low'
+  outlet_name: string | null
+  message: string
+}
+
 interface TransactionReport {
   tanggal: string // YYYY-MM-DD
   unit: string
@@ -178,6 +234,20 @@ export function useReports() {
     return data
   }
 
+  // Operational alerts for the dashboard strip. Kept separate from the stats
+  // call so a slow/failed stats query never hides "a kiosk is offline".
+  const getOperationalAlerts = async (): Promise<{ data: OperationalAlert[], count: number }> => {
+    return await authFetch(`/statistics/alerts`, { method: 'GET' })
+  }
+
+  const getBusinessOverview = async (days = 30): Promise<BusinessOverview> => {
+    return await authFetch(`/statistics/business?days=${days}`, { method: 'GET' })
+  }
+
+  const getTodaySnapshot = async (): Promise<TodaySnapshot> => {
+    return await authFetch(`/statistics/today`, { method: 'GET' })
+  }
+
   const getDasboardStatistcs = async (): Promise<ReportResponse | null>  => {
     const data = await authFetch<ReportResponse>(`/statistics/`, {      
       method: 'GET'        
@@ -213,6 +283,9 @@ export function useReports() {
   
 
   return {    
+    getOperationalAlerts,
+    getTodaySnapshot,
+    getBusinessOverview,
     getDasboardStatistcs,
     getTransactionsReport,
     getAllUnitReports,

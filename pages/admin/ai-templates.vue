@@ -181,6 +181,13 @@ const outletItems = computed(() => [
   ...outlets.value.map(o => ({ title: o.name, value: o.id })),
 ])
 
+const MAX_PERSONS_ITEMS = [
+  { title: 'Tidak ada batasan', value: null },
+  { title: '1 orang', value: 1 },
+  { title: '2 orang', value: 2 },
+  { title: '3+ orang', value: 3 },
+]
+
 // ── View (before/after preview) ──────────────────────────────────────────────
 const showView = ref(false)
 const viewTpl  = ref<any>(null)
@@ -219,8 +226,6 @@ onMounted(() => { fetchOutlets(); fetchAll() })
                 v-model="outletFilter"
                 :items="outletItems"
                 label="Filter Outlet"
-                density="compact"
-                variant="outlined"
                 hide-details
                 style="max-width:260px"
                 @update:modelValue="fetchAll"
@@ -333,7 +338,6 @@ onMounted(() => { fetchOutlets(); fetchAll() })
                       v-model="tryTemplateId"
                       :items="templateItems"
                       label="Template"
-                      variant="outlined"
                       density="comfortable"
                       hide-details
                     />
@@ -353,7 +357,6 @@ onMounted(() => { fetchOutlets(); fetchAll() })
                     <VTextarea
                       v-model="tryCustomPrompt"
                       label="Prompt AI"
-                      variant="outlined"
                       rows="5"
                       hint="Prompt ini dikirim langsung ke Gemini tanpa disimpan"
                       persistent-hint
@@ -464,209 +467,223 @@ onMounted(() => { fetchOutlets(); fetchAll() })
     </VTabsWindow>
 
     <!-- Create dialog -->
-    <VDialog v-model="showCreate" max-width="580" persistent>
-      <VCard rounded="lg">
-        <VCardTitle class="d-flex align-center gap-2 pa-4 pb-2">
-          <VIcon color="primary">bx-bot</VIcon>
-          Tambah AI Template
-          <VSpacer />
-          <VBtn icon variant="text" size="small" @click="showCreate = false; resetCreateForm()">
-            <VIcon>bx-x</VIcon>
-          </VBtn>
-        </VCardTitle>
-        <VDivider />
-        <VCardText class="pa-4 d-flex flex-column gap-4">
-          <VTextField v-model="createLabel" label="Label *" density="compact" variant="outlined" />
-          <VTextarea v-model="createPrompt" label="Prompt AI *" density="compact" variant="outlined" rows="4" hint="Prompt ini dikirim ke Gemini saat kiosk menerapkan template" persistent-hint />
+    <AppModal
+      v-model="showCreate"
+      title="Tambah AI Template"
+      size="md"
+      persistent
+      :loading="isSubmitting"
+      confirm-text="Simpan"
+      cancel-text="Batal"
+      :confirm-disabled="!createLabel || !createPrompt"
+      @confirm="handleCreate"
+      @cancel="resetCreateForm"
+    >
+      <FormSection title="Detail Template">
+        <FormField label="Label">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="createLabel" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Prompt AI" helper="Prompt ini dikirim ke Gemini saat kiosk menerapkan template">
+          <template #default="{ id, describedBy }">
+            <VTextarea :id="id" v-model="createPrompt" rows="4" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
 
-          <div class="d-flex gap-3">
-            <div class="flex-1">
-              <p class="text-caption font-weight-bold mb-1">Gambar Before (contoh)</p>
-              <div class="drop-zone" @click="beforeFileInput?.click()">
-                <img v-if="beforePreviewUrl" :src="beforePreviewUrl" class="drop-preview" />
-                <template v-else>
-                  <VIcon size="28" color="primary">bx-image-add</VIcon>
-                  <p class="text-caption mt-1">Klik upload</p>
-                </template>
-              </div>
-              <input ref="beforeFileInput" type="file" accept="image/*" style="display:none"
-                @change="e => beforeFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
+      <FormSection title="Contoh Gambar" subtitle="Opsional — ditampilkan sebagai preview before/after.">
+        <div class="d-flex gap-3">
+          <div class="flex-1">
+            <p class="text-caption font-weight-bold mb-1">Gambar Before</p>
+            <div class="drop-zone" @click="beforeFileInput?.click()">
+              <img v-if="beforePreviewUrl" :src="beforePreviewUrl" class="drop-preview" />
+              <template v-else>
+                <VIcon size="28" color="primary">bx-image-add</VIcon>
+                <p class="text-caption mt-1">Klik upload</p>
+              </template>
             </div>
-            <div class="flex-1">
-              <p class="text-caption font-weight-bold mb-1">Gambar After (contoh)</p>
-              <div class="drop-zone" @click="afterFileInput?.click()">
-                <img v-if="afterPreviewUrl" :src="afterPreviewUrl" class="drop-preview" />
-                <template v-else>
-                  <VIcon size="28" color="primary">bx-image-add</VIcon>
-                  <p class="text-caption mt-1">Klik upload</p>
-                </template>
-              </div>
-              <input ref="afterFileInput" type="file" accept="image/*" style="display:none"
-                @change="e => afterFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
-            </div>
+            <input ref="beforeFileInput" type="file" accept="image/*" style="display:none"
+              @change="e => beforeFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
           </div>
+          <div class="flex-1">
+            <p class="text-caption font-weight-bold mb-1">Gambar After</p>
+            <div class="drop-zone" @click="afterFileInput?.click()">
+              <img v-if="afterPreviewUrl" :src="afterPreviewUrl" class="drop-preview" />
+              <template v-else>
+                <VIcon size="28" color="primary">bx-image-add</VIcon>
+                <p class="text-caption mt-1">Klik upload</p>
+              </template>
+            </div>
+            <input ref="afterFileInput" type="file" accept="image/*" style="display:none"
+              @change="e => afterFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
+          </div>
+        </div>
+      </FormSection>
 
-          <VSelect
-            v-model="createMaxPersons"
-            :items="[{ title: 'Tidak ada batasan', value: null }, { title: '1 orang', value: 1 }, { title: '2 orang', value: 2 }, { title: '3+ orang', value: 3 }]"
-            label="Untuk berapa orang?"
-            density="compact"
-            variant="outlined"
-            hint="Kiosk akan menampilkan peringatan jika foto mengandung lebih banyak wajah dari batas ini"
-            persistent-hint
-          />
-          <VSelect v-model="createOutlet" :items="outletItems" label="Outlet" density="compact" variant="outlined" hint="Kosongkan agar muncul di semua outlet (global)" persistent-hint />
-        </VCardText>
-        <VDivider />
-        <VCardActions class="pa-4">
-          <VSpacer />
-          <VBtn variant="text" :disabled="isSubmitting" @click="showCreate = false; resetCreateForm()">Batal</VBtn>
-          <VBtn color="primary" variant="elevated" :loading="isSubmitting" :disabled="!createLabel || !createPrompt" @click="handleCreate">Simpan</VBtn>
-        </VCardActions>
-      </VCard>
-    </VDialog>
+      <FormSection title="Pengaturan">
+        <FormField
+          label="Untuk berapa orang?"
+          optional
+          helper="Kiosk akan menampilkan peringatan jika foto mengandung lebih banyak wajah dari batas ini"
+        >
+          <template #default="{ id, describedBy }">
+            <VSelect :id="id" v-model="createMaxPersons" :items="MAX_PERSONS_ITEMS" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Outlet" optional helper="Kosongkan agar muncul di semua outlet (global)">
+          <template #default="{ id, describedBy }">
+            <VSelect :id="id" v-model="createOutlet" :items="outletItems" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
+    </AppModal>
 
     <!-- Edit dialog -->
-    <VDialog v-model="showEdit" max-width="580">
-      <VCard rounded="lg">
-        <VCardTitle class="d-flex align-center gap-2 pa-4 pb-2">
-          <VIcon color="warning">bx-edit-alt</VIcon>
-          Edit AI Template
-          <VSpacer />
-          <VBtn icon variant="text" size="small" @click="showEdit = false"><VIcon>bx-x</VIcon></VBtn>
-        </VCardTitle>
-        <VDivider />
-        <VCardText class="pa-4 d-flex flex-column gap-4">
-          <VTextField v-model="editForm.label" label="Label *" density="compact" variant="outlined" />
-          <VTextarea v-model="editForm.prompt" label="Prompt AI *" density="compact" variant="outlined" rows="4" />
+    <AppModal
+      v-model="showEdit"
+      title="Edit AI Template"
+      size="md"
+      :loading="isSubmitting"
+      confirm-text="Update"
+      cancel-text="Batal"
+      @confirm="handleUpdate"
+    >
+      <FormSection title="Detail Template">
+        <FormField label="Label">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="editForm.label" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Prompt AI">
+          <template #default="{ id, describedBy }">
+            <VTextarea :id="id" v-model="editForm.prompt" rows="4" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
 
-          <div class="d-flex gap-3">
-            <div class="flex-1">
-              <p class="text-caption font-weight-bold mb-1">Ganti Gambar Before (opsional)</p>
-              <div class="drop-zone drop-zone-sm" @click="editBeforeFileInput?.click()">
-                <img v-if="editBeforeFile" :src="URL.createObjectURL(editBeforeFile)" class="drop-preview" />
-                <template v-else>
-                  <VIcon size="22" color="grey">bx-image-add</VIcon>
-                  <p class="text-caption">Ganti</p>
-                </template>
-              </div>
-              <input ref="editBeforeFileInput" type="file" accept="image/*" style="display:none"
-                @change="e => editBeforeFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
+      <FormSection title="Contoh Gambar" subtitle="Opsional — biarkan kosong untuk mempertahankan gambar saat ini.">
+        <div class="d-flex gap-3">
+          <div class="flex-1">
+            <p class="text-caption font-weight-bold mb-1">Ganti Gambar Before</p>
+            <div class="drop-zone drop-zone-sm" @click="editBeforeFileInput?.click()">
+              <img v-if="editBeforeFile" :src="URL.createObjectURL(editBeforeFile)" class="drop-preview" />
+              <template v-else>
+                <VIcon size="22" color="grey">bx-image-add</VIcon>
+                <p class="text-caption">Ganti</p>
+              </template>
             </div>
-            <div class="flex-1">
-              <p class="text-caption font-weight-bold mb-1">Ganti Gambar After (opsional)</p>
-              <div class="drop-zone drop-zone-sm" @click="editAfterFileInput?.click()">
-                <img v-if="editAfterFile" :src="URL.createObjectURL(editAfterFile)" class="drop-preview" />
-                <template v-else>
-                  <VIcon size="22" color="grey">bx-image-add</VIcon>
-                  <p class="text-caption">Ganti</p>
-                </template>
-              </div>
-              <input ref="editAfterFileInput" type="file" accept="image/*" style="display:none"
-                @change="e => editAfterFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
-            </div>
+            <input ref="editBeforeFileInput" type="file" accept="image/*" style="display:none"
+              @change="e => editBeforeFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
           </div>
-
-          <VSelect
-            v-model="editForm.max_persons"
-            :items="[{ title: 'Tidak ada batasan', value: null }, { title: '1 orang', value: 1 }, { title: '2 orang', value: 2 }, { title: '3+ orang', value: 3 }]"
-            label="Untuk berapa orang?"
-            density="compact"
-            variant="outlined"
-            hint="Kiosk akan menampilkan peringatan jika foto mengandung lebih banyak wajah dari batas ini"
-            persistent-hint
-          />
-          <VSelect v-model="editForm.outlet_id" :items="outletItems" label="Outlet" density="compact" variant="outlined" />
-
-          <div class="d-flex align-center justify-space-between pa-3 rounded-lg" style="background:#f9f9f9;border:1px solid #eee;">
-            <div>
-              <p class="text-body-2 font-weight-medium">Status Aktif</p>
-              <p class="text-caption text-medium-emphasis">Nonaktif = tidak muncul di kiosk</p>
+          <div class="flex-1">
+            <p class="text-caption font-weight-bold mb-1">Ganti Gambar After</p>
+            <div class="drop-zone drop-zone-sm" @click="editAfterFileInput?.click()">
+              <img v-if="editAfterFile" :src="URL.createObjectURL(editAfterFile)" class="drop-preview" />
+              <template v-else>
+                <VIcon size="22" color="grey">bx-image-add</VIcon>
+                <p class="text-caption">Ganti</p>
+              </template>
             </div>
-            <VSwitch v-model="editForm.is_active" color="success" hide-details density="compact" />
+            <input ref="editAfterFileInput" type="file" accept="image/*" style="display:none"
+              @change="e => editAfterFile = (e.target as HTMLInputElement).files?.[0] ?? null" />
           </div>
-        </VCardText>
-        <VDivider />
-        <VCardActions class="pa-4">
-          <VSpacer />
-          <VBtn variant="text" :disabled="isSubmitting" @click="showEdit = false">Batal</VBtn>
-          <VBtn color="primary" variant="elevated" :loading="isSubmitting" @click="handleUpdate">Update</VBtn>
-        </VCardActions>
-      </VCard>
-    </VDialog>
+        </div>
+      </FormSection>
+
+      <FormSection title="Pengaturan">
+        <FormField
+          label="Untuk berapa orang?"
+          optional
+          helper="Kiosk akan menampilkan peringatan jika foto mengandung lebih banyak wajah dari batas ini"
+        >
+          <template #default="{ id, describedBy }">
+            <VSelect :id="id" v-model="editForm.max_persons" :items="MAX_PERSONS_ITEMS" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Outlet" optional>
+          <template #default="{ id, describedBy }">
+            <VSelect :id="id" v-model="editForm.outlet_id" :items="outletItems" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
+
+      <FormSection title="Status">
+        <SettingsCard title="Status Aktif" description="Nonaktif = tidak muncul di kiosk">
+          <VSwitch v-model="editForm.is_active" color="success" hide-details density="compact" />
+        </SettingsCard>
+      </FormSection>
+    </AppModal>
 
     <!-- View: before/after preview dialog -->
-    <VDialog v-model="showView" max-width="860">
-      <VCard rounded="lg" v-if="viewTpl">
-        <VCardTitle class="d-flex align-center gap-2 pa-4 pb-2">
-          <VIcon color="primary">bx-show</VIcon>
-          Contoh — {{ viewTpl.label }}
-          <VSpacer />
-          <VBtn icon variant="text" size="small" @click="showView = false"><VIcon>bx-x</VIcon></VBtn>
-        </VCardTitle>
-        <VDivider />
-        <VCardText class="pa-4">
-          <div v-if="viewTpl.before_url && viewTpl.after_url" class="before-after-wrap">
-            <!-- Before image -->
-            <div class="ba-side">
-              <p class="ba-label">Sebelum</p>
-              <img :src="viewTpl.before_url" alt="before" class="ba-img" />
-            </div>
-            <!-- After image -->
-            <div class="ba-side">
-              <p class="ba-label" style="color:rgb(var(--v-theme-primary))">Sesudah (AI)</p>
-              <img :src="viewTpl.after_url" alt="after" class="ba-img" />
-            </div>
+    <AppModal
+      v-model="showView"
+      title="Contoh"
+      :description="viewTpl?.label"
+      size="lg"
+      hide-footer
+    >
+      <template v-if="viewTpl">
+        <div v-if="viewTpl.before_url && viewTpl.after_url" class="before-after-wrap">
+          <!-- Before image -->
+          <div class="ba-side">
+            <p class="ba-label">Sebelum</p>
+            <img :src="viewTpl.before_url" alt="before" class="ba-img" />
           </div>
-          <div v-else-if="viewTpl.after_url" class="text-center">
-            <p class="text-caption text-medium-emphasis mb-3">Hanya tersedia contoh hasil (after)</p>
-            <img :src="viewTpl.after_url" alt="after" style="max-height:360px;object-fit:contain;border-radius:8px;" />
+          <!-- After image -->
+          <div class="ba-side">
+            <p class="ba-label" style="color:rgb(var(--v-theme-primary))">Sesudah (AI)</p>
+            <img :src="viewTpl.after_url" alt="after" class="ba-img" />
           </div>
-          <div v-else class="text-center pa-8 text-medium-emphasis">
-            <VIcon size="48" color="grey-lighten-1">bx-image-alt</VIcon>
-            <p class="mt-2">Belum ada gambar contoh untuk template ini.</p>
-          </div>
-        </VCardText>
-      </VCard>
-    </VDialog>
+        </div>
+        <div v-else-if="viewTpl.after_url" class="text-center">
+          <p class="text-caption text-medium-emphasis mb-3">Hanya tersedia contoh hasil (after)</p>
+          <img :src="viewTpl.after_url" alt="after" style="max-height:360px;object-fit:contain;border-radius:8px;" />
+        </div>
+        <div v-else class="text-center pa-8 text-medium-emphasis">
+          <VIcon size="48" color="grey-lighten-1">bx-image-alt</VIcon>
+          <p class="mt-2">Belum ada gambar contoh untuk template ini.</p>
+        </div>
+      </template>
+    </AppModal>
   </div>
 </template>
 
 <style scoped>
 .before-after-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .ba-side { display: flex; flex-direction: column; gap: 6px; }
-.ba-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #888; margin: 0; }
-.ba-img { width: 100%; height: 280px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb; }
+.ba-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-tertiary); margin: 0; }
+.ba-img { width: 100%; height: 280px; object-fit: cover; border-radius: 8px; border: var(--border-default); }
 .tpl-list { display: flex; flex-direction: column; gap: 6px; }
-.tpl-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1.5px solid #e5e7eb; border-radius: 10px; background: #fff; transition: box-shadow 0.15s, border-color 0.15s; user-select: none; }
+.tpl-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1.5px solid var(--n-200); border-radius: 10px; background: var(--n-0); transition: box-shadow 0.15s, border-color 0.15s; user-select: none; }
 .tpl-row:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
 .tpl-row-inactive { opacity: 0.5; }
 .tpl-row-dragging { opacity: 0.4; border-style: dashed; }
-.tpl-row-over { border-color: #4f46e5; box-shadow: 0 0 0 2px #c7d2fe; }
+.tpl-row-over { border-color: rgb(var(--v-theme-primary)); box-shadow: 0 0 0 2px rgb(var(--v-theme-primary) / 20%); }
 .drag-handle { cursor: grab; flex-shrink: 0; }
 .drag-handle:active { cursor: grabbing; }
-.tpl-thumb { width: 48px; height: 48px; border-radius: 6px; overflow: hidden; background: #000; flex-shrink: 0; }
+.tpl-thumb { width: 48px; height: 48px; border-radius: 6px; overflow: hidden; background: var(--n-900); flex-shrink: 0; }
 .tpl-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.tpl-thumb-empty { width: 100%; height: 100%; background: #e5e7eb; }
+.tpl-thumb-empty { width: 100%; height: 100%; background: var(--n-200); }
 .tpl-meta { min-width: 0; }
 .tpl-label { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.drop-zone { min-height: 100px; border: 2px dashed #c7d2fe; border-radius: 10px; background: #f5f3ff; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, border-color 0.2s; padding: 12px; text-align: center; overflow: hidden; }
-.drop-zone:hover { background: #ede9fe; border-color: #818cf8; }
+.drop-zone { min-height: 100px; border: 2px dashed rgb(var(--v-theme-primary) / 35%); border-radius: 10px; background: rgb(var(--v-theme-primary) / 5%); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, border-color 0.2s; padding: 12px; text-align: center; overflow: hidden; }
+.drop-zone:hover { background: rgb(var(--v-theme-primary) / 10%); border-color: rgb(var(--v-theme-primary) / 50%); }
 .drop-zone-sm { min-height: 72px; }
 .drop-preview { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
 /* Mode toggle */
-.mode-toggle { display: flex; border: 1.5px solid #e0e0e0; border-radius: 10px; overflow: hidden; }
-.mode-btn { flex: 1; padding: 8px 12px; font-size: 13px; font-weight: 500; background: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(0,0,0,.6); transition: background 0.15s, color 0.15s; }
-.mode-btn + .mode-btn { border-left: 1.5px solid #e0e0e0; }
-.mode-btn.active { background: #1b5782; color: #fff; }
-.mode-btn:not(.active):hover { background: #f5f5f5; }
+.mode-toggle { display: flex; border: 1.5px solid var(--n-200); border-radius: 10px; overflow: hidden; }
+.mode-btn { flex: 1; padding: 8px 12px; font-size: 13px; font-weight: 500; background: var(--n-0); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(0,0,0,.6); transition: background 0.15s, color 0.15s; }
+.mode-btn + .mode-btn { border-left: 1.5px solid var(--n-200); }
+.mode-btn.active { background: rgb(var(--v-theme-primary)); color: var(--n-0); }
+.mode-btn:not(.active):hover { background: var(--n-50); }
 /* Try Prompt */
-.try-drop-zone { min-height: 200px; border: 2px dashed #c7d2fe; border-radius: 12px; background: #f5f3ff; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, border-color 0.2s; overflow: hidden; }
-.try-drop-zone:hover { background: #ede9fe; border-color: #818cf8; }
+.try-drop-zone { min-height: 200px; border: 2px dashed rgb(var(--v-theme-primary) / 35%); border-radius: 12px; background: rgb(var(--v-theme-primary) / 5%); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, border-color 0.2s; overflow: hidden; }
+.try-drop-zone:hover { background: rgb(var(--v-theme-primary) / 10%); border-color: rgb(var(--v-theme-primary) / 50%); }
 .try-drop-zone.has-image { min-height: unset; background: transparent; border-style: solid; }
 .try-preview { width: 100%; height: auto; display: block; }
 .result-wrap { width: 100%; }
-.result-img { width: 100%; max-height: 420px; object-fit: contain; border-radius: 8px; border: 1px solid #eee; display: block; }
+.result-img { width: 100%; max-height: 420px; object-fit: contain; border-radius: 8px; border: var(--border-subtle); display: block; }
 .sample-wrap { max-width: 160px; }
-.sample-img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid #eee; display: block; }
+.sample-img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; border: var(--border-subtle); display: block; }
 </style>

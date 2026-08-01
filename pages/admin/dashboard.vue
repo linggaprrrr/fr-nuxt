@@ -52,6 +52,11 @@ definePageMeta({ layout: 'default' })
   <div>
     <PageHeader title="Dashboard" subtitle="Ringkasan pendapatan dan transaksi." />
 
+    <!-- Above the revenue tiles on purpose: a kiosk that is down costs more
+         than any number below it is worth reading. Renders nothing when the
+         fleet is healthy. -->
+    <OperationalAlerts />
+
     <!-- Revenue stats -->
     <VRow>
       <VCol v-for="card in revenueCards" :key="card.title" cols="12" sm="6" lg="3">
@@ -65,6 +70,10 @@ definePageMeta({ layout: 'default' })
         <StatCard :title="card.title" :value="card.value" :icon="card.icon" :color="card.color" />
       </VCol>
     </VRow>
+
+    <!-- Direction, not just totals: the tiles above say how much, this says
+         whether that is up or down and which outlets are trading. -->
+    <TodaySnapshot />
 
     <!-- Charts -->
     <VRow class="mt-1">

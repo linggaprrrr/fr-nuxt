@@ -1,7 +1,12 @@
 export interface OutletPrintSetting {
   outlet_id: string
   printing_enabled: boolean
+  // default_template_id = the Primary print (normal photo layout);
+  // secondary_template_id = the Secondary print (photo strip). Null secondary
+  // means the kiosk hides the strip option entirely rather than offering
+  // something it can't fulfil. Send an explicit null to withdraw it.
   default_template_id: string | null
+  secondary_template_id: string | null
   print_price: number | null
   max_copies_per_order: number | null
 }

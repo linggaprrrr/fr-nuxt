@@ -275,45 +275,60 @@ onMounted(() => {
       @confirm="submitCreate"
     >
       <FormSection title="Event">
-        <VCol cols="12" md="6">
-          <VTextField v-model="createForm.event_name" label="Event Name" />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VSelect
-            v-model="createForm.unit_id"
-            :items="units"
-            item-title="name"
-            item-value="id"
-            label="Unit (optional)"
-            hint="Leave empty to allow at any unit"
-            persistent-hint
-            clearable
-          />
-        </VCol>
+        <VRow dense>
+          <VCol cols="12" md="6">
+            <FormField label="Event Name">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="createForm.event_name" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+          <VCol cols="12" md="6">
+            <FormField label="Unit" optional helper="Leave empty to allow at any unit">
+              <template #default="{ id, describedBy }">
+                <VSelect
+                  :id="id"
+                  v-model="createForm.unit_id"
+                  :items="units"
+                  item-title="name"
+                  item-value="id"
+                  clearable
+                  :aria-describedby="describedBy"
+                />
+              </template>
+            </FormField>
+          </VCol>
+        </VRow>
       </FormSection>
 
       <FormSection title="Ticket Codes">
-        <VCol cols="12">
-          <VTextarea
-            v-model="createForm.ticket_codes_raw"
-            label="Paste ticket codes, one per line"
-            rows="6"
-            :hint="`${parsedCodeCount} code(s) detected`"
-            persistent-hint
-          />
-        </VCol>
+        <FormField label="Paste ticket codes, one per line" :helper="`${parsedCodeCount} code(s) detected`">
+          <template #default="{ id, describedBy }">
+            <VTextarea :id="id" v-model="createForm.ticket_codes_raw" rows="6" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
       </FormSection>
 
       <FormSection title="Validity Window (optional)">
-        <VCol cols="12" md="6">
-          <VTextField v-model="createForm.valid_from" label="Valid From" type="datetime-local" />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField v-model="createForm.valid_until" label="Valid Until" type="datetime-local" />
-        </VCol>
-        <VCol cols="12">
-          <VSwitch v-model="createForm.is_active" label="Active" color="primary" />
-        </VCol>
+        <VRow dense>
+          <VCol cols="12" md="6">
+            <FormField label="Valid From">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="createForm.valid_from" type="datetime-local" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+          <VCol cols="12" md="6">
+            <FormField label="Valid Until">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="createForm.valid_until" type="datetime-local" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+        </VRow>
+        <SettingsCard title="Active">
+          <VSwitch v-model="createForm.is_active" color="primary" hide-details />
+        </SettingsCard>
       </FormSection>
     </AppModal>
 
@@ -328,34 +343,57 @@ onMounted(() => {
       @confirm="submitEdit"
     >
       <FormSection title="Details">
-        <VCol cols="12">
-          <VTextField :model-value="editForm.ticket_code" label="Ticket Code" readonly disabled />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField v-model="editForm.event_name" label="Event Name" />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VSelect
-            v-model="editForm.unit_id"
-            :items="units"
-            item-title="name"
-            item-value="id"
-            label="Unit (optional)"
-            clearable
-          />
-        </VCol>
+        <FormField label="Ticket Code">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" :model-value="editForm.ticket_code" readonly disabled :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <VRow dense>
+          <VCol cols="12" md="6">
+            <FormField label="Event Name">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="editForm.event_name" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+          <VCol cols="12" md="6">
+            <FormField label="Unit" optional>
+              <template #default="{ id, describedBy }">
+                <VSelect
+                  :id="id"
+                  v-model="editForm.unit_id"
+                  :items="units"
+                  item-title="name"
+                  item-value="id"
+                  clearable
+                  :aria-describedby="describedBy"
+                />
+              </template>
+            </FormField>
+          </VCol>
+        </VRow>
       </FormSection>
 
       <FormSection title="Validity Window">
-        <VCol cols="12" md="6">
-          <VTextField v-model="editForm.valid_from" label="Valid From" type="datetime-local" />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField v-model="editForm.valid_until" label="Valid Until" type="datetime-local" />
-        </VCol>
-        <VCol cols="12">
-          <VSwitch v-model="editForm.is_active" label="Active" color="primary" />
-        </VCol>
+        <VRow dense>
+          <VCol cols="12" md="6">
+            <FormField label="Valid From">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="editForm.valid_from" type="datetime-local" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+          <VCol cols="12" md="6">
+            <FormField label="Valid Until">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="editForm.valid_until" type="datetime-local" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+        </VRow>
+        <SettingsCard title="Active">
+          <VSwitch v-model="editForm.is_active" color="primary" hide-details />
+        </SettingsCard>
       </FormSection>
     </AppModal>
   </div>

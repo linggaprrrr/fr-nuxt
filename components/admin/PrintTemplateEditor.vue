@@ -34,6 +34,14 @@ const PAPER_SIZES = [
   { value: 'custom', title: 'Custom' },
 ]
 
+// Which of the outlet's two print products this template is. Nothing renders
+// differently — a strip is just N slots on a 2x6 canvas — but the outlet's
+// print settings has one slot per type, and checkout refuses a mismatch.
+const PRINT_TYPES = [
+  { value: 'primary', title: 'Primary — Cetak Foto (layout biasa)' },
+  { value: 'secondary', title: 'Secondary — Strip Foto' },
+]
+
 // Mirrors fr/app/routers/print_template.py's PAPER_SIZE_INCHES exactly — used
 // to size the canvas from paper size alone when there's no background image.
 const PAPER_SIZE_INCHES: Record<string, [number, number]> = {
@@ -65,6 +73,7 @@ const price       = ref<number | null>(null)  // per-print price (IDR) — paper
 const isGlobal    = ref(false)
 const outletIds   = ref<string[]>([])
 const paperSize   = ref('4R')
+const printType   = ref('primary')
 const orientation = ref<'portrait' | 'landscape'>('portrait')
 const dpi         = ref(300)
 const customW     = ref<number | null>(null)
@@ -168,6 +177,7 @@ function resetEditor() {
   isGlobal.value = false
   outletIds.value = []
   paperSize.value = '4R'
+  printType.value = 'primary'
   orientation.value = 'portrait'
   dpi.value = 300
   customW.value = null
@@ -229,6 +239,7 @@ function loadFromTemplate(t: any) {
   isGlobal.value = t.is_global ?? false
   outletIds.value = t.outlet_ids ?? []
   paperSize.value = t.paper_size ?? '4R'
+  printType.value = t.print_type ?? 'primary'
 
   const v = t.draft_version ?? t.current_version
   currentVersion.value = t.current_version ?? null
@@ -383,6 +394,7 @@ function buildForm(): FormData | null {
   const form = new FormData()
   form.append('label', label.value.trim())
   form.append('paper_size', paperSize.value)
+  form.append('print_type', printType.value)
   form.append('orientation', orientation.value)
   form.append('dpi', String(dpi.value))
   if (paperSize.value === 'custom') {
@@ -473,10 +485,10 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
 
 <template>
   <VDialog :model-value="modelValue" max-width="1600" :persistent="true" scrollable @update:model-value="close">
-    <VCard style="display: flex; flex-direction: column; max-height: 96vh;">
-      <VCardTitle class="d-flex align-center gap-3 pa-4 pb-2" style="flex-shrink: 0;">
+    <VCard class="editor-shell" style="display: flex; flex-direction: column; max-height: 96vh;">
+      <VCardTitle class="editor-shell__header d-flex align-center gap-3" style="flex-shrink: 0;">
         <VIcon color="primary">bx bx-image-alt</VIcon>
-        <span>{{ isEditMode ? 'Edit Print Template' : 'Tambah Print Template Baru' }}</span>
+        <span class="editor-shell__title">{{ isEditMode ? 'Edit Print Template' : 'Tambah Print Template Baru' }}</span>
         <VChip v-if="isEditMode" size="small" :color="currentVersion ? 'success' : 'default'">
           {{ currentVersion ? `Published v${currentVersion.version_number}` : 'Belum publish' }}
         </VChip>
@@ -484,7 +496,7 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
           Draft v{{ draftVersion.version_number }} belum dipublikasikan
         </VChip>
         <VSpacer />
-        <VBtn icon variant="text" @click="close"><VIcon>bx bx-x</VIcon></VBtn>
+        <VBtn icon variant="text" aria-label="Tutup" @click="close"><VIcon>bx bx-x</VIcon></VBtn>
       </VCardTitle>
 
       <VDivider />
@@ -545,18 +557,16 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
         <div class="pa-4 d-flex flex-column gap-4" style="width: 340px; flex-shrink: 0; overflow-y: auto;">
 
           <div>
-            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:#888;">Nama Template</p>
-            <VTextField v-model="label" density="compact" variant="outlined" placeholder="cth: 4R Standard" hide-details />
+            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:var(--text-tertiary);">Nama Template</p>
+            <VTextField v-model="label" placeholder="cth: 4R Standard" hide-details />
           </div>
 
           <div>
-            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:#888;">Harga per Cetak</p>
+            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:var(--text-tertiary);">Harga per Cetak</p>
             <VTextField
               v-model.number="price"
               type="number"
               prefix="Rp"
-              density="compact"
-              variant="outlined"
               placeholder="cth: 50000"
               hint="Harga dibayar pelanggan per lembar — beda ukuran kertas bisa beda harga"
               persistent-hint
@@ -564,42 +574,54 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
           </div>
 
           <div class="d-flex align-center justify-space-between">
-            <span class="text-caption font-weight-bold text-uppercase" style="color:#888;">Status Aktif</span>
+            <span class="text-caption font-weight-bold text-uppercase" style="color:var(--text-tertiary);">Status Aktif</span>
             <VSwitch v-model="isActive" color="success" hide-details density="compact" />
           </div>
 
           <VDivider />
 
           <div>
-            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:#888;">Ukuran Kertas</p>
-            <VSelect v-model="paperSize" :items="PAPER_SIZES" item-title="title" item-value="value" density="compact" variant="outlined" hide-details />
+            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:var(--text-tertiary);">Jenis Cetak</p>
+            <VSelect
+              v-model="printType"
+              :items="PRINT_TYPES"
+              item-title="title"
+              item-value="value"
+              hint="Menentukan slot mana yang bisa dipakai di Pengaturan Cetak per Outlet"
+              persistent-hint
+            />
+          </div>
+
+          <div>
+            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:var(--text-tertiary);">Ukuran Kertas</p>
+            <VSelect v-model="paperSize" :items="PAPER_SIZES" item-title="title" item-value="value" hide-details />
           </div>
           <div v-if="paperSize === 'custom'" class="d-flex gap-2">
-            <VTextField v-model.number="customW" type="number" label="Lebar (px)" density="compact" variant="outlined" hide-details />
-            <VTextField v-model.number="customH" type="number" label="Tinggi (px)" density="compact" variant="outlined" hide-details />
+            <VTextField v-model.number="customW" type="number" label="Lebar (px)" hide-details />
+            <VTextField v-model.number="customH" type="number" label="Tinggi (px)" hide-details />
           </div>
           <div class="d-flex gap-2">
             <VBtnToggle v-model="orientation" density="compact" color="primary" mandatory divided>
               <VBtn value="portrait" size="small">Portrait</VBtn>
               <VBtn value="landscape" size="small">Landscape</VBtn>
             </VBtnToggle>
-            <VTextField v-model.number="dpi" type="number" label="DPI" density="compact" variant="outlined" hide-details style="max-width:100px" />
+            <VTextField v-model.number="dpi" type="number" label="DPI" hide-details style="max-width:100px" />
           </div>
 
           <div>
-            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:#888;">Margin (px)</p>
+            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:var(--text-tertiary);">Margin (px)</p>
             <div class="d-flex gap-2 flex-wrap">
-              <VTextField v-model.number="margins.top" type="number" label="Atas" density="compact" variant="outlined" hide-details style="width:75px" />
-              <VTextField v-model.number="margins.right" type="number" label="Kanan" density="compact" variant="outlined" hide-details style="width:75px" />
-              <VTextField v-model.number="margins.bottom" type="number" label="Bawah" density="compact" variant="outlined" hide-details style="width:75px" />
-              <VTextField v-model.number="margins.left" type="number" label="Kiri" density="compact" variant="outlined" hide-details style="width:75px" />
+              <VTextField v-model.number="margins.top" type="number" label="Atas" hide-details style="width:75px" />
+              <VTextField v-model.number="margins.right" type="number" label="Kanan" hide-details style="width:75px" />
+              <VTextField v-model.number="margins.bottom" type="number" label="Bawah" hide-details style="width:75px" />
+              <VTextField v-model.number="margins.left" type="number" label="Kiri" hide-details style="width:75px" />
             </div>
           </div>
 
           <VDivider />
 
           <div>
-            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:#888;">Frame Overlay (opsional)</p>
+            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:var(--text-tertiary);">Frame Overlay (opsional)</p>
             <div class="small-upload d-flex align-center gap-2" @click="triggerFrameInput">
               <img v-if="frameUrl" :src="frameUrl" class="small-upload-thumb" >
               <VIcon v-else color="primary">bx bx-image-add</VIcon>
@@ -609,7 +631,7 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
           </div>
 
           <div>
-            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:#888;">Logo Outlet (opsional)</p>
+            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color:var(--text-tertiary);">Logo Outlet (opsional)</p>
             <div class="small-upload d-flex align-center gap-2" @click="triggerLogoInput">
               <img v-if="logoUrl" :src="logoUrl" class="small-upload-thumb" >
               <VIcon v-else color="primary">bx bx-image-add</VIcon>
@@ -621,8 +643,8 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
           <VDivider />
 
           <div>
-            <p class="text-caption font-weight-bold text-uppercase mb-2" style="color:#888;">Daftar Slot ({{ slots.length }})</p>
-            <div v-if="slots.length === 0" class="text-center pa-4 rounded-lg" style="background:#f9f9f9;border:1px dashed #ddd;">
+            <p class="text-caption font-weight-bold text-uppercase mb-2" style="color:var(--text-tertiary);">Daftar Slot ({{ slots.length }})</p>
+            <div v-if="slots.length === 0" class="text-center pa-4 rounded-lg" style="background:var(--n-50);border:1px dashed var(--n-300);">
               <VIcon color="grey-lighten-1" size="28">bx bx-layer</VIcon>
               <p class="text-caption text-medium-emphasis mt-1">Belum ada slot.</p>
             </div>
@@ -640,7 +662,7 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
 
           <div>
             <div class="d-flex align-center justify-space-between mb-1">
-              <span class="text-caption font-weight-bold text-uppercase" style="color:#888;">Global (semua outlet)</span>
+              <span class="text-caption font-weight-bold text-uppercase" style="color:var(--text-tertiary);">Global (semua outlet)</span>
               <VSwitch v-model="isGlobal" color="primary" hide-details density="compact" :disabled="isEditMode" />
             </div>
             <VSelect
@@ -650,8 +672,6 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
               label="Outlet"
               multiple
               chips
-              density="compact"
-              variant="outlined"
               :disabled="isEditMode"
               :hint="isEditMode ? 'Ubah assignment lewat tombol Kelola Outlet di daftar template' : 'Pilih satu atau lebih outlet'"
               persistent-hint
@@ -662,11 +682,11 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
 
           <div v-if="isEditMode">
             <div class="d-flex align-center justify-space-between mb-2">
-              <span class="text-caption font-weight-bold text-uppercase" style="color:#888;">Riwayat Versi</span>
+              <span class="text-caption font-weight-bold text-uppercase" style="color:var(--text-tertiary);">Riwayat Versi</span>
               <VBtn size="x-small" variant="text" @click="showVersions = !showVersions">{{ showVersions ? 'Sembunyikan' : 'Lihat' }}</VBtn>
             </div>
             <div v-if="showVersions" class="d-flex flex-column gap-1">
-              <div v-for="v in versions" :key="v.id" class="d-flex align-center justify-space-between px-2 py-1 rounded-lg" style="background:#f9f9f9;">
+              <div v-for="v in versions" :key="v.id" class="d-flex align-center justify-space-between px-2 py-1 rounded-lg" style="background:var(--n-50);">
                 <span class="text-caption">
                   v{{ v.version_number }}
                   <VChip v-if="v.id === currentVersion?.id" size="x-small" color="success" class="ml-1">live</VChip>
@@ -686,23 +706,32 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
         <VSpacer v-else />
         <VBtn variant="text" @click="close">Tutup</VBtn>
         <VBtn color="secondary" variant="tonal" :loading="isSubmitting" prepend-icon="bx bx-save" @click="handleSave">Simpan Draft</VBtn>
-        <VBtn v-if="isEditMode" color="primary" variant="elevated" :loading="isPublishing" prepend-icon="bx bx-upload" @click="handlePublish">Publikasikan</VBtn>
+        <VBtn v-if="isEditMode" color="primary" variant="flat" :loading="isPublishing" prepend-icon="bx bx-upload" @click="handlePublish">Publikasikan</VBtn>
       </VCardActions>
     </VCard>
   </VDialog>
 </template>
 
 <style scoped>
-.upload-zone { min-height: 260px; border: 2px dashed #c7d2fe; background: #f5f3ff; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
-.upload-zone:hover { background: #ede9fe; border-color: #818cf8; }
-.small-upload { padding: 8px; border: 1.5px dashed #ddd; border-radius: 8px; cursor: pointer; }
-.small-upload:hover { background: #f9f9f9; }
+/* Dialog shell — matches AppModal's visual language (radius/shadow/header
+   typography) without adopting its slot structure, which assumes a single
+   scrolling column and would break this two-pane canvas+sidebar layout. */
+.editor-shell { border-radius: var(--radius-xl) !important; box-shadow: var(--shadow-dialog) !important; }
+.editor-shell__header { padding: var(--sp-6) var(--sp-8) var(--sp-4) !important; }
+.editor-shell__title { font-size: var(--fs-lg); font-weight: var(--fw-semibold); color: var(--text-primary); }
+
+.upload-zone { min-height: 260px; border: 2px dashed var(--n-300); background: var(--n-50); cursor: pointer; transition: background 0.2s, border-color 0.2s; }
+.upload-zone:hover { background: var(--n-100); border-color: rgb(var(--v-theme-primary)); }
+.small-upload { padding: 8px; border: 1.5px dashed var(--n-300); border-radius: 8px; cursor: pointer; }
+.small-upload:hover { background: var(--n-50); }
 .small-upload-thumb { width: 32px; height: 32px; object-fit: contain; background: repeating-conic-gradient(#eee 0% 25%, #fff 0% 50%) 50% / 8px 8px; border-radius: 4px; }
-.canvas-scroll-wrapper { overflow: auto; flex: 1; min-height: 0; border: 1px solid #e5e7eb; border-radius: 8px; background: #fafafa; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.canvas-scroll-wrapper { overflow: auto; flex: 1; min-height: 0; border: 1px solid var(--n-200); border-radius: 8px; background: var(--n-50); box-shadow: var(--shadow-sm); }
 .canvas-container { position: relative; display: inline-block; cursor: default; user-select: none; overflow: visible; }
+/* Snap grid + slot styling below are functional canvas affordances (multi-slot
+   differentiation, drag handles) — not theme mistakes, deliberately untouched. */
 .snap-grid { position: absolute; inset: 0; background-image: linear-gradient(to right, rgba(99,102,241,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(99,102,241,0.08) 1px, transparent 1px); background-size: 2px 2px; pointer-events: none; z-index: 1; }
 .frame-image { display: block; max-width: 1100px; max-height: 860px; width: auto; height: auto; pointer-events: none; position: relative; z-index: 0; }
-.frame-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: #fafafa; border: 2px dashed #ddd; box-sizing: border-box; position: relative; z-index: 0; }
+.frame-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--n-50); border: 2px dashed var(--n-300); box-sizing: border-box; position: relative; z-index: 0; }
 .frame-overlay-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 15; }
 .slot-overlay { position: absolute; border: 2px dashed var(--slot-color, #4f46e5); background: rgba(79,70,229,0.12); border-radius: 4px; cursor: move; z-index: 10; touch-action: none; transition: background 0.1s; }
 .slot-overlay:hover { background: rgba(79,70,229,0.2); }
@@ -711,7 +740,7 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
 .slot-size-tip { position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.6); color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 3px; pointer-events: none; z-index: 20; white-space: nowrap; }
 .resize-handle { position: absolute; width: 10px; height: 10px; background: #fff; border: 2px solid var(--slot-color, #4f46e5); border-radius: 2px; z-index: 30; touch-action: none; }
 .slot-list-item { cursor: pointer; transition: background 0.15s; border: 1px solid transparent; }
-.slot-list-item:hover { background: #f5f5f5; }
+.slot-list-item:hover { background: var(--n-100); }
 .slot-list-selected { background: rgba(79,70,229,0.08); border-color: rgba(79,70,229,0.4) !important; }
 .slot-list-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--slot-color, #4f46e5); flex-shrink: 0; }
 </style>

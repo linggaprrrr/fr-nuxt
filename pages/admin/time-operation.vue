@@ -219,75 +219,109 @@ onMounted(() => { fetchUnits(); fetchTimeOperations() })
     <AppModal
       v-model="createDialog"
       title="Tambah Jam Operasional"
-      icon="bx-time-five"
       :loading="isSubmitting"
       confirm-text="Simpan"
       cancel-text="Batal"
       :confirm-disabled="!createForm.unit_id || !createForm.opening_time || !createForm.closing_time"
       @confirm="handleCreate"
     >
-      <VRow>
-        <VCol cols="12">
-          <VSelect
-            v-model="createForm.unit_id"
-            :items="availableUnits"
-            item-title="name"
-            item-value="id"
-            label="Unit"
-          >
-            <template #item="{ props, item }">
-              <VListItem v-bind="props">
-                <template #subtitle>{{ item.raw.location }}</template>
-              </VListItem>
-            </template>
-          </VSelect>
-        </VCol>
-        <VCol cols="6">
-          <VTextField v-model="createForm.opening_time" label="Jam Buka" type="time" />
-        </VCol>
-        <VCol cols="6">
-          <VTextField v-model="createForm.closing_time" label="Jam Tutup" type="time" />
-        </VCol>
-        <VCol cols="12">
-          <VTextarea v-model="createForm.notes" label="Catatan (opsional)" rows="2" />
-        </VCol>
-      </VRow>
+      <FormSection title="Jadwal">
+        <FormField label="Unit">
+          <template #default="{ id, describedBy }">
+            <VSelect
+              :id="id"
+              v-model="createForm.unit_id"
+              :items="availableUnits"
+              item-title="name"
+              item-value="id"
+              :aria-describedby="describedBy"
+            >
+              <template #item="{ props, item }">
+                <VListItem v-bind="props">
+                  <template #subtitle>{{ item.raw.location }}</template>
+                </VListItem>
+              </template>
+            </VSelect>
+          </template>
+        </FormField>
+
+        <VRow dense>
+          <VCol cols="6">
+            <FormField label="Jam Buka">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="createForm.opening_time" type="time" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+          <VCol cols="6">
+            <FormField label="Jam Tutup">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="createForm.closing_time" type="time" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+        </VRow>
+
+        <FormField label="Catatan" optional>
+          <template #default="{ id, describedBy }">
+            <VTextarea :id="id" v-model="createForm.notes" rows="2" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
     </AppModal>
 
     <!-- Edit modal -->
     <AppModal
       v-model="editDialog"
       title="Edit Jam Operasional"
-      icon="bx-edit-alt"
       :loading="isSubmitting"
       confirm-text="Update"
       cancel-text="Batal"
       @confirm="handleUpdate"
     >
-      <VRow>
-        <VCol cols="12">
-          <VTextField :model-value="editForm.unit_name" label="Unit" readonly />
-        </VCol>
-        <VCol cols="6">
-          <VTextField v-model="editForm.opening_time" label="Jam Buka" type="time" />
-        </VCol>
-        <VCol cols="6">
-          <VTextField v-model="editForm.closing_time" label="Jam Tutup" type="time" />
-        </VCol>
-        <VCol cols="12">
-          <VTextarea v-model="editForm.notes" label="Catatan (opsional)" rows="2" />
-        </VCol>
-        <VCol cols="12">
-          <VSwitch v-model="editForm.is_active" label="Aktif" color="primary" />
-        </VCol>
-      </VRow>
+      <FormSection title="Jadwal">
+        <FormField label="Unit">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" :model-value="editForm.unit_name" :aria-describedby="describedBy" readonly />
+          </template>
+        </FormField>
+
+        <VRow dense>
+          <VCol cols="6">
+            <FormField label="Jam Buka">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="editForm.opening_time" type="time" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+          <VCol cols="6">
+            <FormField label="Jam Tutup">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="editForm.closing_time" type="time" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+        </VRow>
+
+        <FormField label="Catatan" optional>
+          <template #default="{ id, describedBy }">
+            <VTextarea :id="id" v-model="editForm.notes" rows="2" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
+
+      <FormSection title="Status">
+        <SettingsCard title="Aktif">
+          <VSwitch v-model="editForm.is_active" color="primary" hide-details density="compact" />
+        </SettingsCard>
+      </FormSection>
     </AppModal>
 
     <!-- Status info dialog -->
     <AppModal
       v-model="statusDialog"
-      :title="`Status ${selectedUnit?.name}`"
-      icon="bx-store"
+      title="Status"
+      :description="selectedUnit?.name"
       hide-footer
       :max-width="480"
     >

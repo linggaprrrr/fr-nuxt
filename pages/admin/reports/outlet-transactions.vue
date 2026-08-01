@@ -133,13 +133,13 @@ definePageMeta({ layout: 'default', title: 'Laporan Transaksi Per Outlet' })
       <VCardText>
         <VRow dense>
           <VCol cols="12" md="3">
-            <VSelect v-model="selectedOutlet" :items="outletItems" label="Pilih Outlet" variant="outlined" clearable :loading="outlets.length === 0" />
+            <VSelect v-model="selectedOutlet" :items="outletItems" label="Pilih Outlet" clearable :loading="outlets.length === 0" />
           </VCol>
           <VCol cols="12" md="3">
-            <VTextField v-model="startDate" label="Start Date" type="date" variant="outlined" />
+            <VTextField v-model="startDate" label="Start Date" type="date" />
           </VCol>
           <VCol cols="12" md="3">
-            <VTextField v-model="endDate" label="End Date" type="date" variant="outlined" />
+            <VTextField v-model="endDate" label="End Date" type="date" />
           </VCol>
           <VCol cols="12" md="3" class="d-flex align-center gap-2">
             <VBtn color="primary" prepend-icon="bx-search-alt" :disabled="!selectedOutlet" @click="fetchTransactionsByOutlet">Terapkan</VBtn>
