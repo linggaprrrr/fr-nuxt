@@ -1,4 +1,11 @@
 
+export interface OperationalAlert {
+  kind: 'kiosk_offline' | 'printer_down' | 'media_low' | 'print_failed' | 'txn_stuck'
+  severity: 'high' | 'medium' | 'low'
+  outlet_name: string | null
+  message: string
+}
+
 interface TransactionReport {
   tanggal: string // YYYY-MM-DD
   unit: string
@@ -178,6 +185,12 @@ export function useReports() {
     return data
   }
 
+  // Operational alerts for the dashboard strip. Kept separate from the stats
+  // call so a slow/failed stats query never hides "a kiosk is offline".
+  const getOperationalAlerts = async (): Promise<{ data: OperationalAlert[], count: number }> => {
+    return await authFetch(`/statistics/alerts`, { method: 'GET' })
+  }
+
   const getDasboardStatistcs = async (): Promise<ReportResponse | null>  => {
     const data = await authFetch<ReportResponse>(`/statistics/`, {      
       method: 'GET'        
@@ -213,6 +226,7 @@ export function useReports() {
   
 
   return {    
+    getOperationalAlerts,
     getDasboardStatistcs,
     getTransactionsReport,
     getAllUnitReports,

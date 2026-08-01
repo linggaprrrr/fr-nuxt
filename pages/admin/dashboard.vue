@@ -52,6 +52,11 @@ definePageMeta({ layout: 'default' })
   <div>
     <PageHeader title="Dashboard" subtitle="Ringkasan pendapatan dan transaksi." />
 
+    <!-- Above the revenue tiles on purpose: a kiosk that is down costs more
+         than any number below it is worth reading. Renders nothing when the
+         fleet is healthy. -->
+    <OperationalAlerts />
+
     <!-- Revenue stats -->
     <VRow>
       <VCol v-for="card in revenueCards" :key="card.title" cols="12" sm="6" lg="3">
