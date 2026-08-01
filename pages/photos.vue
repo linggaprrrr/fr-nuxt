@@ -177,7 +177,7 @@ definePageMeta({
 
 
           <v-card-actions>
-            <v-btn prepend-icon="bx bxs-download" color="#4f545c" variant="flat" size="x-small" @click="() => downloadPhoto(photo.original_path)">              
+            <v-btn prepend-icon="bx bxs-download" color="primary" variant="flat" size="x-small" @click="() => downloadPhoto(photo.original_path)">
           
               <span class="subheading me-2">Beli Sekarang</span>
             </v-btn>

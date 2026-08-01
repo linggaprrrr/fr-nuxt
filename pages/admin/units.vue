@@ -150,17 +150,29 @@ onMounted(fetchUnits)
       cancel-text="Batal"
       @confirm="submit"
     >
-      <VRow>
-        <VCol cols="12" md="6">
-          <VTextField v-model="form.name" label="Nama" />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField v-model="form.kode_folder" label="Kode Folder" />
-        </VCol>
-        <VCol cols="12">
-          <VTextField v-model="form.location" label="Alamat / Lokasi" />
-        </VCol>
-      </VRow>
+      <FormSection title="Detail">
+        <VRow dense>
+          <VCol cols="12" md="6">
+            <FormField label="Nama">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="form.name" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+          <VCol cols="12" md="6">
+            <FormField label="Kode Folder">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="form.kode_folder" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+        </VRow>
+        <FormField label="Alamat / Lokasi">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="form.location" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
     </AppModal>
   </div>
 </template>

@@ -39,16 +39,14 @@ onMounted(async () => { await fetchOutlets(); await fetchAnalytics() })
               v-model="outletFilter"
               :items="[{ title: 'Semua Outlet', value: '' }, ...outlets.map(o => ({ title: o.name, value: o.id }))]"
               label="Outlet"
-              density="compact"
-              variant="outlined"
               hide-details
             />
           </VCol>
           <VCol cols="12" md="3">
-            <VTextField v-model="fromDate" type="date" label="Dari" density="compact" variant="outlined" hide-details />
+            <VTextField v-model="fromDate" type="date" label="Dari" hide-details />
           </VCol>
           <VCol cols="12" md="3">
-            <VTextField v-model="toDate" type="date" label="Sampai" density="compact" variant="outlined" hide-details />
+            <VTextField v-model="toDate" type="date" label="Sampai" hide-details />
           </VCol>
           <VCol cols="12" md="3" class="d-flex align-center">
             <VBtn color="primary" prepend-icon="bx-search-alt" @click="fetchAnalytics">Terapkan</VBtn>

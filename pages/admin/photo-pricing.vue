@@ -266,17 +266,23 @@ onMounted(() => { fetchPhotoTypes(); fetchPhotoPrices(); fetchUnitsAndOutlets() 
       cancel-text="Batal"
       @confirm="submitType"
     >
-      <VRow>
-        <VCol cols="12" md="6">
-          <VTextField v-model="typeForm.name" label="Nama Tipe Foto" />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField v-model="typeForm.kode_folder" label="Kode Folder" />
-        </VCol>
-        <VCol cols="12">
-          <VTextField v-model="typeForm.description" label="Deskripsi" />
-        </VCol>
-      </VRow>
+      <FormSection title="Detail">
+        <FormField label="Nama Tipe Foto">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="typeForm.name" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Kode Folder" width="code">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="typeForm.kode_folder" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Deskripsi">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="typeForm.description" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
     </AppModal>
 
     <!-- Price modal -->
@@ -289,46 +295,49 @@ onMounted(() => { fetchPhotoTypes(); fetchPhotoPrices(); fetchUnitsAndOutlets() 
       cancel-text="Batal"
       @confirm="submitPrice"
     >
-      <VRow>
-        <VCol cols="12" md="6">
-          <VSelect
-            v-model="priceForm.unit_id"
-            :items="units"
-            item-value="id"
-            item-title="name"
-            label="Unit"
-            :hint="selectedUnit?.location"
-            persistent-hint
-          />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VSelect
-            v-model="priceForm.outlet_id"
-            :items="outletList"
-            item-value="id"
-            item-title="name"
-            label="Outlet"
-          />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VSelect
-            v-model="priceForm.photo_type_id"
-            :items="photoTypes"
-            item-value="id"
-            item-title="name"
-            label="Tipe Foto"
-          />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField
-            v-model="priceForm.price"
-            label="Harga"
-            prefix="Rp"
-            hint="Rp 0 jika foto gratis"
-            persistent-hint
-          />
-        </VCol>
-      </VRow>
+      <FormSection title="Detail">
+        <FormField label="Unit" :helper="selectedUnit?.location">
+          <template #default="{ id, describedBy }">
+            <VSelect
+              :id="id"
+              v-model="priceForm.unit_id"
+              :items="units"
+              item-value="id"
+              item-title="name"
+              :aria-describedby="describedBy"
+            />
+          </template>
+        </FormField>
+        <FormField label="Outlet">
+          <template #default="{ id, describedBy }">
+            <VSelect
+              :id="id"
+              v-model="priceForm.outlet_id"
+              :items="outletList"
+              item-value="id"
+              item-title="name"
+              :aria-describedby="describedBy"
+            />
+          </template>
+        </FormField>
+        <FormField label="Tipe Foto">
+          <template #default="{ id, describedBy }">
+            <VSelect
+              :id="id"
+              v-model="priceForm.photo_type_id"
+              :items="photoTypes"
+              item-value="id"
+              item-title="name"
+              :aria-describedby="describedBy"
+            />
+          </template>
+        </FormField>
+        <FormField label="Harga" helper="Rp 0 jika foto gratis">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="priceForm.price" prefix="Rp" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
     </AppModal>
   </div>
 </template>

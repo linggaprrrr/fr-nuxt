@@ -223,26 +223,47 @@ definePageMeta({ layout: 'unit' })
     </VCard>
 
     <!-- Type modal -->
-    <AppModal v-model="typeDialog" :title="isEditingType ? 'Edit Tipe Foto' : 'Tambah Tipe Foto'" icon="bx-category" :loading="isSubmittingType" :confirm-text="isEditingType ? 'Update' : 'Simpan'" cancel-text="Batal" @confirm="submitType">
-      <VRow>
-        <VCol cols="12"><VTextField v-model="typeForm.name" label="Nama Tipe Foto" /></VCol>
-        <VCol cols="12"><VTextField v-model="typeForm.description" label="Deskripsi" /></VCol>
-      </VRow>
+    <AppModal v-model="typeDialog" :title="isEditingType ? 'Edit Tipe Foto' : 'Tambah Tipe Foto'" :loading="isSubmittingType" :confirm-text="isEditingType ? 'Update' : 'Simpan'" cancel-text="Batal" @confirm="submitType">
+      <FormSection title="Detail">
+        <FormField label="Nama Tipe Foto">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="typeForm.name" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Deskripsi">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="typeForm.description" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
     </AppModal>
 
     <!-- Price modal -->
-    <AppModal v-model="priceDialog" :title="isEditingPrice ? 'Edit Pricing' : 'Tambah Pricing'" icon="bx-purchase-tag" :loading="isSubmittingPrice" :confirm-text="isEditingPrice ? 'Update' : 'Simpan'" cancel-text="Batal" @confirm="submitPrice">
-      <VRow>
-        <VCol cols="12" md="6">
-          <VSelect v-model="priceForm.unit_id" :items="units" item-value="id" item-title="name" label="Unit" :hint="selectedUnit?.location" persistent-hint />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VSelect v-model="priceForm.photo_type_id" :items="photoTypes" item-value="id" item-title="name" label="Tipe Foto" />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField v-model="priceForm.price" label="Harga" prefix="Rp" hint="Rp 0 jika foto gratis" persistent-hint />
-        </VCol>
-      </VRow>
+    <AppModal v-model="priceDialog" :title="isEditingPrice ? 'Edit Pricing' : 'Tambah Pricing'" :loading="isSubmittingPrice" :confirm-text="isEditingPrice ? 'Update' : 'Simpan'" cancel-text="Batal" @confirm="submitPrice">
+      <FormSection title="Detail">
+        <VRow dense>
+          <VCol cols="12" md="6">
+            <FormField label="Unit" :helper="selectedUnit?.location">
+              <template #default="{ id, describedBy }">
+                <VSelect :id="id" v-model="priceForm.unit_id" :items="units" item-value="id" item-title="name" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+          <VCol cols="12" md="6">
+            <FormField label="Tipe Foto">
+              <template #default="{ id, describedBy }">
+                <VSelect :id="id" v-model="priceForm.photo_type_id" :items="photoTypes" item-value="id" item-title="name" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+        </VRow>
+
+        <FormField label="Harga" helper="Rp 0 jika foto gratis" width="num">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="priceForm.price" prefix="Rp" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
     </AppModal>
   </div>
 </template>

@@ -260,63 +260,84 @@ onMounted(() => {
       @confirm="handleCreateUser"
     >
       <FormSection title="Akun">
-        <VCol cols="12" md="6">
-          <VTextField v-model="createForm.email" label="Email" type="email" />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField v-model="createForm.name" label="Nama" />
-        </VCol>
-        <VCol cols="12">
-          <VTextField
-            v-model="createForm.password"
-            label="Password"
-            :type="showPassword ? 'text' : 'password'"
-            :append-inner-icon="showPassword ? 'bx-show' : 'bx-hide'"
-            :rules="passwordRules"
-            hint="Minimal 6 karakter"
-            counter
-            @click:append-inner="showPassword = !showPassword"
-          />
-        </VCol>
+        <FormField label="Email">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="createForm.email" type="email" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Nama">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="createForm.name" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Password" helper="Minimal 6 karakter">
+          <template #default="{ id, describedBy }">
+            <VTextField
+              :id="id"
+              v-model="createForm.password"
+              :type="showPassword ? 'text' : 'password'"
+              :append-inner-icon="showPassword ? 'bx-show' : 'bx-hide'"
+              :rules="passwordRules"
+              counter
+              :aria-describedby="describedBy"
+              @click:append-inner="showPassword = !showPassword"
+            />
+          </template>
+        </FormField>
       </FormSection>
 
       <FormSection title="Kontak">
-        <VCol cols="12" md="6">
-          <VTextField v-model="createForm.phone" label="No Telp" />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField v-model="createForm.address" label="Alamat" />
-        </VCol>
+        <FormField label="No Telp">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="createForm.phone" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Alamat">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="createForm.address" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
       </FormSection>
 
       <FormSection title="Hak Akses">
-        <VCol cols="12" md="6">
-          <VSelect
-            v-model="createForm.role"
-            :items="['Customer', 'Unit', 'Outlet', 'Superadmin']"
-            label="Role"
-          />
-        </VCol>
-        <VCol v-if="createForm.role === 'Unit' || createForm.role === 'Outlet'" cols="12" md="6">
-          <VSelect
-            v-model="createForm.unit_id"
-            label="Unit"
-            :items="units"
-            item-value="id"
-            item-title="name"
-            :hint="selectedUnit?.location"
-            persistent-hint
-          />
-        </VCol>
-        <VCol v-if="createForm.role === 'Outlet'" cols="12" md="6">
-          <VSelect
-            v-model="createForm.outlet_id"
-            label="Outlet"
-            :items="outletList"
-            item-value="id"
-            item-title="name"
-          />
-        </VCol>
+        <FormField label="Role">
+          <template #default="{ id, describedBy }">
+            <VSelect
+              :id="id"
+              v-model="createForm.role"
+              :items="['Customer', 'Unit', 'Outlet', 'Superadmin']"
+              :aria-describedby="describedBy"
+            />
+          </template>
+        </FormField>
+        <FormField
+          v-if="createForm.role === 'Unit' || createForm.role === 'Outlet'"
+          label="Unit"
+          :helper="selectedUnit?.location"
+        >
+          <template #default="{ id, describedBy }">
+            <VSelect
+              :id="id"
+              v-model="createForm.unit_id"
+              :items="units"
+              item-value="id"
+              item-title="name"
+              :aria-describedby="describedBy"
+            />
+          </template>
+        </FormField>
+        <FormField v-if="createForm.role === 'Outlet'" label="Outlet">
+          <template #default="{ id, describedBy }">
+            <VSelect
+              :id="id"
+              v-model="createForm.outlet_id"
+              :items="outletList"
+              item-value="id"
+              item-title="name"
+              :aria-describedby="describedBy"
+            />
+          </template>
+        </FormField>
       </FormSection>
     </AppModal>
 
@@ -331,14 +352,18 @@ onMounted(() => {
       cancel-text="Batal"
       @confirm="saveEdit"
     >
-      <VRow>
-        <VCol cols="12">
-          <VTextField v-model="editForm.name" label="Name" />
-        </VCol>
-        <VCol cols="12">
-          <VTextField v-model="editForm.email" label="Email" type="email" />
-        </VCol>
-      </VRow>
+      <FormSection title="Detail">
+        <FormField label="Nama">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="editForm.name" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Email">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="editForm.email" type="email" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
     </AppModal>
   </div>
 </template>

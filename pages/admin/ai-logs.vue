@@ -28,7 +28,6 @@
               :items="sourceOptions"
               label="Source"
               clearable
-              density="compact"
               hide-details
               @update:model-value="load"
             />
@@ -39,7 +38,6 @@
               :items="resultOptions"
               label="Result"
               clearable
-              density="compact"
               hide-details
               @update:model-value="load"
             />
@@ -49,7 +47,6 @@
               v-model="filterTemplate"
               label="Template ID"
               clearable
-              density="compact"
               hide-details
               @keyup.enter="load"
               @click:clear="load"
@@ -154,58 +151,55 @@
     </VCard>
 
     <!-- Detail dialog -->
-    <VDialog v-model="showDetail" max-width="820" scrollable>
-      <VCard v-if="detailLog">
-        <VCardTitle class="d-flex align-center justify-space-between pa-4">
-          <span class="text-subtitle-1 font-weight-medium">Detail Log</span>
-          <VBtn icon size="small" variant="text" @click="showDetail = false">
-            <VIcon>bx bx-x</VIcon>
-          </VBtn>
-        </VCardTitle>
-        <VDivider />
+    <AppModal
+      v-model="showDetail"
+      title="Detail Log"
+      size="lg"
+      hide-footer
+    >
+      <template v-if="detailLog">
+        <!-- Meta chips -->
+        <div class="d-flex flex-wrap gap-2">
+          <VChip size="small" :color="detailLog.source === 'kiosk' ? 'info' : 'secondary'" label>
+            {{ detailLog.source === 'kiosk' ? 'Kiosk' : 'Admin Preview' }}
+          </VChip>
+          <VChip size="small" :color="detailLog.image_generated ? 'success' : 'error'" label>
+            {{ detailLog.image_generated ? 'Image generated' : 'No image' }}
+          </VChip>
+          <VChip size="small" variant="outlined" label>
+            {{ shortModel(detailLog.model) }}
+          </VChip>
+          <VChip v-if="detailLog.duration_ms != null" size="small" variant="outlined" label>
+            {{ detailLog.duration_ms }} ms
+          </VChip>
+        </div>
 
-        <VCardText class="pa-4">
-          <!-- Meta chips -->
-          <div class="d-flex flex-wrap gap-2 mb-4">
-            <VChip size="small" :color="detailLog.source === 'kiosk' ? 'info' : 'secondary'" label>
-              {{ detailLog.source === 'kiosk' ? 'Kiosk' : 'Admin Preview' }}
-            </VChip>
-            <VChip size="small" :color="detailLog.image_generated ? 'success' : 'error'" label>
-              {{ detailLog.image_generated ? 'Image generated' : 'No image' }}
-            </VChip>
-            <VChip size="small" variant="outlined" label>
-              {{ shortModel(detailLog.model) }}
-            </VChip>
-            <VChip v-if="detailLog.duration_ms != null" size="small" variant="outlined" label>
-              {{ detailLog.duration_ms }} ms
-            </VChip>
-          </div>
+        <!-- Metadata grid -->
+        <VTable density="compact" class="meta-table">
+          <tbody>
+            <tr>
+              <td class="text-caption text-medium-emphasis" style="width:140px">Waktu</td>
+              <td class="text-body-2">{{ formatTs(detailLog.created_at) }}</td>
+            </tr>
+            <tr v-if="detailLog.template_label">
+              <td class="text-caption text-medium-emphasis">Template</td>
+              <td class="text-body-2">{{ detailLog.template_label }}</td>
+            </tr>
+            <tr v-if="detailLog.device_id">
+              <td class="text-caption text-medium-emphasis">Device ID</td>
+              <td class="text-caption font-mono">{{ detailLog.device_id }}</td>
+            </tr>
+            <tr v-if="detailLog.input_mime_type">
+              <td class="text-caption text-medium-emphasis">Input MIME</td>
+              <td class="text-caption">{{ detailLog.input_mime_type }}</td>
+            </tr>
+          </tbody>
+        </VTable>
 
-          <!-- Metadata grid -->
-          <VTable density="compact" class="meta-table mb-5">
-            <tbody>
-              <tr>
-                <td class="text-caption text-medium-emphasis" style="width:140px">Waktu</td>
-                <td class="text-body-2">{{ formatTs(detailLog.created_at) }}</td>
-              </tr>
-              <tr v-if="detailLog.template_label">
-                <td class="text-caption text-medium-emphasis">Template</td>
-                <td class="text-body-2">{{ detailLog.template_label }}</td>
-              </tr>
-              <tr v-if="detailLog.device_id">
-                <td class="text-caption text-medium-emphasis">Device ID</td>
-                <td class="text-caption font-mono">{{ detailLog.device_id }}</td>
-              </tr>
-              <tr v-if="detailLog.input_mime_type">
-                <td class="text-caption text-medium-emphasis">Input MIME</td>
-                <td class="text-caption">{{ detailLog.input_mime_type }}</td>
-              </tr>
-            </tbody>
-          </VTable>
-
-          <!-- Prompt -->
+        <!-- Prompt -->
+        <div>
           <div class="section-label">Prompt</div>
-          <div class="prompt-box mb-5" @click="promptExpanded = !promptExpanded">
+          <div class="prompt-box" @click="promptExpanded = !promptExpanded">
             <div :class="['prompt-text', { collapsed: !promptExpanded }]">
               {{ detailLog.prompt_text || '—' }}
             </div>
@@ -213,27 +207,29 @@
               {{ promptExpanded ? 'Tutup' : 'Tampilkan semua' }}
             </div>
           </div>
+        </div>
 
-          <!-- Request JSON -->
+        <!-- Request JSON -->
+        <div>
           <div class="section-label">Request JSON <span class="text-caption text-medium-emphasis">(base64 dihapus)</span></div>
-          <pre class="json-block mb-5">{{ formatJson(detailLog.request_json) }}</pre>
+          <pre class="json-block">{{ formatJson(detailLog.request_json) }}</pre>
+        </div>
 
-          <!-- Output image -->
-          <template v-if="detailLog.image_generated && detailLog.output_image_url">
-            <div class="section-label">Output Image</div>
-            <div class="output-img-wrap mb-4">
-              <img :src="detailLog.output_image_url" alt="AI output" class="output-img" />
-            </div>
-          </template>
+        <!-- Output image -->
+        <div v-if="detailLog.image_generated && detailLog.output_image_url">
+          <div class="section-label">Output Image</div>
+          <div class="output-img-wrap">
+            <img :src="detailLog.output_image_url" alt="AI output" class="output-img">
+          </div>
+        </div>
 
-          <!-- Error -->
-          <template v-if="detailLog.error_detail">
-            <div class="section-label error-label">Error Detail</div>
-            <div class="error-box mb-2">{{ detailLog.error_detail }}</div>
-          </template>
-        </VCardText>
-      </VCard>
-    </VDialog>
+        <!-- Error -->
+        <div v-if="detailLog.error_detail">
+          <div class="section-label error-label">Error Detail</div>
+          <div class="error-box">{{ detailLog.error_detail }}</div>
+        </div>
+      </template>
+    </AppModal>
   </div>
 </template>
 

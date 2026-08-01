@@ -73,13 +73,13 @@ definePageMeta({ layout: 'outlet' })
       <VCardText>
         <VRow dense>
           <VCol cols="12" md="3">
-            <VSelect v-model="unitId" :items="units" item-title="name" item-value="id" label="Pilih Unit" variant="outlined" clearable :loading="unitsLoading" :disabled="unitsLoading || unitsError !== null" />
+            <VSelect v-model="unitId" :items="units" item-title="name" item-value="id" label="Pilih Unit" clearable :loading="unitsLoading" :disabled="unitsLoading || unitsError !== null" />
           </VCol>
           <VCol cols="12" md="3">
-            <VTextField v-model="startDate" label="Start Date" type="date" variant="outlined" />
+            <VTextField v-model="startDate" label="Start Date" type="date" />
           </VCol>
           <VCol cols="12" md="3">
-            <VTextField v-model="endDate" label="End Date" type="date" variant="outlined" />
+            <VTextField v-model="endDate" label="End Date" type="date" />
           </VCol>
           <VCol cols="12" md="3" class="d-flex align-center gap-2">
             <VBtn color="primary" prepend-icon="bx-search-alt" :loading="loading" :disabled="loading" @click="fetchReport">Terapkan</VBtn>

@@ -152,8 +152,6 @@ watch([dateFrom, dateTo], () => { page.value = 1; fetchPhotos() })
               label="Filter Outlet"
               :loading="isLoadingOutlets"
               clearable
-              density="compact"
-              variant="outlined"
               hide-details
             />
           </VCol>
@@ -164,15 +162,13 @@ watch([dateFrom, dateTo], () => { page.value = 1; fetchPhotos() })
               prepend-inner-icon="bx-search"
               clearable
               hide-details
-              density="compact"
-              variant="outlined"
             />
           </VCol>
           <VCol cols="12" md="2">
-            <VTextField v-model="dateFrom" label="Dari Tanggal" type="date" hide-details density="compact" variant="outlined" />
+            <VTextField v-model="dateFrom" label="Dari Tanggal" type="date" hide-details />
           </VCol>
           <VCol cols="12" md="2">
-            <VTextField v-model="dateTo" label="Sampai Tanggal" type="date" hide-details density="compact" variant="outlined" />
+            <VTextField v-model="dateTo" label="Sampai Tanggal" type="date" hide-details />
           </VCol>
           <VCol cols="12" md="1" class="d-flex align-center">
             <VChip color="primary" variant="tonal" size="small">{{ total }} foto</VChip>

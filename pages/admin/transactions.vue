@@ -132,7 +132,20 @@ async function handleDelete(trx: any) {
       :max-width="400"
       @confirm="handleUpdateStatus"
     >
-      <VSelect v-model="editingStatus" :items="statusOptions" item-title="title" item-value="value" label="Status" />
+      <FormSection title="Status">
+        <FormField label="Status">
+          <template #default="{ id, describedBy }">
+            <VSelect
+              :id="id"
+              v-model="editingStatus"
+              :items="statusOptions"
+              item-title="title"
+              item-value="value"
+              :aria-describedby="describedBy"
+            />
+          </template>
+        </FormField>
+      </FormSection>
     </AppModal>
   </div>
 </template>

@@ -123,14 +123,18 @@ definePageMeta({ layout: 'unit' })
       :max-width="480"
       @confirm="saveEdit"
     >
-      <VRow>
-        <VCol cols="12">
-          <VTextField v-model="editForm.name" label="Nama" />
-        </VCol>
-        <VCol cols="12">
-          <VTextField v-model="editForm.email" label="Email" type="email" />
-        </VCol>
-      </VRow>
+      <FormSection title="Detail">
+        <FormField label="Nama">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="editForm.name" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Email">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="editForm.email" type="email" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
     </AppModal>
   </div>
 </template>

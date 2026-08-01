@@ -141,8 +141,6 @@ onMounted(() => { fetchOutlets(); fetchAll() })
             v-model="outletFilter"
             :items="outletItems"
             label="Filter Outlet"
-            density="compact"
-            variant="outlined"
             hide-details
             style="max-width:260px"
             @update:modelValue="fetchAll"
@@ -198,171 +196,158 @@ onMounted(() => { fetchOutlets(); fetchAll() })
     </VCard>
 
     <!-- Create dialog -->
-    <VDialog v-model="showCreate" max-width="560" persistent>
-      <VCard rounded="lg">
-        <VCardTitle class="d-flex align-center gap-2 pa-4 pb-2">
-          <VIcon color="primary">bx-smile</VIcon>
-          Tambah Sticker
-          <VSpacer />
-          <VBtn icon variant="text" size="small" @click="showCreate = false; resetCreateForm()">
-            <VIcon>bx-x</VIcon>
-          </VBtn>
-        </VCardTitle>
-        <VDivider />
-        <VCardText class="pa-4">
-          <p class="text-caption font-weight-bold text-uppercase mb-2" style="color:#888;">Tipe Sticker</p>
-          <div class="d-flex gap-3 mb-4">
-            <div class="type-card" :class="{ 'type-card-active': createType === 'image' }" @click="createType = 'image'">
-              <VIcon size="28" :color="createType === 'image' ? 'primary' : 'grey'">bx-image</VIcon>
-              <span class="text-caption font-weight-bold mt-1">Image / PNG</span>
-              <span class="text-caption text-medium-emphasis">Upload file gambar</span>
-            </div>
-            <div class="type-card" :class="{ 'type-card-active': createType === 'emoji' }" @click="createType = 'emoji'">
-              <span style="font-size:28px;">😊</span>
-              <span class="text-caption font-weight-bold mt-1">Emoji</span>
-              <span class="text-caption text-medium-emphasis">Karakter emoji</span>
+    <AppModal
+      v-model="showCreate"
+      title="Tambah Sticker"
+      size="md"
+      persistent
+      :loading="isSubmitting"
+      :confirm-text="createType === 'image' && bulkFiles.length > 1 ? `Upload ${bulkFiles.length} Sticker` : 'Simpan'"
+      cancel-text="Batal"
+      :confirm-disabled="(createType === 'image' && bulkFiles.length === 0) || (createType === 'emoji' && !createEmoji)"
+      @confirm="handleCreate"
+      @cancel="resetCreateForm"
+    >
+      <FormSection title="Tipe Sticker">
+        <div class="d-flex gap-3">
+          <div class="type-card" :class="{ 'type-card-active': createType === 'image' }" @click="createType = 'image'">
+            <VIcon size="28" :color="createType === 'image' ? 'primary' : 'grey'">bx-image</VIcon>
+            <span class="text-caption font-weight-bold mt-1">Image / PNG</span>
+            <span class="text-caption text-medium-emphasis">Upload file gambar</span>
+          </div>
+          <div class="type-card" :class="{ 'type-card-active': createType === 'emoji' }" @click="createType = 'emoji'">
+            <span style="font-size:28px;">😊</span>
+            <span class="text-caption font-weight-bold mt-1">Emoji</span>
+            <span class="text-caption text-medium-emphasis">Karakter emoji</span>
+          </div>
+        </div>
+      </FormSection>
+
+      <FormSection v-if="createType === 'image'" title="Gambar">
+        <div
+          class="drop-zone"
+          @click="bulkFileInput?.click()"
+          @dragover.prevent
+          @drop.prevent="e => { bulkFiles.value = Array.from(e.dataTransfer?.files ?? []) }"
+        >
+          <VIcon size="36" color="primary" class="mb-2">bx-cloud-upload</VIcon>
+          <p class="font-weight-medium mb-1">Klik atau drag & drop</p>
+          <p class="text-caption text-medium-emphasis">PNG, JPG, WebP · Bisa pilih banyak file sekaligus</p>
+          <input ref="bulkFileInput" type="file" accept="image/*" multiple style="display:none" @change="onBulkFileChange" />
+        </div>
+
+        <div v-if="bulkFiles.length > 0">
+          <p class="text-caption font-weight-bold mb-2">{{ bulkFiles.length }} file dipilih:</p>
+          <div class="bulk-preview-grid">
+            <div v-for="(url, i) in createPreviewUrls" :key="i" class="bulk-preview-item">
+              <img :src="url" :alt="bulkFiles[i].name" class="bulk-preview-img" />
+              <span class="bulk-preview-name text-caption">{{ bulkFiles[i].name }}</span>
+              <VBtn icon variant="text" size="x-small" class="bulk-preview-del" @click="removeBulkFile(i)">
+                <VIcon size="12" color="error">bx-x</VIcon>
+              </VBtn>
             </div>
           </div>
+        </div>
 
-          <template v-if="createType === 'image'">
-            <div
-              class="drop-zone"
-              @click="bulkFileInput?.click()"
-              @dragover.prevent
-              @drop.prevent="e => { bulkFiles.value = Array.from(e.dataTransfer?.files ?? []) }"
-            >
-              <VIcon size="36" color="primary" class="mb-2">bx-cloud-upload</VIcon>
-              <p class="font-weight-medium mb-1">Klik atau drag & drop</p>
-              <p class="text-caption text-medium-emphasis">PNG, JPG, WebP · Bisa pilih banyak file sekaligus</p>
-              <input ref="bulkFileInput" type="file" accept="image/*" multiple style="display:none" @change="onBulkFileChange" />
-            </div>
-
-            <div v-if="bulkFiles.length > 0" class="mt-3">
-              <p class="text-caption font-weight-bold mb-2">{{ bulkFiles.length }} file dipilih:</p>
-              <div class="bulk-preview-grid">
-                <div v-for="(url, i) in createPreviewUrls" :key="i" class="bulk-preview-item">
-                  <img :src="url" :alt="bulkFiles[i].name" class="bulk-preview-img" />
-                  <span class="bulk-preview-name text-caption">{{ bulkFiles[i].name }}</span>
-                  <VBtn icon variant="text" size="x-small" class="bulk-preview-del" @click="removeBulkFile(i)">
-                    <VIcon size="12" color="error">bx-x</VIcon>
-                  </VBtn>
-                </div>
-              </div>
-            </div>
-
-            <VTextField v-model="createLabel" label="Label (opsional)" density="compact" variant="outlined" class="mt-3" hint="Kosongkan untuk menggunakan nama file sebagai label" persistent-hint />
+        <FormField label="Label" optional helper="Kosongkan untuk menggunakan nama file sebagai label">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="createLabel" :aria-describedby="describedBy" />
           </template>
+        </FormField>
+      </FormSection>
 
-          <template v-else>
-            <VTextField v-model="createEmoji" label="Karakter Emoji" density="compact" variant="outlined" class="mb-3" :style="{ fontSize: '24px' }" />
-            <VTextField v-model="createLabel" label="Label" density="compact" variant="outlined" />
+      <FormSection v-else title="Emoji">
+        <FormField label="Karakter Emoji">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="createEmoji" :style="{ fontSize: '24px' }" :aria-describedby="describedBy" />
           </template>
+        </FormField>
+        <FormField label="Label">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="createLabel" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
 
-          <VSelect
-            v-model="createOutlet"
-            :items="outletItems"
-            label="Outlet"
-            density="compact"
-            variant="outlined"
-            class="mt-3"
-            hint="Kosongkan agar muncul di semua outlet"
-            persistent-hint
-          />
-        </VCardText>
-        <VDivider />
-        <VCardActions class="pa-4">
-          <VSpacer />
-          <VBtn variant="text" :disabled="isSubmitting" @click="showCreate = false; resetCreateForm()">Batal</VBtn>
-          <VBtn
-            color="primary"
-            variant="elevated"
-            :loading="isSubmitting"
-            :disabled="(createType === 'image' && bulkFiles.length === 0) || (createType === 'emoji' && !createEmoji)"
-            @click="handleCreate"
-          >
-            {{ createType === 'image' && bulkFiles.length > 1 ? `Upload ${bulkFiles.length} Sticker` : 'Simpan' }}
-          </VBtn>
-        </VCardActions>
-      </VCard>
-    </VDialog>
+      <FormField label="Outlet" optional helper="Kosongkan agar muncul di semua outlet">
+        <template #default="{ id, describedBy }">
+          <VSelect :id="id" v-model="createOutlet" :items="outletItems" :aria-describedby="describedBy" />
+        </template>
+      </FormField>
+    </AppModal>
 
     <!-- Edit dialog -->
-    <VDialog v-model="showEdit" max-width="420">
-      <VCard rounded="lg">
-        <VCardTitle class="d-flex align-center gap-2 pa-4 pb-2">
-          <VIcon color="warning">bx-edit-alt</VIcon>
-          Edit Sticker
-          <VSpacer />
-          <VBtn icon variant="text" size="small" @click="showEdit = false"><VIcon>bx-x</VIcon></VBtn>
-        </VCardTitle>
-        <VDivider />
-        <VCardText class="pa-4 d-flex flex-column gap-3">
-          <VTextField v-model="editForm.label" label="Label" density="compact" variant="outlined" />
-          <VSelect v-model="editForm.outlet_id" :items="outletItems" label="Outlet" density="compact" variant="outlined" />
-          <div class="d-flex align-center justify-space-between pa-3 rounded-lg" style="background:#f9f9f9;border:1px solid #eee;">
-            <div>
-              <p class="text-body-2 font-weight-medium">Status Aktif</p>
-              <p class="text-caption text-medium-emphasis">Nonaktif = tidak muncul di kiosk</p>
-            </div>
-            <VSwitch v-model="editForm.is_active" color="success" hide-details density="compact" />
-          </div>
-        </VCardText>
-        <VDivider />
-        <VCardActions class="pa-4">
-          <VSpacer />
-          <VBtn variant="text" :disabled="isSubmitting" @click="showEdit = false">Batal</VBtn>
-          <VBtn color="primary" variant="elevated" :loading="isSubmitting" @click="handleUpdate">Update</VBtn>
-        </VCardActions>
-      </VCard>
-    </VDialog>
+    <AppModal
+      v-model="showEdit"
+      title="Edit Sticker"
+      size="sm"
+      :loading="isSubmitting"
+      confirm-text="Update"
+      cancel-text="Batal"
+      @confirm="handleUpdate"
+    >
+      <FormSection title="Detail">
+        <FormField label="Label">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="editForm.label" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Outlet" optional>
+          <template #default="{ id, describedBy }">
+            <VSelect :id="id" v-model="editForm.outlet_id" :items="outletItems" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
+
+      <SettingsCard title="Status Aktif" description="Nonaktif = tidak muncul di kiosk">
+        <VSwitch v-model="editForm.is_active" color="success" hide-details density="compact" />
+      </SettingsCard>
+    </AppModal>
 
     <!-- View dialog -->
-    <VDialog v-model="showView" max-width="400">
-      <VCard rounded="lg" v-if="viewSticker">
-        <VCardTitle class="d-flex align-center gap-2 pa-4 pb-2">
-          <VIcon color="primary">bx-show</VIcon>
-          {{ viewSticker.label }}
-          <VSpacer />
-          <VBtn icon variant="text" size="small" @click="showView = false"><VIcon>bx-x</VIcon></VBtn>
-        </VCardTitle>
-        <VDivider />
-        <VCardText class="pa-6 text-center">
-          <div v-if="viewSticker.type === 'emoji'" style="font-size:96px;line-height:1;">
-            {{ viewSticker.value }}
-          </div>
-          <img v-else-if="viewSticker.url" :src="viewSticker.url" :alt="viewSticker.label"
-            style="max-width:100%;max-height:280px;object-fit:contain;border-radius:8px;" />
-          <p v-else class="text-medium-emphasis">Tidak ada gambar</p>
-          <VChip size="small" :color="viewSticker.is_active ? 'success' : 'default'" class="mt-4">
-            {{ viewSticker.is_active ? 'Aktif' : 'Nonaktif' }}
-          </VChip>
-        </VCardText>
-      </VCard>
-    </VDialog>
+    <AppModal
+      v-model="showView"
+      title="Detail Sticker"
+      :description="viewSticker?.label"
+      size="sm"
+      hide-footer
+    >
+      <div v-if="viewSticker" class="text-center">
+        <div v-if="viewSticker.type === 'emoji'" style="font-size:96px;line-height:1;">
+          {{ viewSticker.value }}
+        </div>
+        <img v-else-if="viewSticker.url" :src="viewSticker.url" :alt="viewSticker.label"
+          style="max-width:100%;max-height:280px;object-fit:contain;border-radius:8px;" />
+        <p v-else class="text-medium-emphasis">Tidak ada gambar</p>
+        <VChip size="small" :color="viewSticker.is_active ? 'success' : 'default'" class="mt-4">
+          {{ viewSticker.is_active ? 'Aktif' : 'Nonaktif' }}
+        </VChip>
+      </div>
+    </AppModal>
   </div>
 </template>
 
 <style scoped>
 .sticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
-.sticker-card { border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #fff; transition: box-shadow 0.2s, transform 0.15s; }
-.sticker-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); transform: translateY(-2px); }
+.sticker-card { border: var(--border-default); border-radius: 12px; overflow: hidden; background: var(--n-0); transition: box-shadow 0.2s, transform 0.15s; }
+.sticker-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .sticker-card-inactive { opacity: 0.5; }
-.sticker-thumb { position: relative; height: 90px; background: #f9fafb; display: flex; align-items: center; justify-content: center; }
+.sticker-thumb { position: relative; height: 90px; background: var(--n-50); display: flex; align-items: center; justify-content: center; }
 .sticker-img { max-width: 80%; max-height: 80%; object-fit: contain; }
 .sticker-emoji { font-size: 44px; line-height: 1; }
 .sticker-status-chip { position: absolute; top: 5px; right: 5px; }
 .sticker-info { padding: 6px 8px 2px; display: flex; flex-direction: column; }
 .sticker-label { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sticker-type { font-size: 10px; color: #999; }
+.sticker-type { font-size: 10px; color: var(--text-tertiary); }
 .sticker-actions { display: flex; justify-content: flex-end; padding: 2px 4px 4px; }
-.type-card { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 16px 8px; border: 2px solid #e5e7eb; border-radius: 12px; cursor: pointer; transition: border-color 0.15s, background 0.15s; text-align: center; }
-.type-card:hover { border-color: #a5b4fc; background: #f5f3ff; }
-.type-card-active { border-color: #4f46e5; background: #eef2ff; }
-.drop-zone { min-height: 120px; border: 2px dashed #c7d2fe; border-radius: 12px; background: #f5f3ff; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, border-color 0.2s; padding: 20px; text-align: center; }
-.drop-zone:hover { background: #ede9fe; border-color: #818cf8; }
+.type-card { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 16px 8px; border: 2px solid var(--n-200); border-radius: 12px; cursor: pointer; transition: border-color 0.15s, background 0.15s; text-align: center; }
+.type-card:hover { border-color: var(--n-300); }
+.type-card-active { border-color: rgb(var(--v-theme-primary)); background: rgb(var(--v-theme-primary) / 6%); }
+.drop-zone { min-height: 120px; border: 2px dashed var(--n-300); border-radius: 12px; background: var(--n-50); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, border-color 0.2s; padding: 20px; text-align: center; }
+.drop-zone:hover { background: var(--n-100); border-color: rgb(var(--v-theme-primary) / 40%); }
 .bulk-preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
-.bulk-preview-item { position: relative; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #f9f9f9; }
+.bulk-preview-item { position: relative; border: var(--border-default); border-radius: 8px; overflow: hidden; background: var(--n-50); }
 .bulk-preview-img { width: 100%; height: 70px; object-fit: contain; display: block; }
-.bulk-preview-name { display: block; padding: 2px 4px; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #666; }
+.bulk-preview-name { display: block; padding: 2px 4px; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-tertiary); }
 .bulk-preview-del { position: absolute; top: 2px; right: 2px; background: rgba(255,255,255,.9) !important; width: 18px !important; height: 18px !important; min-width: unset !important; }
 </style>

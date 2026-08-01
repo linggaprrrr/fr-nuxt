@@ -53,8 +53,6 @@ onMounted(() => { fetchOutlets(); fetchAll() })
             v-model="outletFilter"
             :items="outletItems"
             label="Outlet"
-            density="compact"
-            variant="outlined"
             hide-details
             style="max-width:240px"
             @update:modelValue="fetchAll"
@@ -63,8 +61,6 @@ onMounted(() => { fetchOutlets(); fetchAll() })
             v-model="startDate"
             type="date"
             label="Dari"
-            density="compact"
-            variant="outlined"
             hide-details
             style="max-width:180px"
             @update:modelValue="fetchAll"
@@ -73,8 +69,6 @@ onMounted(() => { fetchOutlets(); fetchAll() })
             v-model="endDate"
             type="date"
             label="Sampai"
-            density="compact"
-            variant="outlined"
             hide-details
             style="max-width:180px"
             @update:modelValue="fetchAll"
@@ -195,11 +189,11 @@ onMounted(() => { fetchOutlets(); fetchAll() })
   align-items: center;
   gap: 10px;
   padding: 8px 16px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--n-100);
 }
 .usage-row:last-child { border-bottom: none; }
 .usage-label { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.usage-bar-wrap { height: 8px; background: #f3f4f6; border-radius: 999px; overflow: hidden; }
+.usage-bar-wrap { height: 8px; background: var(--n-100); border-radius: 999px; overflow: hidden; }
 .usage-bar { height: 100%; border-radius: 999px; transition: width 0.4s ease; min-width: 4px; }
-.usage-count { font-size: 12px; font-weight: 700; text-align: right; color: #555; }
+.usage-count { font-size: 12px; font-weight: 700; text-align: right; color: var(--text-tertiary); }
 </style>

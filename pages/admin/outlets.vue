@@ -235,37 +235,49 @@ watch([page, search, activeTab], fetchOutlets)
       cancel-text="Batal"
       @confirm="submit"
     >
-      <VRow>
-        <VCol cols="12" md="6">
-          <VTextField v-model="form.name" label="Nama" />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField v-model="form.phone" label="Telp" />
-        </VCol>
-        <VCol cols="12">
-          <VTextField v-model="form.address" label="Alamat" />
-        </VCol>
-        <VCol v-if="!form.is_kiosk" cols="12" md="6">
-          <VTextField v-model="form.kode_folder" label="Kode Folder" />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VSelect
-            v-model="form.unit_id"
-            :items="units"
-            item-value="id"
-            item-title="name"
-            label="Unit"
-          />
-        </VCol>
-        <VCol cols="12">
-          <VCheckbox
-            v-model="form.is_kiosk"
-            label="Kiosk (Self-Service)"
-            hint="Pelanggan bertransaksi sendiri tanpa staf — bukan gerai berstaf."
-            persistent-hint
-          />
-        </VCol>
-      </VRow>
+      <FormSection title="Detail">
+        <FormField label="Nama">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="form.name" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Telp">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="form.phone" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Alamat">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="form.address" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField v-if="!form.is_kiosk" label="Kode Folder" width="code">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="form.kode_folder" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Unit">
+          <template #default="{ id, describedBy }">
+            <VSelect
+              :id="id"
+              v-model="form.unit_id"
+              :items="units"
+              item-value="id"
+              item-title="name"
+              :aria-describedby="describedBy"
+            />
+          </template>
+        </FormField>
+      </FormSection>
+
+      <FormSection title="Tipe Outlet">
+        <SettingsCard
+          title="Kiosk (Self-Service)"
+          description="Pelanggan bertransaksi sendiri tanpa staf — bukan gerai berstaf."
+        >
+          <VCheckbox v-model="form.is_kiosk" density="compact" />
+        </SettingsCard>
+      </FormSection>
     </AppModal>
 
     <KioskBrandingModal v-model="brandingDialog" :outlet="brandingOutlet" />

@@ -11,6 +11,7 @@
     "build": "node --max-old-space-size=4096 node_modules/nuxt/bin/nuxt.mjs build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "audit:design": "bash scripts/audit-design.sh",
     "build:icons": "tsx plugins/iconify/build-icons.ts",
     "postinstall": "nuxt prepare && npm run build:icons",
     "generate": "nuxt generate"

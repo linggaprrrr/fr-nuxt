@@ -435,14 +435,14 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
     :persistent="true"
     scrollable
   >
-    <VCard style="display: flex; flex-direction: column; max-height: 96vh;">
+    <VCard class="editor-shell" style="display: flex; flex-direction: column; max-height: 96vh;">
 
       <!-- ── Header ─────────────────────────────────────────────────── -->
-      <VCardTitle class="d-flex align-center gap-3 pa-4 pb-2" style="flex-shrink: 0;">
+      <VCardTitle class="editor-shell__header d-flex align-center gap-3" style="flex-shrink: 0;">
         <VIcon color="primary">bx bx-layout</VIcon>
-        <span>{{ isEditMode ? 'Edit Template Frame' : 'Tambah Template Frame Baru' }}</span>
+        <span class="editor-shell__title">{{ isEditMode ? 'Edit Template Frame' : 'Tambah Template Frame Baru' }}</span>
         <VSpacer />
-        <VBtn icon variant="text" @click="close"><VIcon>bx bx-x</VIcon></VBtn>
+        <VBtn icon variant="text" aria-label="Tutup" @click="close"><VIcon>bx bx-x</VIcon></VBtn>
       </VCardTitle>
 
       <VDivider />
@@ -580,7 +580,7 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
         <div class="d-flex flex-column" style="width: 300px; flex-shrink: 0; overflow: hidden;">
 
           <!-- Tab bar -->
-          <div class="d-flex" style="flex-shrink: 0; border-bottom: 1px solid #e5e7eb;">
+          <div class="d-flex" style="flex-shrink: 0; border-bottom: 1px solid var(--n-200);">
             <button
               class="sidebar-tab"
               :class="{ 'sidebar-tab-active': sidebarTab === 'config' }"
@@ -598,11 +598,9 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
 
           <!-- Template label -->
           <div>
-            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color: #888;">Nama Template</p>
+            <p class="text-caption font-weight-bold text-uppercase mb-1" style="color: var(--text-tertiary);">Nama Template</p>
             <VTextField
               v-model="label"
-              density="compact"
-              variant="outlined"
               placeholder="cth: Lotso 6 Foto"
               hide-details
             />
@@ -610,7 +608,7 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
 
           <!-- Status -->
           <div class="d-flex align-center justify-space-between">
-            <span class="text-caption font-weight-bold text-uppercase" style="color: #888;">Status Aktif</span>
+            <span class="text-caption font-weight-bold text-uppercase" style="color: var(--text-tertiary);">Status Aktif</span>
             <VSwitch v-model="isActive" color="success" hide-details density="compact" />
           </div>
 
@@ -618,11 +616,11 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
 
           <!-- Slot list -->
           <div>
-            <p class="text-caption font-weight-bold text-uppercase mb-2" style="color: #888;">
+            <p class="text-caption font-weight-bold text-uppercase mb-2" style="color: var(--text-tertiary);">
               Daftar Slot ({{ slots.length }})
             </p>
 
-            <div v-if="slots.length === 0" class="text-center pa-4 rounded-lg" style="background:#f9f9f9; border: 1px dashed #ddd;">
+            <div v-if="slots.length === 0" class="text-center pa-4 rounded-lg" style="background:var(--n-50); border: 1px dashed var(--n-300);">
               <VIcon color="grey-lighten-1" size="28">bx bx-layer</VIcon>
               <p class="text-caption text-medium-emphasis mt-1">Belum ada slot.<br>Klik "Tambah Slot" di atas.</p>
             </div>
@@ -672,9 +670,9 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
           </div>
 
           <!-- Tips -->
-          <div class="pa-3 rounded-lg" style="background:#f0f4ff; border: 1px solid #c7d7ff;">
-            <p class="text-caption font-weight-bold mb-1" style="color:#4f46e5;">Tips</p>
-            <ul class="text-caption" style="color:#555; padding-left: 16px; line-height: 1.7;">
+          <InlineAlert tone="info">
+            <p class="text-caption font-weight-bold mb-1">Tips</p>
+            <ul class="text-caption" style="padding-left: 16px; line-height: 1.7;">
               <li>Drag slot untuk pindah posisi</li>
               <li>Drag sudut/tepi untuk resize</li>
               <li>Tombol Delete untuk hapus slot</li>
@@ -682,14 +680,14 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
               <li>Shift+Arrow untuk nudge 16px</li>
               <li>Snap Grid menjaga slot rapi</li>
             </ul>
-          </div>
+          </InlineAlert>
           </div> <!-- /config tab -->
 
           <!-- Preview tab -->
           <div v-if="sidebarTab === 'preview'" class="pa-3 d-flex flex-column gap-3" style="overflow-y: auto; flex: 1;">
             <!-- Header row -->
             <div class="d-flex align-center justify-space-between">
-              <p class="text-caption font-weight-bold text-uppercase" style="color: #888; margin: 0;">
+              <p class="text-caption font-weight-bold text-uppercase" style="color: var(--text-tertiary); margin: 0;">
                 Preview dengan foto sample
               </p>
               <VBtn
@@ -767,7 +765,7 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
         </VAlert>
         <VSpacer v-else />
         <VBtn variant="text" @click="close">Batal</VBtn>
-        <VBtn color="primary" variant="elevated" prepend-icon="bx bx-save" @click="handleSave">
+        <VBtn color="primary" variant="flat" prepend-icon="bx bx-save" @click="handleSave">
           {{ isEditMode ? 'Update Template' : 'Simpan Template' }}
         </VBtn>
       </VCardActions>
@@ -782,7 +780,7 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
         <VIcon color="primary">bx bx-image</VIcon>
         <span>Preview Fullscreen</span>
         <VSpacer />
-        <VBtn icon variant="text" @click="fullscreenPreview = false">
+        <VBtn icon variant="text" aria-label="Tutup" @click="fullscreenPreview = false">
           <VIcon>bx bx-x</VIcon>
         </VBtn>
       </VCardTitle>
@@ -822,17 +820,24 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
 </template>
 
 <style scoped>
+/* Dialog shell — matches AppModal's visual language (radius/shadow/header
+   typography) without adopting its slot structure, which assumes a single
+   scrolling column and would break this two-pane canvas+sidebar layout. */
+.editor-shell { border-radius: var(--radius-xl) !important; box-shadow: var(--shadow-dialog) !important; }
+.editor-shell__header { padding: var(--sp-6) var(--sp-8) var(--sp-4) !important; }
+.editor-shell__title { font-size: var(--fs-lg); font-weight: var(--fw-semibold); color: var(--text-primary); }
+
 /* ── Upload zone ──────────────────────────────────────────────────────────── */
 .upload-zone {
   min-height: 260px;
-  border: 2px dashed #c7d2fe;
-  background: #f5f3ff;
+  border: 2px dashed var(--n-300);
+  background: var(--n-50);
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
 }
 .upload-zone:hover {
-  background: #ede9fe;
-  border-color: #818cf8;
+  background: var(--n-100);
+  border-color: rgb(var(--v-theme-primary));
 }
 
 /* ── Canvas scroll wrapper ────────────────────────────────────────────────── */
@@ -840,10 +845,10 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
   overflow: auto;
   flex: 1;
   min-height: 0;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--n-200);
   border-radius: 8px;
-  background: #fafafa;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  background: var(--n-50);
+  box-shadow: var(--shadow-sm);
 }
 
 /* ── Canvas container ─────────────────────────────────────────────────────── */
@@ -952,7 +957,7 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
   border: 1px solid transparent;
 }
 .slot-list-item:hover {
-  background: #f5f5f5;
+  background: var(--n-100);
 }
 .slot-list-selected {
   background: rgba(79, 70, 229, 0.08);
@@ -976,21 +981,21 @@ function slotColor(i: number) { return SLOT_COLORS[i % SLOT_COLORS.length] }
   border: none;
   border-bottom: 2px solid transparent;
   cursor: pointer;
-  color: #888;
+  color: var(--text-tertiary);
   transition: color 0.15s, border-color 0.15s;
 }
-.sidebar-tab:hover { color: #4f46e5; }
+.sidebar-tab:hover { color: rgb(var(--v-theme-primary)); }
 .sidebar-tab-active {
-  color: #4f46e5;
-  border-bottom-color: #4f46e5;
+  color: rgb(var(--v-theme-primary));
+  border-bottom-color: rgb(var(--v-theme-primary));
 }
 
 /* ── Preview canvas ───────────────────────────────────────────────────────── */
 .preview-canvas-wrapper {
   overflow: auto;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--n-200);
   border-radius: 8px;
-  background: #f9fafb;
+  background: var(--n-50);
 }
 .preview-canvas {
   position: relative;

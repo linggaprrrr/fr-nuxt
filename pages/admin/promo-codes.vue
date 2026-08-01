@@ -316,72 +316,104 @@ onMounted(() => {
       @confirm="submit"
     >
       <FormSection title="Details">
-        <VCol cols="12" md="6">
-          <VTextField v-model="form.name" label="Name" />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField v-model="form.description" label="Description (optional)" />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField
-            :model-value="form.promo_code"
-            label="Promo Code"
-            @update:model-value="val => (form.promo_code = val.toUpperCase())"
-          />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VSelect
-            v-model="form.unit_id"
-            :items="units"
-            item-title="name"
-            item-value="id"
-            label="Unit"
-          />
-        </VCol>
+        <FormField label="Name">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="form.name" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Description" optional>
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="form.description" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField label="Promo Code" width="code">
+          <template #default="{ id, describedBy }">
+            <VTextField
+              :id="id"
+              :model-value="form.promo_code"
+              :aria-describedby="describedBy"
+              @update:model-value="val => (form.promo_code = val.toUpperCase())"
+            />
+          </template>
+        </FormField>
+        <FormField label="Unit">
+          <template #default="{ id, describedBy }">
+            <VSelect
+              :id="id"
+              v-model="form.unit_id"
+              :items="units"
+              item-title="name"
+              item-value="id"
+              :aria-describedby="describedBy"
+            />
+          </template>
+        </FormField>
       </FormSection>
 
       <FormSection title="Discount">
-        <VCol cols="12" md="6">
-          <VSelect
-            v-model="form.discount_type"
-            :items="discountTypeItems"
-            item-title="title"
-            item-value="value"
-            label="Discount Type"
-          />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField
-            v-model.number="form.value"
-            label="Discount Value"
-            type="number"
-            :max="form.discount_type === 'percentage' ? 100 : undefined"
-            :hint="form.discount_type === 'percentage' ? 'Maximum 100%' : ''"
-            persistent-hint
-          />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField
-            v-model.number="form.max_uses"
-            label="Max Uses (optional)"
-            type="number"
-            min="1"
-            hint="Leave empty for unlimited redemptions"
-            persistent-hint
-          />
-        </VCol>
+        <FormField label="Discount Type">
+          <template #default="{ id, describedBy }">
+            <VSelect
+              :id="id"
+              v-model="form.discount_type"
+              :items="discountTypeItems"
+              item-title="title"
+              item-value="value"
+              :aria-describedby="describedBy"
+            />
+          </template>
+        </FormField>
+        <FormField
+          label="Discount Value"
+          width="num"
+          :helper="form.discount_type === 'percentage' ? 'Maximum 100%' : undefined"
+        >
+          <template #default="{ id, describedBy }">
+            <VTextField
+              :id="id"
+              v-model.number="form.value"
+              type="number"
+              :max="form.discount_type === 'percentage' ? 100 : undefined"
+              :aria-describedby="describedBy"
+            />
+          </template>
+        </FormField>
+        <FormField
+          label="Max Uses"
+          optional
+          width="num"
+          helper="Leave empty for unlimited redemptions"
+        >
+          <template #default="{ id, describedBy }">
+            <VTextField
+              :id="id"
+              v-model.number="form.max_uses"
+              type="number"
+              min="1"
+              :aria-describedby="describedBy"
+            />
+          </template>
+        </FormField>
       </FormSection>
 
       <FormSection title="Schedule">
-        <VCol cols="12" md="6">
-          <VTextField v-model="form.start_date" label="Start Date" type="datetime-local" />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField v-model="form.end_date" label="End Date" type="datetime-local" />
-        </VCol>
-        <VCol cols="12">
-          <VSwitch v-model="form.is_active" label="Active" color="primary" />
-        </VCol>
+        <VRow dense>
+          <VCol cols="12" md="6">
+            <FormField label="Start Date">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="form.start_date" type="datetime-local" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+          <VCol cols="12" md="6">
+            <FormField label="End Date">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="form.end_date" type="datetime-local" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+        </VRow>
+        <VSwitch v-model="form.is_active" label="Active" color="primary" />
       </FormSection>
     </AppModal>
   </div>

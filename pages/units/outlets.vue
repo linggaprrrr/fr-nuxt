@@ -153,20 +153,34 @@ definePageMeta({ layout: 'unit' })
       cancel-text="Batal"
       @confirm="submit"
     >
-      <VRow>
-        <VCol cols="12" md="6">
-          <VTextField v-model="form.name" label="Nama" />
-        </VCol>
-        <VCol cols="12" md="6">
-          <VTextField v-model="form.phone" label="Telepon" />
-        </VCol>
-        <VCol cols="12">
-          <VTextField v-model="form.address" label="Alamat" />
-        </VCol>
-        <VCol v-if="!isEditing" cols="12">
-          <VSelect v-model="form.unit_id" :items="units" item-value="id" item-title="name" label="Unit" />
-        </VCol>
-      </VRow>
+      <FormSection title="Detail">
+        <VRow dense>
+          <VCol cols="12" md="6">
+            <FormField label="Nama">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="form.name" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+          <VCol cols="12" md="6">
+            <FormField label="Telepon">
+              <template #default="{ id, describedBy }">
+                <VTextField :id="id" v-model="form.phone" :aria-describedby="describedBy" />
+              </template>
+            </FormField>
+          </VCol>
+        </VRow>
+        <FormField label="Alamat">
+          <template #default="{ id, describedBy }">
+            <VTextField :id="id" v-model="form.address" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+        <FormField v-if="!isEditing" label="Unit">
+          <template #default="{ id, describedBy }">
+            <VSelect :id="id" v-model="form.unit_id" :items="units" item-value="id" item-title="name" :aria-describedby="describedBy" />
+          </template>
+        </FormField>
+      </FormSection>
     </AppModal>
   </div>
 </template>
