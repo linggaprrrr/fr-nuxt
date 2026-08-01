@@ -94,6 +94,17 @@ const templatesForSettingsOutlet = computed(() => {
   return templates.value.filter(t => t.is_active && t.current_version && (t.is_global || t.outlet_ids?.includes(selectedOutletId.value)))
 })
 
+// A template with no price is rejected by the kiosk's own gate (Cart.jsx's
+// `usable()` requires currentVersion AND price), so it can be assigned,
+// published, and selected here and still never appear at checkout — silently.
+// Surfaced as a warning rather than filtered out of the dropdown: hiding it
+// would leave an admin hunting for a template that looks fine on this page.
+const unpricedSelected = computed(() => [
+  { slot: 'Cetak foto biasa', id: currentSetting.value?.default_template_id },
+  { slot: 'Cetak strip foto', id: currentSetting.value?.secondary_template_id },
+].map(s => ({ ...s, tpl: templates.value.find(t => t.id === s.id) }))
+  .filter(s => s.tpl && !s.tpl.price))
+
 // Each slot only lists templates of its own type — the backend rejects a
 // mismatch at checkout, so offering one here would just be a trap.
 const primaryOptions = computed(() =>
@@ -253,6 +264,12 @@ onMounted(async () => { await fetchOutlets(); await fetchAll() })
             </InlineAlert>
             <InlineAlert v-else-if="!currentSetting.default_template_id" tone="warning" class="mt-4">
               Cetak aktif tapi belum ada template foto biasa yang dipilih — kiosk akan menolak pesanan cetak.
+            </InlineAlert>
+
+            <InlineAlert v-for="u in unpricedSelected" :key="u.slot" tone="warning" class="mt-4">
+              <strong>{{ u.tpl.label }}</strong> ({{ u.slot }}) belum punya harga per lembar, jadi kiosk
+              <strong>tidak akan menawarkan cetak sama sekali</strong> — meski template ini sudah Live dan dipilih.
+              Isi harganya lewat <strong>Edit</strong> di langkah 1.
             </InlineAlert>
 
             <FormSection title="Template yang dipakai">
