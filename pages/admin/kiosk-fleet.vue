@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
+import type { DataTableHeader } from '@/components/AppDataTable.vue'
 import { useKioskFleet } from '@/composables/useKioskFleet'
 
 dayjs.extend(relativeTime)
 
-const { kiosks, loading, error, getKioskFleet, updateKioskStock } = useKioskFleet()
+const { kiosks, loading, error, getKioskFleet, updateKioskStock, deleteKioskPrinter } = useKioskFleet()
 const toast = useToast()
+const { confirm } = useConfirm()
 
 const STALE_MINUTES = 15
 
@@ -35,6 +37,55 @@ function queueAge(k: any) {
   const mins = Math.floor((k.print_queue_age_ms ?? 0) / 60000)
   return mins >= 60 ? `${Math.floor(mins / 60)} jam` : `${mins} menit`
 }
+
+// The banners above scan the whole fleet, so search/sort/paging stay
+// client-side over the full list rather than round-tripping to the server —
+// a fleet is tens of kiosks per tenant, not thousands.
+const search = ref('')
+const sortBy = ref<'outlet_name' | 'last_seen_at' | 'app_version'>('last_seen_at')
+const sortDir = ref<'asc' | 'desc'>('desc')
+const page = ref(1)
+const limit = 10
+
+const sortOptions = [
+  { title: 'Terakhir Terlihat', value: 'last_seen_at' },
+  { title: 'Outlet', value: 'outlet_name' },
+  { title: 'App Version', value: 'app_version' },
+]
+
+const filteredKiosks = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  let list = kiosks.value
+  if (q) {
+    list = list.filter(k =>
+      [k.outlet_name, k.printer_name, k.secondary_printer_name, k.receipt_printer_name]
+        .some(v => v?.toLowerCase().includes(q)),
+    )
+  }
+
+  const dir = sortDir.value === 'asc' ? 1 : -1
+  return [...list].sort((a, b) => {
+    const av = a[sortBy.value] ?? ''
+    const bv = b[sortBy.value] ?? ''
+    return av < bv ? -dir : av > bv ? dir : 0
+  })
+})
+
+const total = computed(() => filteredKiosks.value.length)
+const pagedKiosks = computed(() => filteredKiosks.value.slice((page.value - 1) * limit, page.value * limit))
+
+watch([search, sortBy, sortDir], () => { page.value = 1 })
+
+const headers: DataTableHeader[] = [
+  { key: 'outlet_name', title: 'Outlet' },
+  { key: 'foto', title: 'Printer Foto' },
+  { key: 'strip', title: 'Printer Strip' },
+  { key: 'struk', title: 'Printer Struk' },
+  { key: 'stock', title: 'Sisa Cetak' },
+  { key: 'app_version', title: 'App Version' },
+  { key: 'last_seen_at', title: 'Terakhir Terlihat', nowrap: true },
+  { key: 'actions', title: '', align: 'end' },
+]
 
 const stockDialog = ref(false)
 const stockTarget = ref<any>(null)
@@ -66,6 +117,21 @@ async function saveStock() {
   if (!res) { toast.error(error.value ?? 'Gagal menyimpan stok cetak.'); return }
   toast.success('Stok cetak diperbarui — hitungan tercetak direset ke 0')
   stockDialog.value = false
+  await fetchAll()
+}
+
+async function removeKiosk(kiosk: any) {
+  const ok = await confirm({
+    title: 'Hapus kiosk',
+    message: `Yakin ingin menghapus kiosk "${kiosk.outlet_name}" dari fleet? Kiosk yang masih aktif akan muncul lagi di heartbeat berikutnya.`,
+    tone: 'danger',
+    confirmText: 'Hapus',
+    cancelText: 'Batal',
+  })
+  if (!ok) return
+  const ok2 = await deleteKioskPrinter(kiosk.id)
+  if (!ok2) { toast.error(error.value ?? 'Gagal menghapus kiosk.'); return }
+  toast.success('Kiosk berhasil dihapus')
   await fetchAll()
 }
 
@@ -108,97 +174,109 @@ onMounted(fetchAll)
     </VAlert>
 
     <VCard flat border rounded="lg">
-      <VCardText>
-        <VProgressLinear v-if="loading" indeterminate color="primary" class="mb-4" />
+      <AppDataTable
+        :headers="headers"
+        :items="pagedKiosks"
+        :loading="loading"
+        :page="page"
+        :items-per-page="limit"
+        :total="total"
+        empty-title="Belum ada kiosk terdaftar"
+        empty-icon="bx-printer"
+        @update:page="p => (page = p)"
+      >
+        <template #toolbar>
+          <VTextField
+            v-model="search"
+            placeholder="Cari outlet atau printer..."
+            prepend-inner-icon="bx-search"
+            clearable
+            style="max-width: 280px;"
+          />
+          <VSelect
+            v-model="sortBy"
+            :items="sortOptions"
+            label="Urutkan"
+            density="compact"
+            style="max-width: 200px;"
+            hide-details
+          />
+          <VBtn
+            icon
+            variant="text"
+            :aria-label="sortDir === 'asc' ? 'Ascending' : 'Descending'"
+            @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'"
+          >
+            <VIcon :icon="sortDir === 'asc' ? 'bx-sort-up' : 'bx-sort-down'" />
+            <VTooltip activator="parent">{{ sortDir === 'asc' ? 'Naik' : 'Turun' }}</VTooltip>
+          </VBtn>
+        </template>
 
-        <div v-if="!loading && kiosks.length === 0" class="text-center pa-12 text-medium-emphasis">
-          <VIcon size="56" class="mb-3" color="grey-lighten-1">bx-printer</VIcon>
-          <p class="text-subtitle-1">Belum ada kiosk terdaftar</p>
-        </div>
+        <template #item.foto="{ item }">
+          <template v-if="item.printer_name">
+            <div class="text-body-2">{{ item.printer_name }}</div>
+            <VChip size="x-small" :color="statusColor(item.printer_status)">{{ item.printer_status }}</VChip>
+          </template>
+          <!-- No photo printer paired yet (receipt-only kiosk, or still being
+               set up) reads as an em dash rather than a red "offline" chip
+               for a device that was never configured. -->
+          <span v-else class="text-medium-emphasis">—</span>
+        </template>
 
-        <VTable v-else density="compact">
-          <thead>
-            <tr>
-              <th>Outlet</th>
-              <th>Printer Foto</th>
-              <th>Status</th>
-              <th>Printer Strip</th>
-              <th>Status Strip</th>
-              <th>Printer Struk</th>
-              <th>Status Struk</th>
-              <th>Sisa Cetak</th>
-              <th>App Version</th>
-              <th>Terakhir Terlihat</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="k in kiosks" :key="k.id">
-              <td>{{ k.outlet_name }}</td>
-              <td>{{ k.printer_name ?? '-' }}</td>
-              <td>
-                <!-- No photo printer paired yet (receipt-only kiosk, or still
-                     being set up). printer_status is NOT NULL server-side so it
-                     still says "offline"; a red chip for a device that was
-                     never configured reads as a fault it isn't. -->
-                <VChip v-if="k.printer_name" size="small" :color="statusColor(k.printer_status)">
-                  {{ k.printer_status }}
-                </VChip>
-                <span v-else class="text-medium-emphasis">—</span>
-              </td>
-              <td>{{ k.secondary_printer_name ?? '-' }}</td>
-              <td>
-                <!-- Unset means strips go to the primary printer, a normal
-                     single-printer setup — not a fault. -->
-                <VChip
-                  v-if="k.secondary_printer_status"
-                  size="small"
-                  :color="statusColor(k.secondary_printer_status)"
-                >
-                  {{ k.secondary_printer_status }}
-                </VChip>
-                <span v-else class="text-medium-emphasis">—</span>
-              </td>
-              <td>{{ k.receipt_printer_name ?? '-' }}</td>
-              <td>
-                <!-- No receipt printer configured is not a fault, so it reads
-                     as an em dash rather than a red "offline" chip. -->
-                <VChip
-                  v-if="k.receipt_printer_status"
-                  size="small"
-                  :color="statusColor(k.receipt_printer_status)"
-                >
-                  {{ k.receipt_printer_status }}
-                </VChip>
-                <span v-else class="text-medium-emphasis">—</span>
-              </td>
-              <td>
-                <!-- null initial = tracking never configured; an em dash says
-                     that plainly instead of implying a real count of zero. -->
-                <template v-if="k.stock?.initial === null">
-                  <span class="text-medium-emphasis">—</span>
-                </template>
-                <template v-else>
-                  <VChip size="small" :color="k.stock.low ? 'warning' : 'default'">
-                    {{ k.stock.remaining }} / {{ k.stock.initial }}
-                  </VChip>
-                </template>
-              </td>
-              <td>{{ k.app_version ?? '-' }}</td>
-              <td>
-                {{ dayjs(k.last_seen_at).fromNow() }}
-                <VChip v-if="isStale(k.last_seen_at)" size="x-small" color="warning" class="ml-2">Stale</VChip>
-              </td>
-              <td class="text-end">
-                <VBtn icon variant="text" size="small" @click="openStock(k)">
-                  <VIcon icon="bx-layer" />
-                  <VTooltip activator="parent">Atur stok cetak</VTooltip>
-                </VBtn>
-              </td>
-            </tr>
-          </tbody>
-        </VTable>
-      </VCardText>
+        <template #item.strip="{ item }">
+          <template v-if="item.secondary_printer_name">
+            <div class="text-body-2">{{ item.secondary_printer_name }}</div>
+            <!-- Unset means strips go to the primary printer, a normal
+                 single-printer setup — not a fault. -->
+            <VChip v-if="item.secondary_printer_status" size="x-small" :color="statusColor(item.secondary_printer_status)">
+              {{ item.secondary_printer_status }}
+            </VChip>
+          </template>
+          <span v-else class="text-medium-emphasis">—</span>
+        </template>
+
+        <template #item.struk="{ item }">
+          <template v-if="item.receipt_printer_name">
+            <div class="text-body-2">{{ item.receipt_printer_name }}</div>
+            <!-- No receipt printer configured is not a fault either. -->
+            <VChip v-if="item.receipt_printer_status" size="x-small" :color="statusColor(item.receipt_printer_status)">
+              {{ item.receipt_printer_status }}
+            </VChip>
+          </template>
+          <span v-else class="text-medium-emphasis">—</span>
+        </template>
+
+        <template #item.stock="{ item }">
+          <!-- null initial = tracking never configured; an em dash says that
+               plainly instead of implying a real count of zero. -->
+          <span v-if="item.stock?.initial === null" class="text-medium-emphasis">—</span>
+          <VChip v-else size="small" :color="item.stock.low ? 'warning' : 'default'">
+            {{ item.stock.remaining }} / {{ item.stock.initial }}
+          </VChip>
+        </template>
+
+        <template #item.app_version="{ item }">
+          {{ item.app_version ?? '-' }}
+        </template>
+
+        <template #item.last_seen_at="{ item }">
+          {{ dayjs(item.last_seen_at).fromNow() }}
+          <VChip v-if="isStale(item.last_seen_at)" size="x-small" color="warning" class="ml-2">Stale</VChip>
+        </template>
+
+        <template #item.actions="{ item }">
+          <div class="d-flex justify-end" style="gap: 4px;">
+            <VBtn icon variant="text" size="small" @click="openStock(item)">
+              <VIcon icon="bx-layer" />
+              <VTooltip activator="parent">Atur stok cetak</VTooltip>
+            </VBtn>
+            <VBtn icon variant="text" size="small" color="error" @click="removeKiosk(item)">
+              <VIcon icon="bx-trash-alt" />
+              <VTooltip activator="parent">Hapus</VTooltip>
+            </VBtn>
+          </div>
+        </template>
+      </AppDataTable>
     </VCard>
 
     <AppModal

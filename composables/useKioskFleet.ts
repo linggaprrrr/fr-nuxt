@@ -56,5 +56,16 @@ export function useKioskFleet() {
     }
   }
 
-  return { kiosks, loading, error, getKioskFleet, updateKioskStock }
+  const deleteKioskPrinter = async (kioskPrinterId: string) => {
+    error.value = null
+    try {
+      await authFetch(`/kiosk-printers/${kioskPrinterId}`, { method: 'DELETE' })
+      return true
+    } catch (err: any) {
+      error.value = err.data?.detail || err.message || 'Gagal menghapus kiosk.'
+      return false
+    }
+  }
+
+  return { kiosks, loading, error, getKioskFleet, updateKioskStock, deleteKioskPrinter }
 }
