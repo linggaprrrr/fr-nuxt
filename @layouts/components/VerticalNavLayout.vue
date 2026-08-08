@@ -10,6 +10,7 @@ export default defineComponent({
 
     const route = useRoute()
     const { mdAndDown } = useDisplay()
+    const { isNavCollapsed } = useNavCollapse()
 
     // ℹ️ This is alternative to below two commented watcher
     // We want to show overlay if overlay nav is visible and want to hide overlay if overlay is hidden and vice versa.
@@ -77,6 +78,9 @@ export default defineComponent({
           class: [
             'layout-wrapper layout-nav-type-vertical layout-navbar-static layout-footer-static layout-content-width-fluid',
             mdAndDown.value && 'layout-overlay-nav',
+            // Desktop only: below lg the nav is an overlay drawer, where a
+            // collapsed rail would just be a second, conflicting mode.
+            !mdAndDown.value && isNavCollapsed.value && 'layout-vertical-nav-collapsed',
             route.meta.layoutWrapperClasses,
           ],
         },

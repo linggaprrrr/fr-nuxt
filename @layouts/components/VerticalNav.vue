@@ -15,6 +15,11 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const { mdAndDown } = useDisplay()
+const { isNavCollapsed } = useNavCollapse()
+
+// While collapsed, hovering temporarily restores the full width so labels are
+// readable without un-collapsing. The theme styles `.hovered`; this sets it.
+const isNavHovered = ref(false)
 
 const refNav = ref()
 
@@ -49,8 +54,11 @@ const handleNavScroll = (evt: Event) => {
         'visible': isOverlayNavActive,
         'scrolled': isVerticalNavScrolled,
         'overlay-nav': mdAndDown,
+        'hovered': isNavCollapsed && isNavHovered,
       },
     ]"
+    @mouseenter="isNavHovered = true"
+    @mouseleave="isNavHovered = false"
   >
     <!-- 👉 Header -->
     <div class="nav-header">

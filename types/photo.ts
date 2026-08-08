@@ -6,9 +6,12 @@ export interface Photo {
     is_public: boolean
     uploaded_at: string
     bounding_boxes: Array<any>
-    unit_price: number
+    unit_price: number | null
     unit_name: string
-    photo_type: string
+    photo_type: string | null
+    /** Non-null marks a free Event photo — why it has no outlet, type or price. */
+    event_name?: string | null
+    face_count?: number
   }
 
 export interface PhotoType {

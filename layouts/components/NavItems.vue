@@ -56,6 +56,7 @@ const pricingLink = Object.freeze({ title: 'Pricing', icon: 'bx bxs-purchase-tag
 const accessMethodsLink = Object.freeze({ title: 'Access Methods', icon: 'bx bx-log-in-circle', to: '/admin/access-methods' })
 const promoCodesLink = Object.freeze({ title: 'Promo Codes', icon: 'bx bxs-discount', to: '/admin/promo-codes' })
 const eventTicketsLink = Object.freeze({ title: 'Event Tickets', icon: 'bx bxs-coupon', to: '/admin/event-tickets' })
+const eventsLink = Object.freeze({ title: 'Events', icon: 'bx bx-calendar-event', to: '/admin/events' })
 const timeOperationLink = Object.freeze({ title: 'Time Operation', icon: 'bx bxs-time', to: '/admin/time-operation' })
 </script>
 
@@ -97,5 +98,6 @@ const timeOperationLink = Object.freeze({ title: 'Time Operation', icon: 'bx bxs
   <VerticalNavLink :item="accessMethodsLink" />
   <VerticalNavLink :item="promoCodesLink" />
   <VerticalNavLink :item="eventTicketsLink" />
+  <VerticalNavLink :item="eventsLink" />
   <VerticalNavLink :item="timeOperationLink" />
 </template>
