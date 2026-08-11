@@ -2,12 +2,14 @@
 import { useRuntimeConfig } from '#imports'
 import { createApiError, getApiErrorMessage, validateApiResponse } from '@/utils/apiHelpers'
 
-const { refreshAuth, logout } = useAuth()
-
 export const authFetch = async <T>(
   url: string,
   options: Omit<Parameters<typeof $fetch<T>>[1], 'headers'> = {}
 ): Promise<T> => {
+  // Must be resolved per call, not at module scope: useAuth() reaches for
+  // useRuntimeConfig()/useCookie(), which need a live Nuxt instance. At module
+  // scope SSR evaluates this with no instance bound and the whole route 500s.
+  const { refreshAuth, logout } = useAuth()
   const config = useRuntimeConfig()
 
   const getAccessToken = () => {

@@ -6,6 +6,8 @@ import VerticalNavLayout from '../../@layouts/components/VerticalNavLayout.vue'
 import Footer from '@/layouts/components/Footer.vue'
 import NavbarThemeSwitcher from '@/layouts/components/NavbarThemeSwitcher.vue'
 import UserProfile from '@/layouts/components/UserProfile.vue'
+
+const { isNavCollapsed, toggleNavCollapse } = useNavCollapse()
 </script>
 
 <template>
@@ -19,6 +21,19 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
           @click="toggleVerticalOverlayNavActive(true)"
         >
           <VIcon icon="bx-menu" />
+        </IconBtn>
+
+        <!-- 👉 Collapse the nav to an icon rail (desktop; below lg the nav is
+             already an overlay drawer with its own toggle above) -->
+        <IconBtn
+          class="ms-n3 d-none d-lg-flex"
+          :aria-label="isNavCollapsed ? 'Perluas menu' : 'Ciutkan menu'"
+          @click="toggleNavCollapse"
+        >
+          <VIcon :icon="isNavCollapsed ? 'bx-chevrons-right' : 'bx-chevrons-left'" />
+          <VTooltip activator="parent" location="bottom">
+            {{ isNavCollapsed ? 'Perluas menu' : 'Ciutkan menu' }}
+          </VTooltip>
         </IconBtn>
 
 
