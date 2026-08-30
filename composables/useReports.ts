@@ -270,18 +270,6 @@ export function useReports() {
     return data
   }
 
-  const getFotoTerjualReport = async (startDate: string, endDate: string) => {
-    const config = useRuntimeConfig()
-    // Call ke endpoint /reports/foto-terjual
-    const response = await $fetch(`${config.public.apiBase}/statistics/reports/transactions`, {
-      method: 'GET',
-      query: { start_date: startDate, end_date: endDate }
-    })
-    return response
-  }
-  
-  
-
   return {    
     getOperationalAlerts,
     getTodaySnapshot,
@@ -290,7 +278,6 @@ export function useReports() {
     getTransactionsReport,
     getAllUnitReports,
     getPerUnitReports,
-    getPerOutletReports,
-    getFotoTerjualReport
+    getPerOutletReports
   }
 }
