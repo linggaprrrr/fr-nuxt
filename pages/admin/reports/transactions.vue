@@ -31,7 +31,7 @@ const today = new Date()
 const startDate = ref(formatDateToYYYYMMDD(today))
 const endDate = ref(formatDateToYYYYMMDD(today))
 
-const { getFotoTerjualReport } = useReports()
+const { getTransactionsReport } = useReports()
 
 const totalFotoTerjualFromData = computed(() => fotoTerjualData.value.reduce((sum, item) => sum + item.foto_terjual, 0))
 const totalRevenue = computed(() => fotoTerjualData.value.reduce((sum, item) => sum + item.total_pendapatan, 0))
@@ -43,7 +43,7 @@ const dateHeader = computed(() => {
 })
 
 const fetchFotoTerjual = async () => {
-  const result: FotoTerjualSummary = await getFotoTerjualReport(startDate.value, endDate.value)
+  const result: FotoTerjualSummary = await getTransactionsReport(startDate.value, endDate.value)
   fotoTerjualData.value = result.data
   totalPendapatan.value = result.total_pendapatan
   totalFotoTerjual.value = result.total_foto_terjual
