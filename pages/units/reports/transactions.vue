@@ -4,7 +4,7 @@ import { saveAs } from 'file-saver'
 
 const toast = useToast()
 
-interface Transaction { tanggal: string; total_transaksi: number; total_pendapatan: number }
+interface Transaction { tanggal: string; foto_terjual: number; total_pendapatan: number }
 interface TransactionSummary { start_date: string; end_date: string; total_pendapatan: number; jumlah_transaksi: number; data: Transaction[] }
 
 const transactions = ref<Transaction[]>([])
@@ -40,7 +40,7 @@ const exportToExcel = () => {
     return
   }
   const exportData = transactions.value.map((trx, index) => ({
-    No: index + 1, Tanggal: trx.tanggal, 'Jumlah Transaksi': trx.total_transaksi, 'Total Pendapatan': trx.total_pendapatan,
+    No: index + 1, Tanggal: trx.tanggal, 'Foto Terjual': trx.foto_terjual, 'Total Pendapatan': trx.total_pendapatan,
   }))
   const worksheet = XLSX.utils.json_to_sheet(exportData)
   const workbook = XLSX.utils.book_new()
@@ -94,7 +94,7 @@ definePageMeta({ layout: 'unit' })
           <tr>
             <th class="text-center">#</th>
             <th class="text-center">Tanggal</th>
-            <th class="text-center">Jumlah Transaksi</th>
+            <th class="text-center">Foto Terjual</th>
             <th class="text-center">Total Pendapatan</th>
           </tr>
         </thead>
@@ -105,7 +105,7 @@ definePageMeta({ layout: 'unit' })
           <tr v-else v-for="(trx, index) in transactions" :key="index">
             <td class="text-center">{{ index + 1 }}</td>
             <td class="text-center">{{ trx.tanggal }}</td>
-            <td class="text-center">{{ trx.total_transaksi }}</td>
+            <td class="text-center">{{ trx.foto_terjual }}</td>
             <td class="text-center">Rp {{ trx.total_pendapatan.toLocaleString() }}</td>
           </tr>
         </tbody>
