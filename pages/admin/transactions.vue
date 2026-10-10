@@ -11,6 +11,7 @@ const page = ref(1)
 const limit = 24
 const total = ref(0)
 const search = ref('')
+const source = ref<'' | 'app' | 'kiosk'>('')
 
 const statusOptions = [
   { title: 'Pending', value: 'pending' },
@@ -23,6 +24,7 @@ const statusLabel: Record<string, string> = { paid: 'Lunas', cancelled: 'Dibatal
 const editDialog = ref(false)
 const editingTrxId = ref('')
 const editingStatus = ref('')
+const viewingTrx = ref<any>(null)
 
 const headers: DataTableHeader[] = [
   { key: 'trx_code', title: 'Kode Transaksi', nowrap: true },
@@ -32,17 +34,18 @@ const headers: DataTableHeader[] = [
   { key: 'status', title: 'Status' },
   { key: 'paid_at', title: 'Waktu Bayar', nowrap: true },
   { key: 'created_at', title: 'Dibuat', nowrap: true },
-  { key: 'actions', title: '', align: 'end', width: '80px' },
+  { key: 'actions', title: '', align: 'end', width: '120px' },
 ]
 
 onMounted(fetchTransactions)
 
 async function fetchTransactions() {
-  await getTransactions({ page: page.value, limit, search: search.value })
+  await getTransactions({ page: page.value, limit, search: search.value, source: source.value || undefined })
   if (transactions.value) total.value = transactions.value.total
 }
 
-watch([page, search], fetchTransactions)
+watch([search, source], () => { page.value = 1 })
+watch([page, search, source], fetchTransactions)
 
 function openEditDialog(trx: any) {
   editingTrxId.value = trx.id
@@ -74,6 +77,12 @@ async function handleDelete(trx: any) {
     <PageHeader title="Transaksi" subtitle="Daftar semua transaksi." />
 
     <VCard rounded="lg">
+      <VTabs v-model="source" color="primary">
+        <VTab value="">Semua</VTab>
+        <VTab value="app">Ownize App</VTab>
+        <VTab value="kiosk">Kiosk</VTab>
+      </VTabs>
+      <VDivider />
       <AppDataTable
         :headers="headers"
         :items="transactions?.data ?? []"
@@ -83,7 +92,7 @@ async function handleDelete(trx: any) {
         :items-per-page="limit"
         :total="total"
         empty-title="Belum ada transaksi"
-        @update:page="p => { page = p; fetchTransactions() }"
+        @update:page="p => page = p"
       >
         <template #toolbar>
           <VTextField v-model="search" placeholder="Cari email atau kode..." prepend-inner-icon="bx-search" clearable style="max-width:320px" />
@@ -111,6 +120,9 @@ async function handleDelete(trx: any) {
 
         <template #item.actions="{ item }">
           <div class="d-flex justify-end" style="gap:4px">
+            <VBtn icon variant="text" size="small" :disabled="!item.photos.length" aria-label="Lihat foto" @click="viewingTrx = item">
+              <VIcon color="primary" icon="bx-image" />
+            </VBtn>
             <VBtn icon variant="text" size="small" @click="openEditDialog(item)">
               <VIcon color="primary" icon="bx-edit-alt" />
             </VBtn>
@@ -121,6 +133,24 @@ async function handleDelete(trx: any) {
         </template>
       </AppDataTable>
     </VCard>
+
+    <AppModal
+      :model-value="!!viewingTrx"
+      title="Foto Transaksi"
+      :description="viewingTrx ? `${viewingTrx.trx_code} · ${viewingTrx.user?.email ?? '-'}` : ''"
+      size="lg"
+      hide-footer
+      @update:model-value="v => { if (!v) viewingTrx = null }"
+    >
+      <VRow v-if="viewingTrx" dense>
+        <VCol v-for="p in viewingTrx.photos" :key="p.id" cols="6" sm="4">
+          <a :href="p.original_path" target="_blank" rel="noopener">
+            <VImg :src="p.original_path" :alt="p.filename" aspect-ratio="1" cover rounded="lg" />
+          </a>
+          <div class="text-caption text-truncate mt-1">{{ p.filename }}</div>
+        </VCol>
+      </VRow>
+    </AppModal>
 
     <AppModal
       v-model="editDialog"

@@ -31,7 +31,7 @@ export interface User {
 export interface Photo {
   id: string
   filename: string
-  original_url: string
+  original_path: string // public URL (serialized by backend)
 }
 
 export interface Unit {
