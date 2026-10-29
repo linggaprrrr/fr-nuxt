@@ -144,8 +144,9 @@ async function handleDelete(trx: any) {
     >
       <VRow v-if="viewingTrx" dense>
         <VCol v-for="p in viewingTrx.photos" :key="p.id" cols="6" sm="4">
-          <a :href="p.original_path" target="_blank" rel="noopener">
-            <VImg :src="p.original_path" :alt="p.filename" aspect-ratio="1" cover rounded="lg" />
+          <!-- The sold file (render) outlives the 7-day originals/ expiry. -->
+          <a :href="viewingTrx.photo_renders?.[p.id] ?? p.original_path" target="_blank" rel="noopener">
+            <VImg :src="viewingTrx.photo_renders?.[p.id] ?? p.original_path" :alt="p.filename" aspect-ratio="1" cover rounded="lg" />
           </a>
           <div class="text-caption text-truncate mt-1">{{ p.filename }}</div>
         </VCol>
